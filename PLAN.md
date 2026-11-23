@@ -77,12 +77,17 @@ One PIN guards everything parent-only:
 
 ### Making a sticker
 - **Style:** floating faces (no bodies), flat shapes, a white sticker outline, and simple line eyes and mouths
-- **Feeling** (every sticker): happy, cute, silly, love, shy, sleepy, surprised, nervous, confused, grumpy. Small changes to the eyes and mouth, plus little extras like blush, Zzz, a sweat drop or question marks.
-- **Person:** feeling, skin color, hair style, hair color, hat, glasses, background
-- **Alien:** feeling, color, head shape, 1 to 3 eyes, antennae, hat, glasses, background
-- **Animal:** cat, dog, chihuahua, bunny, bear, mouse, fox or sheep, then feeling, coat (plain, tabby, patch, two-tone, calico, colorpoint), fur color, patch color, hat, glasses and background. Calico cat is the starting animal.
+- **Build the expression** (every sticker), piece by piece:
+  - **Eyes:** open, big and shiny, wide, closed happy, sleepy, wink, looking up, down or to the side, cross-eyed, crying, hearts, angry, sad
+  - **Mouth:** closed smile, open smile, smile with teeth, small smile, tongue out, "oh," frown, wobbly, flat
+  - **Cheeks:** none, blush, shy lines
+  - **Extras:** sweat drop, Zzz, question marks, heart, sparkle, anger mark
+  - **Quick feelings** (happy, laugh, cute, silly, love, shy, sleepy, surprised, nervous, confused, sad, grumpy) are only starting points: one tap fills in the parts, and any part can then be changed
+- **Person:** expression, skin color, hair style, hair color, hat, glasses, background
+- **Alien:** expression, color, head shape, 1 to 3 eyes, antennae, hat, glasses, background
+- **Animal:** cat, dog, chihuahua, bunny, bear, mouse, fox or sheep (each with its own face, not a cat face with new ears), then expression, coat (plain, tabby, patch, two-tone, calico, colorpoint), fur color, patch color, hat, glasses and background. Calico cat is the starting animal.
 - **Cats also get:** face shape (round, wide, fluffy), ears (pointy, big, folded; folded isn't offered on the wide face) and long whiskers
-- **Hats:** party hat, tiny crown, tiny bowler hat, beanie, cap, bow (on the ear), flower, top hat, nightcap
+- **Hats:** party hat, tiny crown, tiny bowler hat, beanie, cap, bow (on the ear), flower, top hat, nightcap, beanie pulled down over the eyes
 - **Bow tie** under the chin (pink or blue)
 - **Glasses:** round, sunglasses, hearts, stars
 - **Keep it really simple:** a few big choices per step, each shown as a small picture

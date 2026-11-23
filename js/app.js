@@ -278,6 +278,8 @@
     builderBack = pagePersonId ? `#/people/${pagePersonId}` : '#/who';
     draftIsNew = !existing;
     draft = existing ? clone(existing) : { ...clone(Stickers.DEFAULTS.person), id: S.uid() };
+    // Older stickers kept a single "feeling"; turn it into eyes, mouth and cheeks.
+    if (draft.feeling) draft = Stickers.applyPreset(draft, draft.feeling);
     drawBuilder();
   }
 
@@ -295,7 +297,14 @@
 
     const optionRows = Stickers.OPTIONS[draft.type].filter(opt => !opt.when || opt.when(draft)).map(opt => {
       let choices;
-      if (opt.colors) {
+      if (opt.presets) {
+        // Quick feelings: each fills in eyes, mouth, cheeks and extras at once.
+        const current = Stickers.presetOf(draft);
+        choices = opt.presets.map(f =>
+          `<button type="button" class="pick small ${current === f ? 'picked' : ''}" data-act="sticker-preset" data-value="${f}" aria-label="${f}" aria-pressed="${current === f}">
+            ${Stickers.render(Stickers.applyPreset(draft, f))}</button>`
+        ).join('');
+      } else if (opt.colors) {
         choices = opt.colors.map(c =>
           `<button type="button" class="swatch ${draft[opt.key] === c ? 'picked' : ''}" style="--swatch:${c}" data-act="sticker-opt" data-key="${opt.key}" data-value="${c}" aria-label="${opt.label} ${c}" aria-pressed="${draft[opt.key] === c}"></button>`
         ).join('');
@@ -548,9 +557,19 @@
     'sticker-type'(el) {
       const type = el.dataset.value;
       if (draft.type === type) return;
-      draft = { ...clone(Stickers.DEFAULTS[type]), bg: draft.bg, id: draft.id };
+      // Keep the background and the expression when switching kind.
+      const keep = { bg: draft.bg, eyes: draft.eyes, mouth: draft.mouth, cheeks: draft.cheeks, extra: draft.extra, hat: draft.hat, glasses: draft.glasses, neck: draft.neck };
+      Object.keys(keep).forEach(k => { if (keep[k] === undefined) delete keep[k]; });
+      draft = { ...clone(Stickers.DEFAULTS[type]), ...keep, id: draft.id };
       Effects.pop();
       drawBuilder();
+    },
+    'sticker-preset'(el) {
+      draft = Stickers.applyPreset(draft, el.dataset.value);
+      Effects.pop();
+      const y = window.scrollY;
+      drawBuilder();
+      window.scrollTo(0, y);
     },
     'sticker-opt'(el) {
       const value = el.dataset.num === 'true' ? Number(el.dataset.value) : el.dataset.value;
