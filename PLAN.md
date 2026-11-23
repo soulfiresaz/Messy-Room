@@ -49,6 +49,7 @@ One PIN guards everything parent-only:
 - Adding rewards, changing their pictures and goals, and deleting them
 - Changing how often cleaning jobs come up
 - Deleting a room
+- Removing a furniture part that already has things assigned to it
 - Deleting a person
 - Deleting a sticker (only ones nobody is using)
 
@@ -130,6 +131,8 @@ The child (with a parent's help if needed) places the door on a wall first.
 - **Both the child and a grown-up, depending on the step**
 - **Ready-made pieces** (like "6-drawer dresser" or "12-cubby unit") are shown as pictures the child can drag in alone
 - **"Change the parts"** is a simple option a grown-up can open when a ready-made piece doesn't match the real one
+- **Anyone can add parts** or change an empty part
+- **Removing a part that already has things assigned to it needs the parent PIN**, so a child can't lose what they set up by accident
 
 ### Furniture is built from parts
 Real furniture comes in all shapes and sizes, so each piece is made of parts you choose:
