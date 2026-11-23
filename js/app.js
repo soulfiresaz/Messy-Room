@@ -197,6 +197,11 @@
     return room().pieces.find(p => p.id === id) || null;
   }
 
+  // Things hanging on a door or on a closet's doors.
+  function piecesHungOn(id) {
+    return room().pieces.filter(p => p.hangOn === id);
+  }
+
   // Pieces standing on a closet's floor.
   function piecesIn(closetId) {
     return room().pieces.filter(p => p.insideId === closetId);
@@ -290,23 +295,20 @@
     }
     const tray = [];
     if (mapStep === 2) {
-      ['door', 'window', 'switch'].forEach(t => {
+      ['door', 'window', 'switch', 'outlet'].forEach(t => {
         tray.push(`<div class="tray-item" data-tray="${t}" role="button" aria-label="${t}">${RoomMap.itemIcon(t)}</div>`);
       });
       mapPieces().filter(p => isWallPiece(p) && !p.place).forEach(p => {
         tray.push(`<div class="tray-item piece" data-tray="piece" data-id="${p.id}" role="button" aria-label="Closet">${Furniture.renderTop(p, 8)}</div>`);
       });
-      // Ready-made closets: drag one onto a wall, then stretch it to fit.
-      ['closet', 'closetHalf', 'closetMiddle', 'closetDouble'].forEach(key => {
-        const sample = Furniture.make(key);
-        tray.push(`<div class="tray-item closet-pick" data-tray="catalog" data-key="${key}" role="button" aria-label="Closet">${Furniture.render(sample)}</div>`);
-      });
+      // A new closet is built first, then it waits here to go on its wall.
+      tray.splice(4, 0, `<a class="tray-item new-closet" href="#/rooms/my-room/add-closet" aria-label="Make a closet">${Furniture.doorIcon('bifold')}<span class="plus-badge" aria-hidden="true">➕</span></a>`);
     } else {
       mapPieces().filter(p => !isWallPiece(p) && !p.place).forEach(p => {
         tray.push(`<div class="tray-item piece" data-tray="piece" data-id="${p.id}" role="button" aria-label="${esc(p.label || 'Furniture')}">${Furniture.renderTop(p, 8)}</div>`);
       });
     }
-    const add = `<a class="tray-item add" href="#/rooms/my-room/add" aria-label="Make furniture">➕</a>`;
+    const add = mapStep === 2 ? '' : `<a class="tray-item add" href="#/rooms/my-room/add" aria-label="Make furniture">➕</a>`;
     const hasDoor = r.wallItems.some(it => it.type === 'door');
     const next = mapStep === 2 && hasDoor
       ? `<button type="button" class="big-btn yes" data-act="map-next" aria-label="Next">➡️</button>` : '';
@@ -471,15 +473,17 @@
 
   document.addEventListener('pointercancel', () => { drag = null; });
 
-  // Ready-made pieces, shown as pictures. Inside a closet, only pieces that stand on its floor.
-  function renderCatalog(closetId) {
-    const closet = closetId ? pieceById(closetId) : null;
-    if (closetId && !closet) { location.replace('#/rooms/my-room'); return; }
-    const back = closet ? `#/rooms/my-room/piece/${closet.id}` : '#/rooms/my-room';
+  // Ready-made pieces, shown as pictures.
+  // mode: 'room' (furniture), 'floor' (pieces that stand on a closet floor), 'closets' (closets only)
+  function renderCatalog(mode, targetId) {
+    const closet = mode === 'floor' ? pieceById(targetId) : null;
+    if (mode === 'floor' && !closet) { location.replace('#/rooms/my-room'); return; }
+    const back = closet ? `#/rooms/my-room/piece/${closet.id}` : pieceReturn;
     const groups = Furniture.GROUPS.map(g => {
+      if (mode === 'closets' ? g.key !== 'closet' : g.key === 'closet') return '';
       const items = Furniture.CATALOG.filter(c => c.group === g.key)
         .map(c => ({ c, p: c.make() }))
-        .filter(x => !closet || Furniture.fitsInCloset(x.p));
+        .filter(x => mode !== 'floor' || Furniture.fitsInCloset(x.p));
       if (!items.length) return '';
       return `<section class="opt-row">
         <h2 class="opt-head"><span aria-hidden="true">${g.icon}</span> ${g.label}</h2>
@@ -494,6 +498,7 @@
   }
 
   let catalogCloset = null;
+  let closetOutside = false;   // the closet page is showing the outside of its doors
   let pieceReturn = '#/rooms/my-room';
   let partsMode = false;     // "change the parts" is open
   let selectedPart = null;   // part picked while changing the parts
@@ -507,7 +512,7 @@
   function renderPiece(id) {
     const p = pieceById(id);
     if (!p) { location.replace('#/rooms/my-room'); return; }
-    if (pagePieceId !== id) { partsMode = false; selectedPart = null; }
+    if (pagePieceId !== id) { partsMode = false; selectedPart = null; closetOutside = false; }
     pagePieceId = id;
     const back = p.insideId && pieceById(p.insideId) ? `#/rooms/my-room/piece/${p.insideId}` : '#/rooms/my-room';
     const inside = p.kind === 'closet' ? piecesIn(p.id) : [];
@@ -516,16 +521,22 @@
       interactive: true,
       selected: partsMode ? selectedPart : null,
       inside,
-      addInside: p.kind === 'closet',
-      pickSection: partsMode && p.kind === 'closet',
+      addInside: p.kind === 'closet' && !closetOutside,
+      pickSection: partsMode && p.kind === 'closet' && !closetOutside,
+      outside: p.kind === 'closet' && closetOutside,
+      hung: p.kind === 'closet' ? piecesHungOn(p.id) : [],
+      addHang: p.kind === 'closet' && closetOutside,
     });
+    // On the outside of a closet, the colors are for its doors.
+    const current = p.kind === 'closet' && closetOutside ? p.doorColor : p.color;
     const colors = Furniture.COLORS.map(c =>
-      `<button type="button" class="swatch ${p.color === c ? 'picked' : ''}" style="--swatch:${c}" data-act="piece-color" data-value="${c}" aria-label="Color" aria-pressed="${p.color === c}"></button>`).join('');
+      `<button type="button" class="swatch ${current === c ? 'picked' : ''}" style="--swatch:${c}" data-act="piece-color" data-value="${c}" aria-label="Color" aria-pressed="${current === c}"></button>`).join('');
     $app.innerHTML = `
       ${topBar(p.label || '', back)}
       <main class="piece-page">
         <div class="piece-stage ${p.kind === 'closet' ? 'wide' : ''}">${pic}</div>
         <div class="piece-tools">
+          ${p.kind === 'closet' && p.doors !== 'none' ? `<button type="button" class="round-btn big-door ${closetOutside ? 'on' : ''}" data-act="closet-side" aria-label="${closetOutside ? 'Open the closet' : 'Close the doors'}" aria-pressed="${closetOutside}">🚪</button>` : ''}
           ${canChange ? `<button type="button" class="round-btn ${partsMode ? 'on' : ''}" data-act="parts-mode" aria-label="Change the parts" aria-pressed="${partsMode}">🔧</button>` : ''}
           <button type="button" class="round-btn" data-act="piece-delete" aria-label="Delete">🗑️</button>
         </div>
@@ -555,6 +566,9 @@
 
     if (p.kind === 'closet') {
       Furniture.fixCloset(p);
+      const doorPicks = Furniture.DOOR_KINDS.map(k =>
+        `<button type="button" class="pick small square ${p.doors === k ? 'picked' : ''}" data-act="closet-doors" data-value="${k}" aria-label="Doors ${k}" aria-pressed="${p.doors === k}">${Furniture.doorIcon(k)}</button>`).join('');
+      rows.push(`<section class="opt-row"><h2 class="opt-head">Doors</h2><div class="opt-choices">${doorPicks}</div></section>`);
       rows.push(`<section class="opt-row"><h2 class="opt-head">Top shelf</h2><div class="opt-choices">
         <div class="step-group"><span class="step-num">${p.shelves.length}</span>${stepBtn('closet-shelves', '➖', 'Fewer top shelves', 'data-dir="-1"')}${stepBtn('closet-shelves', '➕', 'More top shelves', 'data-dir="1"')}</div></div></section>`);
       rows.push(`<section class="opt-row"><h2 class="opt-head">Sections</h2><div class="opt-choices">
@@ -1187,6 +1201,21 @@
       Effects.pop();
       drawMapAll();
     },
+    'closet-side'() {
+      closetOutside = !closetOutside;
+      selectedPart = null;
+      Effects.pop();
+      redrawPiece();
+    },
+    'closet-doors'(el) {
+      changePiece(p => {
+        p.doors = el.dataset.value;
+        if (p.doors === 'none') closetOutside = false;
+        // A curtain starts in a soft color; doors start white.
+        if (p.doors === 'curtain' && p.doorColor === '#ffffff') p.doorColor = '#b9a2ff';
+        else if (p.doors !== 'curtain' && p.doorColor === '#b9a2ff') p.doorColor = '#ffffff';
+      });
+    },
     'map-stretch'(el) {
       const r = room();
       const dir = Number(el.dataset.dir);
@@ -1296,7 +1325,10 @@
       redrawPiece();
     },
     'piece-color'(el) {
-      changePiece(p => { p.color = el.dataset.value; });
+      changePiece(p => {
+        if (p.kind === 'closet' && closetOutside) p.doorColor = el.dataset.value;
+        else p.color = el.dataset.value;
+      });
     },
     'piece-delete'() {
       const p = pieceById(pagePieceId);
@@ -1698,8 +1730,9 @@
     [/^#\/rooms$/, renderRooms],
     [/^#\/rooms\/my-room$/, renderMap],
     [/^#\/rooms\/my-room\/furniture$/, renderFurnitureList],
-    [/^#\/rooms\/my-room\/add$/, () => renderCatalog(null)],
-    [/^#\/rooms\/my-room\/add\/([\w-]+)$/, m => renderCatalog(m[1])],
+    [/^#\/rooms\/my-room\/add$/, () => renderCatalog('room')],
+    [/^#\/rooms\/my-room\/add-closet$/, () => renderCatalog('closets')],
+    [/^#\/rooms\/my-room\/add\/([\w-]+)$/, m => renderCatalog('floor', m[1])],
     [/^#\/rooms\/my-room\/piece\/([\w-]+)$/, m => renderPiece(m[1])],
     [/^#\/who$/, renderWho],
     [/^#\/people\/(new|[\w-]+)$/, m => renderPersonPage(m[1])],

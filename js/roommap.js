@@ -14,7 +14,7 @@ const RoomMap = (() => {
   const S = 20;          // pixels per unit in the map drawing
   const M = 3;           // room around the walls, in units
   const T = 0.7;         // wall thickness
-  const ITEM_W = { door: 4.6, window: 5, switch: 0.9 };
+  const ITEM_W = { door: 4.6, window: 5, switch: 0.9, outlet: 0.9 };
   const MIN = 8, MAX = 60;
   const itemW = it => it.w || ITEM_W[it.type];
 
@@ -117,6 +117,14 @@ const RoomMap = (() => {
       `<path d="M-11 0 H11 M-5 -6 L-11 0 L-5 6 M5 -6 L11 0 L5 6" fill="none" stroke="${INK}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>`;
   }
 
+  function bulbMark(x, y) {
+    return `<g transform="translate(${x} ${y})"><path d="M0 -9 C-7 -9 -10 -3 -7 2 C-5 5 -4 6 -4 9 L4 9 C4 6 5 5 7 2 C10 -3 7 -9 0 -9Z" fill="#ffd54a" ${line(1.8)}/><rect x="-3.5" y="9" width="7" height="4" rx="1.5" fill="#c9cfd8" ${line(1.4)}/></g>`;
+  }
+
+  function plugMark(x, y) {
+    return `<g transform="translate(${x} ${y})"><rect x="-6" y="-6" width="12" height="11" rx="3" fill="#9aa7b8" ${line(1.6)}/><path d="M-3 -6 v-4 M3 -6 v-4" stroke="${INK}" stroke-width="2" stroke-linecap="round"/><path d="M0 5 q0 6 6 7" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round"/></g>`;
+  }
+
   function wallItemArt(room, it, selected) {
     const f = wallFrame(room, it.wall, it.pos);
     const w = itemW(it) * S;
@@ -130,9 +138,16 @@ const RoomMap = (() => {
     } else if (it.type === 'window') {
       o += `<rect x="${-w / 2}" y="${-T * S - 3}" width="${w}" height="${T * S + 6}" rx="3" fill="#bfe8ff" ${line(2)}/>`;
       o += `<path d="M${-w / 2} ${-T * S / 2} L${w / 2} ${-T * S / 2}" stroke="${INK}" stroke-width="2"/>`;
+    } else if (it.type === 'outlet') {
+      const p = Math.max(w, 18);
+      o += `<rect x="${-p / 2}" y="2" width="${p}" height="${p * 1.25}" rx="4" fill="#fff" ${line(2)}/>`;
+      o += `<rect x="${-4}" y="${6}" width="2.5" height="6" fill="${INK}"/><rect x="${1.5}" y="${6}" width="2.5" height="6" fill="${INK}"/><circle cx="0" cy="${15}" r="2" fill="${INK}"/>`;
+      o += plugMark(0, p * 1.25 + 14);
     } else {
-      o += `<rect x="${-w / 2}" y="2" width="${w}" height="${w * 1.2}" rx="4" fill="#fff" ${line(2)}/>`;
-      o += `<rect x="${-3}" y="${6}" width="6" height="${w * 0.7}" rx="2" fill="${INK}"/>`;
+      const p = Math.max(w, 18);
+      o += `<rect x="${-p / 2}" y="2" width="${p}" height="${p * 1.25}" rx="4" fill="#fff" ${line(2)}/>`;
+      o += `<rect x="${-3}" y="${6}" width="6" height="${p * 0.75}" rx="2" fill="${INK}"/>`;
+      o += bulbMark(0, p * 1.25 + 14);
     }
     const hit = it.type === 'door'
       ? `<rect x="${-w / 2}" y="${-T * S - 6}" width="${w}" height="${w + T * S + 6}" fill="transparent"/>`
@@ -212,7 +227,12 @@ const RoomMap = (() => {
     if (type === 'window') {
       return `<svg viewBox="0 0 60 60"><rect x="6" y="10" width="48" height="40" rx="4" fill="#bfe8ff" stroke="${INK}" stroke-width="3"/><path d="M30 10 V50 M6 30 H54" stroke="${INK}" stroke-width="3"/></svg>`;
     }
-    return `<svg viewBox="0 0 60 60"><rect x="16" y="8" width="28" height="44" rx="6" fill="#fff" stroke="${INK}" stroke-width="3"/><rect x="26" y="18" width="8" height="24" rx="3" fill="${INK}"/></svg>`;
+    if (type === 'outlet') {
+      const face = (cx, cy) => `<rect x="${cx - 9}" y="${cy - 9}" width="18" height="18" rx="6" fill="#eef1f5" ${line(1.6)}/><rect x="${cx - 5}" y="${cy - 5}" width="2.4" height="6" fill="${INK}"/><rect x="${cx + 2.6}" y="${cy - 5}" width="2.4" height="6" fill="${INK}"/><circle cx="${cx}" cy="${cy + 5}" r="1.8" fill="${INK}"/>`;
+      return `<svg viewBox="0 0 60 60"><rect x="16" y="6" width="28" height="48" rx="7" fill="#fff" ${line(2.5)}/>${face(30, 19)}${face(30, 41)}</svg>`;
+    }
+    return `<svg viewBox="0 0 60 60"><rect x="8" y="8" width="30" height="44" rx="7" fill="#fff" ${line(2.5)}/><rect x="18" y="18" width="10" height="24" rx="3" fill="#eef1f5" ${line(1.8)}/><rect x="20" y="19" width="6" height="11" rx="2" fill="#fff" ${line(1.6)}/>` +
+      `<g transform="translate(46 22)"><path d="M0 -10 C-8 -10 -11 -3 -8 2 C-6 5 -5 7 -5 10 L5 10 C5 7 6 5 8 2 C11 -3 8 -10 0 -10Z" fill="#ffd54a" ${line(2)}/><rect x="-4" y="10" width="8" height="5" rx="2" fill="#c9cfd8" ${line(1.6)}/></g></svg>`;
   }
 
   return { S, defaults, render, settle, settleWallItem, resize, halfSize, itemIcon, ITEM_W, itemW, wallLength, MIN, MAX, stretchItem, stretchPiece };

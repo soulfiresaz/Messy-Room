@@ -73,7 +73,10 @@ const Furniture = (() => {
 
   // Closets saved before sections existed had one set of rods for the whole closet.
   function fixCloset(p) {
-    if (p.kind !== 'closet' || p.sections) return p;
+    if (p.kind !== 'closet') return p;
+    if (!p.doors) p.doors = 'bifold';
+    if (!p.doorColor) p.doorColor = '#ffffff';
+    if (p.sections) return p;
     p.sections = [{ id: uid(), kind: p.rods || 'high', w: p.w, rods: p.rodSpots || [{ id: uid() }, { id: uid() }], shelves: [] }];
     delete p.rods; delete p.rodSpots;
     return p;
@@ -519,6 +522,120 @@ const Furniture = (() => {
     return o;
   }
 
+  // ---------- Closet doors (the outside of a closet) ----------
+  // folding (bifold), curtain, sliding, one regular door, or none.
+
+  const DOOR_KINDS = ['bifold', 'curtain', 'sliding', 'swing', 'none'];
+
+  function doorPanel(x, y, w, h, c) {
+    return rect(x, y, w, h, c, 3, 2.5) +
+      `<rect x="${x + w * 0.14}" y="${y + h * 0.05}" width="${w * 0.72}" height="${h * 0.4}" rx="3" fill="none" stroke="${INK}" stroke-width="1.6" opacity=".3"/>` +
+      `<rect x="${x + w * 0.14}" y="${y + h * 0.52}" width="${w * 0.72}" height="${h * 0.42}" rx="3" fill="none" stroke="${INK}" stroke-width="1.6" opacity=".3"/>`;
+  }
+
+  function doorsArt(kind, x, y, w, h, c) {
+    let o = '';
+    if (kind === 'bifold') {
+      const pw = w / 4;
+      for (let i = 0; i < 4; i++) o += doorPanel(x + i * pw, y, pw, h, shade(c, i % 2 ? 0 : 0.05));
+      o += `<circle cx="${x + 2 * pw - 12}" cy="${y + h * 0.48}" r="5" fill="${shade(c, -0.35)}" ${line(2)}/><circle cx="${x + 2 * pw + 12}" cy="${y + h * 0.48}" r="5" fill="${shade(c, -0.35)}" ${line(2)}/>`;
+    } else if (kind === 'curtain') {
+      o += rect(x - 6, y - 4, w + 12, 8, '#b8b8c8', 4, 2);
+      const n = Math.max(5, Math.round(w / 28)), fw = w / n;
+      let d = `M${x} ${y + 4} L${x + w} ${y + 4} L${x + w} ${y + h - 8}`;
+      for (let i = n; i > 0; i--) { const xx = x + i * fw; d += ` Q${xx - fw / 2} ${y + h + 4} ${xx - fw} ${y + h - 8}`; }
+      o += `<path d="${d} Z" fill="${c}" ${line(2.5)}/>`;
+      for (let i = 1; i < n; i++) o += `<path d="M${x + i * fw} ${y + 10} L${x + i * fw} ${y + h - 14}" stroke="${shade(c, -0.18)}" stroke-width="3" stroke-linecap="round"/>`;
+      for (let i = 0; i < n; i++) o += `<circle cx="${x + i * fw + fw / 2}" cy="${y}" r="4" fill="#fff" ${line(1.6)}/>`;
+    } else if (kind === 'sliding') {
+      const pw = w * 0.54;
+      o += doorPanel(x, y, pw, h, shade(c, 0.05)) + doorPanel(x + w - pw, y + 4, pw, h - 4, c);
+      o += rect(x + pw - 24, y + h * 0.42, 8, 46, shade(c, -0.3), 3, 1.6) + rect(x + w - pw + 16, y + h * 0.42, 8, 46, shade(c, -0.3), 3, 1.6);
+    } else if (kind === 'swing') {
+      const dw = Math.min(w, 5 * U), dx = x + (w - dw) / 2;
+      o += rect(x, y, w, h, '#e9dcc6', 2, 0);
+      o += doorPanel(dx, y, dw, h, c) + `<circle cx="${dx + dw - 16}" cy="${y + h * 0.5}" r="6" fill="#d9b14a" ${line(2)}/>`;
+    }
+    return o;
+  }
+
+  // Things hanging on the outside of a closet's doors (or a room door), left to right along the top.
+  function hungArt(hung, x0, y0, x1, state) {
+    let o = '';
+    let fx = x0 + 14;
+    hung.forEach(q => {
+      const box = frontBox(q);
+      const g = `<svg x="${fx}" y="${y0}" width="${box.W}" height="${box.H}" viewBox="0 0 ${box.W} ${box.H}">${render(q, { bare: true })}</svg>`;
+      o += state.interactive ? `<g class="fpart" data-act="open-piece" data-id="${q.id}" role="button" aria-label="Open">${g}</g>` : g;
+      fx += box.W + 14;
+    });
+    if (state.interactive && state.addHang) {
+      const bx = Math.min(fx + 34, x1 - 34);
+      o += `<g class="fpart add-in" data-act="hang-add" role="button" aria-label="Hang something here">` +
+        `<circle cx="${bx}" cy="${y0 + 40}" r="26" fill="#ffd54a" ${line()}/>` +
+        `<path d="M${bx - 11} ${y0 + 40} h22 M${bx} ${y0 + 29} v22" stroke="${INK}" stroke-width="5" stroke-linecap="round"/></g>`;
+    }
+    return o;
+  }
+
+  function closetOutsideArt(p, inside, state) {
+    const { w, h } = closetInner(p, inside, state.addInside);
+    const ox = 4, oy = 4;
+    let o = rect(ox, oy, w, h, p.color, 10);
+    o += doorsArt(p.doors, ox + 16, oy + 16, w - 32, h - 32, p.doorColor || '#ffffff');
+    o += hungArt(state.hung || [], ox + 16, oy + 34, ox + w - 16, state);
+    return o;
+  }
+
+  // A room door seen from the front, with whatever hangs on it.
+  function renderDoor(item, hung, state = {}) {
+    const need = hung.reduce((a, q) => a + frontBox(q).W + 14, 40) + (state.addHang ? 80 : 0);
+    const dw = Math.max(5 * U, need), dh = 11.5 * U;
+    const W = dw + 40, H = dh + 30;
+    let o = rect(4, 4, W - 8, H - 4, '#e9dcc6', 8);
+    o += doorPanel(20, 20, dw, dh, item.color || '#ffffff');
+    o += `<circle cx="${20 + dw - 18}" cy="${20 + dh * 0.5}" r="7" fill="#d9b14a" ${line(2)}/>`;
+    o += hungArt(hung, 20, 30, 20 + dw, state);
+    return svg(W, H, o, 'furn-svg');
+  }
+
+  // Small pictures for choosing a closet's doors.
+  function doorIcon(kind) {
+    let o = rect(4, 4, 52, 52, '#e9dcc6', 6, 2);
+    if (kind === 'none') {
+      o += rect(9, 9, 42, 42, '#fffaf0', 3, 1.5) + `<path d="M13 18 H47" stroke="#8a8aa0" stroke-width="3" stroke-linecap="round"/>` +
+        [18, 26, 34, 42].map(x => `<rect x="${x - 3}" y="20" width="6" height="14" rx="1.5" fill="#ff9fb8" stroke="${INK}" stroke-width="1"/>`).join('');
+      return svg(60, 60, o, 'icon-svg');
+    }
+    o += doorsArt(kind, 9, 10, 42, 42, kind === 'curtain' ? '#b9a2ff' : '#ffffff').replace(/stroke-width="2\.5"/g, 'stroke-width="1.6"').replace(/stroke-width="3"/g, 'stroke-width="1.6"');
+    return svg(60, 60, o, 'icon-svg');
+  }
+
+  // The front edge of a closet on the map shows its doors.
+  function closetDoorTop(kind, x, y, W) {
+    if (kind === 'bifold') {
+      let d = `M${x} ${y}`;
+      const n = Math.max(4, Math.round(W / 30)) * 2;
+      for (let i = 1; i <= n; i++) d += ` L${x + i * W / n} ${y + (i % 2 ? 12 : 0)}`;
+      return `<path d="${d}" fill="none" stroke="#c98b5a" stroke-width="5" stroke-linejoin="round"/>`;
+    }
+    if (kind === 'curtain') {
+      const n = Math.max(5, Math.round(W / 26));
+      let d = `M${x} ${y + 3}`;
+      for (let i = 0; i < n; i++) d += ` q${W / n / 2} 10 ${W / n} 0`;
+      return `<path d="${d}" fill="none" stroke="#9f86f0" stroke-width="5"/>`;
+    }
+    if (kind === 'sliding') {
+      return rect(x, y - 4, W * 0.54, 7, '#c98b5a', 2, 2) + rect(x + W * 0.46, y + 4, W * 0.54, 7, '#c98b5a', 2, 2);
+    }
+    if (kind === 'swing') {
+      const dw = Math.min(W * 0.6, 5 * 20), dx = x + (W - dw) / 2;
+      return `<path d="${`M${dx} ${y} L${dx} ${y + dw} A${dw} ${dw} 0 0 0 ${dx + dw} ${y}`}" fill="#ffffff55" stroke="${INK}" stroke-width="2" stroke-dasharray="7 6"/>` +
+        rect(dx - 4, y, 8, dw, '#c98b5a', 3, 2);
+    }
+    return '';
+  }
+
   // ---------- Public drawing ----------
 
   // state: { interactive, selected, inside (pieces in a closet), addInside, bare }
@@ -536,7 +653,7 @@ const Furniture = (() => {
     const inside = state.inside || [];
     const box = p.kind === 'closet' ? closetBox(p, inside, state.addInside) : frontBox(p);
     let art;
-    if (p.kind === 'closet') art = closetArt(p, inside, state);
+    if (p.kind === 'closet') art = state.outside && p.doors !== 'none' ? closetOutsideArt(p, inside, state) : closetArt(p, inside, state);
     else if (p.kind === 'bed') art = bedArt(p);
     else if (p.kind === 'seat') art = seatArt(p);
     else if (p.kind === 'wallshelf') art = wallshelfArt(p, state);
@@ -710,8 +827,10 @@ const Furniture = (() => {
     }
     if (p.kind === 'wallshelf') return rect(x, y, W, D, c, 4);
     if (p.kind === 'closet') {
+      fixCloset(p);
       o += rect(x, y, W, D, '#fffaf0', 4, 2);
-      o += `<path d="M${x + 10} ${y + D * 0.5} L${x + W - 10} ${y + D * 0.5}" stroke="#a8a8b8" stroke-width="6" stroke-linecap="round"/>`;
+      o += `<path d="M${x + 10} ${y + D * 0.45} L${x + W - 10} ${y + D * 0.45}" stroke="#a8a8b8" stroke-width="6" stroke-linecap="round"/>`;
+      o += closetDoorTop(p.doors, x, y + D, W);
       return o;
     }
     // Storage: the top, then the front edge with a knob for each column of drawers.
@@ -744,5 +863,6 @@ const Furniture = (() => {
     section, fixCloset, sectionSpaces, findSection,
     cell, col, uid, shade, setInsert, INSERT_COUNTS, fixPiece,
     footprint, topArt, renderTop, canStretch, canDeepen, setWidth, setDepth,
+    DOOR_KINDS, doorIcon, renderDoor,
   };
 })();

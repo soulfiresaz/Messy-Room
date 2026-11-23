@@ -1070,3 +1070,22 @@ button { font: inherit; color: inherit; }
 .save-btn:active { transform: scale(.95); }
 
 .tray-item.closet-pick svg { max-height: 100%; }
+
+.tray-item.new-closet { position: relative; background: #e6f6f0; cursor: pointer; touch-action: manipulation; }
+
+.plus-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ffd54a;
+  border: 3px solid var(--ink);
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}
+
+.round-btn.big-door { width: 76px; height: 76px; font-size: 38px; background: #8fd3ff; }
+.round-btn.big-door.on { background: var(--c-rewards); }
