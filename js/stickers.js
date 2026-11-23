@@ -64,7 +64,7 @@ const Stickers = (() => {
     alien: [
       ...FACE_PARTS,
       { key: 'color', icon: '👽', label: 'Alien color', colors: COLORS.alien },
-      { key: 'head', icon: '🥚', label: 'Head', styles: ['round', 'tall', 'wide', 'bulb', 'classic'] },
+      { key: 'head', icon: '🥚', label: 'Head', styles: ['round', 'tall', 'wide', 'xwide', 'bulb', 'classic'] },
       { key: 'alienEars', icon: '👂', label: 'Ears', styles: ['none', 'pointy', 'round'] },
       { key: 'skinPattern', icon: '✨', label: 'Skin', styles: ['plain', 'spots', 'stars'] },
       { key: 'eyeCount', icon: '👁️', label: 'How many eyes', styles: [1, 2, 3] },
@@ -343,6 +343,8 @@ const Stickers = (() => {
       round: { cy: 54, rx: 26, ry: 26 },
       tall: { cy: 52, rx: 21, ry: 30 },
       wide: { cy: 56, rx: 31, ry: 21 },
+      // Extra wide: almost twice as wide as it is tall, a little flatter on the bottom.
+      xwide: { cy: 57, rx: 35, ry: 19, d: 'M50 38 C72 38 85 45 85 56 C85 68 70 76 50 76 C30 76 15 68 15 56 C15 45 28 38 50 38Z' },
       // Big forehead tapering to a small chin.
       bulb: { cy: 52, rx: 28, ry: 27, d: 'M50 25 C68 25 78 36 78 49 C78 61 67 71 59 77 C56 79 53 81 50 81 C47 81 44 79 41 77 C33 71 22 61 22 49 C22 36 32 25 50 25Z' },
       // Classic alien: tall rounded forehead and a narrow pointed chin.
@@ -388,8 +390,8 @@ const Stickers = (() => {
     const ey = h.eyeY || h.cy - 3;
     let eyes, size;
     if (s.eyeCount === 1) { eyes = [[50, ey]]; size = 1.9; }
-    else if (s.eyeCount === 2) { eyes = [[40.5, ey], [59.5, ey]]; size = 1.4; }
-    else { eyes = [[37, ey + 2], [50, ey - 7], [63, ey + 2]]; size = 1.15; }
+    else if (s.eyeCount === 2) { const dx = Math.max(9.5, h.rx * 0.36); eyes = [[50 - dx, ey], [50 + dx, ey]]; size = 1.4; }
+    else { const dx = Math.max(13, h.rx * 0.48); eyes = [[50 - dx, ey + 2], [50, ey - 7], [50 + dx, ey + 2]]; size = 1.15; }
     let features = face(s, { eyes, size, mouthAt: [50, h.cy + h.ry * 0.42], cheeks: [[50 - h.rx * 0.62, ey + 9], [50 + h.rx * 0.62, ey + 9]], top: [50 + h.rx * 0.7, top + 4], human: true });
     // On a dark alien, draw the face lines light so they can be seen.
     if (lightness(c) < 0.4) features = features.split(INK).join(LIGHT_INK);
@@ -817,8 +819,8 @@ const Stickers = (() => {
   function frame(s) {
     let f;
     if (s.type === 'alien') {
-      f = { round: [44, 1.04], tall: [42, 1.0], wide: [47, 1.1], bulb: [46, 1.04], classic: [45, 0.98] }[s.head] || [44, 1.04];
-      if (s.alienEars && s.alienEars !== 'none') f = [f[0], f[1] * 0.92];
+      f = { round: [44, 1.04], tall: [42, 1.0], wide: [47, 1.1], xwide: [50, 1.08], bulb: [46, 1.04], classic: [45, 0.98] }[s.head] || [44, 1.04];
+      if (s.alienEars && s.alienEars !== 'none') f = [f[0], f[1] * (s.head === 'xwide' ? 0.8 : 0.92)];
     } else if (s.type === 'animal') {
       f = { cat: [52, 0.98], dog: [55, 1.0], chihuahua: [45, 0.88], bunny: [46, 0.94], bear: [58, 1.0], mouse: [58, 0.95], fox: [55, 0.98], sheep: [54, 0.98], dragon: [51, 0.9] }[s.kind] || [52, 0.98];
       if (s.kind === 'cat' && s.ears === 'big') f = [f[0] - 7, f[1] * 0.91];
