@@ -80,9 +80,9 @@ One PIN guards everything parent-only:
 - **Feeling** (every sticker): happy, cute, silly, love, shy, sleepy, surprised, nervous, confused, grumpy. Small changes to the eyes and mouth, plus little extras like blush, Zzz, a sweat drop or question marks.
 - **Person:** feeling, skin color, hair style, hair color, hat, glasses, background
 - **Alien:** feeling, color, head shape, 1 to 3 eyes, antennae, hat, glasses, background
-- **Animal:** cat, dog, bunny or bear, then feeling, coat (plain, tabby, patch, two-tone, calico, colorpoint), fur color, patch color, hat, glasses and background. Calico cat is the starting animal.
-- **Cats also get:** face shape (round, wide, tall, fluffy), ears (pointy, big, folded) and long whiskers
-- **Hats:** party hat, crown, beanie, cap, bow, flower, top hat
+- **Animal:** cat, dog, chihuahua, bunny, bear, mouse, fox or sheep, then feeling, coat (plain, tabby, patch, two-tone, calico, colorpoint), fur color, patch color, hat, glasses and background. Calico cat is the starting animal.
+- **Cats also get:** face shape (round, wide, fluffy), ears (pointy, big, folded; folded isn't offered on the wide face) and long whiskers
+- **Hats:** party hat, tiny crown, tiny bowler hat, beanie, cap, bow, flower, top hat
 - **Glasses:** round, sunglasses, hearts, stars
 - **Keep it really simple:** a few big choices per step, each shown as a small picture
 - **"This is me" on the map:** the child can drag their sticker to where they're sitting (like on the bed) and play with it

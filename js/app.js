@@ -300,7 +300,7 @@
           `<button type="button" class="swatch ${draft[opt.key] === c ? 'picked' : ''}" style="--swatch:${c}" data-act="sticker-opt" data-key="${opt.key}" data-value="${c}" aria-label="${opt.label} ${c}" aria-pressed="${draft[opt.key] === c}"></button>`
         ).join('');
       } else {
-        choices = opt.styles.map(v =>
+        choices = (typeof opt.styles === 'function' ? opt.styles(draft) : opt.styles).map(v =>
           `<button type="button" class="pick small ${draft[opt.key] === v ? 'picked' : ''}" data-act="sticker-opt" data-key="${opt.key}" data-value="${v}" data-num="${typeof v === 'number'}" aria-label="${opt.label} ${v}" aria-pressed="${draft[opt.key] === v}">
             ${Stickers.render({ ...draft, [opt.key]: v })}</button>`
         ).join('');
@@ -555,6 +555,8 @@
     'sticker-opt'(el) {
       const value = el.dataset.num === 'true' ? Number(el.dataset.value) : el.dataset.value;
       draft[el.dataset.key] = value;
+      // Folded ears don't work on a wide cat face.
+      if (draft.face === 'wide' && draft.ears === 'folded') draft.ears = 'pointy';
       Effects.pop();
       const y = window.scrollY;
       drawBuilder();
