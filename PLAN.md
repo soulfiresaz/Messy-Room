@@ -108,6 +108,10 @@ One PIN guards everything parent-only:
 
 Everything is drag and drop. No measuring.
 
+### How the room is shown (decided)
+- **A map from above**, like looking down from the ceiling. That's where kids place the door, rotate the room and drag furniture.
+- **Tapping a piece of furniture opens a front view** of it, showing its drawers, cubbies and cupboard doors. Each part can be opened to see what's inside.
+
 ### Step 1: Place the door
 The child (with a parent's help if needed) places the door on a wall first.
 
