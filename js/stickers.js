@@ -75,6 +75,7 @@ const Stickers = (() => {
       ...FACE_PARTS,
       { key: 'face', icon: '🐱', label: 'Face shape', styles: ['round', 'wide', 'fluffy'], when: s => s.kind === 'cat' },
       { key: 'ears', icon: '👂', label: 'Ears', styles: s => (s.face === 'wide' ? ['pointy', 'big'] : ['pointy', 'big', 'folded']), when: s => s.kind === 'cat' },
+      { key: 'horns', icon: '🐲', label: 'Horns', styles: ['none', 'tiny'], when: s => s.kind === 'dragon' },
       { key: 'coat', icon: '🎀', label: 'Coat', styles: ['plain', 'tabby', 'patch', 'twotone', 'calico', 'mask'] },
       { key: 'color', icon: '🖍️', label: 'Fur color', colors: COLORS.animal },
       { key: 'patchColor', icon: '🟠', label: 'Patch color', colors: COLORS.patch, when: s => s.coat !== 'plain' && s.coat !== 'tabby' },
@@ -87,7 +88,7 @@ const Stickers = (() => {
   const DEFAULTS = {
     person: { type: 'person', bg: '#bfe3ff', skin: '#f6c9a0', hair: 'short', hairColor: '#5a3825', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
     alien: { type: 'alien', bg: '#e2d4ff', color: '#7ee081', head: 'round', eyeCount: 3, antennae: 2, antennaStyle: 'straight', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
-    animal: { type: 'animal', bg: '#bfe3ff', kind: 'cat', face: 'round', ears: 'pointy', coat: 'calico', color: '#fbf8f3', patchColor: '#f5a54a', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
+    animal: { type: 'animal', bg: '#bfe3ff', kind: 'cat', face: 'round', ears: 'pointy', coat: 'calico', color: '#fbf8f3', patchColor: '#f5a54a', horns: 'none', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
   };
 
   // Fill in a quick feeling's parts.
@@ -160,6 +161,7 @@ const Stickers = (() => {
   function mouth(kind, nose, human) {
     let n = '';
     if (nose === 'pink') n = `<path d="M-2.4 -1.3 L2.4 -1.3 L0 1.4Z" fill="${PINK}" stroke="${shade(PINK, -0.15)}" stroke-width=".5" stroke-linejoin="round"/>`;
+    if (nose === 'dots') n = `<ellipse cx="-2.4" cy="-1.4" rx=".7" ry=".9" fill="${INK}" opacity=".6"/><ellipse cx="2.4" cy="-1.4" rx=".7" ry=".9" fill="${INK}" opacity=".6"/>`;
     if (nose === 'nostrils') n = `<path d="M-5.6 -3.6 q1.2 -.6 1.6 .9" ${line(1.2)} opacity=".7"/><path d="M5.6 -3.6 q-1.2 -.6 -1.6 .9" ${line(1.2)} opacity=".7"/>`;
     if (nose === 'ball') n = `<circle r="2.8" fill="#ff8fa3" stroke="${shade('#ff8fa3', -0.15)}" stroke-width=".5"/><circle cx="-.9" cy="-.9" r=".8" fill="#fff" opacity=".7"/>`;
     if (nose === 'black') n = `<ellipse rx="3.6" ry="2.5" fill="${INK}"/><ellipse cx="-1" cy="-.8" rx="1.1" ry=".6" fill="#fff" opacity=".7"/>`;
@@ -466,26 +468,34 @@ const Stickers = (() => {
           eyes: [[43, 60], [57, 60]], mouthAt: [50, 69], cheeks: [[38, 68], [62, 68]], top: [72, 30], hat: [50, 28, 30], chin: [50, 80],
         };
       case 'dragon':
-        // Baby dragon: round head with a snout and nostrils, little horns and a crest,
-        // bat-wing ears, freckles on the forehead, and tiny fangs.
+        // Baby dragon: big round head, a little hair tuft on top, bat wings high on the
+        // head pointing up and out, cream freckles, a small snout bump, and (optional) tiny horns.
         return {
-          head: 'M50 27 C68 27 79 39 79 52 C79 58 76 62 72 65 C70 75 61 81 50 81 C39 81 30 75 28 65 C24 62 21 58 21 52 C21 39 32 27 50 27Z',
-          earsBack: ['M25 45 L3 31 L8 41 L1 46 L9 51 L4 58 L25 57Z', 'M75 45 L97 31 L92 41 L99 46 L91 51 L96 58 L75 57Z'],
-          inner: 'M24 48 L9 38 L12 44 L7 47 L13 51 L10 55 L24 54Z M76 48 L91 38 L88 44 L93 47 L87 51 L90 55 L76 54Z',
+          head: 'M50 30 C70 30 81 43 81 58 C81 73 68 83 50 83 C32 83 19 73 19 58 C19 43 30 30 50 30Z',
+          earsBack: [
+            'M38 34 L5 13 C6 20 8 24 11 26 C15 26 16 30 15 33 C19 33 21 36 21 40 C25 40 27 43 29 46Z',
+            'M62 34 L95 13 C94 20 92 24 89 26 C85 26 84 30 85 33 C81 33 79 36 79 40 C75 40 73 43 71 46Z',
+          ],
+          inner: 'M35 36 L11 20 C12 24 14 27 16 28 C19 29 20 31 20 34 C23 35 24 37 25 40 C27 41 29 43 30 44Z ' +
+            'M65 36 L89 20 C88 24 86 27 84 28 C81 29 80 31 80 34 C77 35 76 37 75 40 C73 41 71 43 70 44Z',
           innerColor: 'wing',
-          outlineExtra: 'M34 32 C28 27 25 20 27 13 C31 18 37 23 43 28Z M66 32 C72 27 75 20 73 13 C69 18 63 23 57 28Z M44 29 L47 19 L50 27 L53 19 L56 29Z',
-          extraArt: c => {
-            const horn = '#f3e2b3', crest = shade(c, -0.22), dots = shade(c, 0.45), snout = shade(c, 0.12);
-            return `<path d="M34 32 C28 27 25 20 27 13 C31 18 37 23 43 28Z" fill="${horn}"/><path d="M66 32 C72 27 75 20 73 13 C69 18 63 23 57 28Z" fill="${horn}"/>` +
-              `<path d="M44.5 29 L47 20 L50 27.5 L53 20 L55.5 29Z" fill="${crest}"/>` +
-              `<ellipse cx="50" cy="69" rx="16" ry="10" fill="${snout}" opacity=".45"/>` +
-              [[43, 36, 1.6], [50, 34, 2], [57, 36, 1.6], [46, 40, 1.2], [54, 40, 1.2], [50, 43, 1.4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${dots}"/>`).join('');
+          outlineExtra: 'M50 33 C46 27 46 20 50 14 C54 20 54 27 50 33Z M49 33 C43 30 39 25 40 19 C45 21 48 26 49 33Z M51 33 C57 30 61 25 60 19 C55 21 52 26 51 33Z',
+          extraArt: (c, s) => {
+            const tuft = shade(c, -0.08), dots = '#fbe3a0';
+            const horns = s.horns === 'tiny'
+              ? `<path d="M37 35 C36 30 37 27 39 25 C40 28 42 31 43 33Z" fill="#f3e2b3"/><path d="M63 35 C64 30 63 27 61 25 C60 28 58 31 57 33Z" fill="#f3e2b3"/>`
+              : '';
+            return horns +
+              `<path d="M49 33 C43 30 39 25 40 19 C45 21 48 26 49 33Z" fill="${tuft}"/><path d="M51 33 C57 30 61 25 60 19 C55 21 52 26 51 33Z" fill="${tuft}"/>` +
+              `<path d="M50 33 C46 27 46 20 50 14 C54 20 54 27 50 33Z" fill="${tuft}"/>` +
+              [[44, 39, 1.5], [50, 37, 2], [56, 39, 1.5], [47, 43, 1.2], [53, 43, 1.2], [41, 44, 1], [59, 44, 1], [50, 46, 1.3]]
+                .map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${dots}"/>`).join('') +
+              '';
           },
-          nose: 'nostrils',
+          nose: 'dots',
           humanMouth: true,
-          fangs: true,
-          eyeSize: 1.5,
-          eyes: [[38, 52], [62, 52]], mouthAt: [50, 69], cheeks: [[28, 62], [72, 62]], top: [74, 30], hat: [50, 29, 28], chin: [50, 81],
+          eyeSize: 1.65,
+          eyes: [[37.5, 55], [62.5, 55]], mouthAt: [50, 66], cheeks: [[28, 66], [72, 66]], top: [74, 32], hat: [50, 30, 28], chin: [50, 83],
         };
       default: // bear
         // Small round ears high on the head, a wide face, a big light muzzle.
@@ -574,7 +584,7 @@ const Stickers = (() => {
     let head = `<path d="${k.head}" fill="${c}"/>`;
     // Fox: white fur on the lower face.
     if (k.cheeksFur) head += `<path d="${k.cheeksFur}" fill="#fbf8f3"/>`;
-    if (k.extraArt) head += k.extraArt(c);
+    if (k.extraArt) head += k.extraArt(c, s);
     // Sheep: a smooth face in the middle of the wool, with a little tuft on top.
     let sheepFaceColor = null;
     if (k.sheep) {
@@ -713,7 +723,7 @@ const Stickers = (() => {
     if (s.type === 'alien') {
       f = { round: [44, 1.08], tall: [42, 1.0], wide: [47, 1.1] }[s.head] || [44, 1.08];
     } else if (s.type === 'animal') {
-      f = { cat: [52, 0.98], dog: [55, 1.0], chihuahua: [45, 0.88], bunny: [46, 0.94], bear: [58, 1.0], mouse: [58, 0.95], fox: [55, 0.98], sheep: [54, 0.98], dragon: [46, 0.9] }[s.kind] || [52, 0.98];
+      f = { cat: [52, 0.98], dog: [55, 1.0], chihuahua: [45, 0.88], bunny: [46, 0.94], bear: [58, 1.0], mouse: [58, 0.95], fox: [55, 0.98], sheep: [54, 0.98], dragon: [47, 0.82] }[s.kind] || [52, 0.98];
       if (s.kind === 'cat' && s.ears === 'big') f = [f[0] - 7, f[1] * 0.91];
     } else {
       f = [50, 1.13];
