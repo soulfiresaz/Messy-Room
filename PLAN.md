@@ -12,6 +12,7 @@ A row of **big, round circles**, each with a picture sticker so it's easy to see
 |---|---|---|
 | **Rooms** | Opens a list of circles, one for each room: **My Room** first. Later: Bathroom, Living Room, Kitchen and more. | My Room now, other rooms later |
 | **Clean** | A parent or child lists jobs the parent asked for, like "pick up my stuff from the living room," "vacuum the living room" or "wipe the kitchen counters." Each job shows a picture of the room plus a picture of the tool (rag, spray bottle, sponge, vacuum). Choosing a job highlights that part of the room, like the kitchen counter. | Later |
+| **Profile** | Opens the sticker builder, where a child (with a parent's help) picks or builds their own sticker. See section 2. | Now |
 | **Rewards** | Opens a page where kids collect the rewards their parents promised them, like money, a game, or a special date or outing. | Now |
 
 All buttons that lead to more choices are also round circles with pictures, so every screen feels the same.
@@ -50,12 +51,14 @@ One PIN guards everything parent-only:
 
 ---
 
-## 2. Stickers for people ("Who am I?")
+## 2. Profile stickers ("Who am I?")
 
 Each child has their own sticker, so nobody needs to read a name.
 
 - **Build a person:** background color, skin color, hair style, hair color, eyes
 - **Build an alien:** the same choices, plus fun extras like antennae and extra eyes
+- **Pick an animal:** choose a ready-made animal, then pick its color and the background color. No building needed.
+- **Keep it really simple:** a few big choices per step
 - **Save or delete stickers anytime**, so a child can change their look whenever they want
 - **"This is me" on the map:** the child can drag their sticker to where they're sitting (like on the bed) and play with it
 
