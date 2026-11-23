@@ -117,6 +117,7 @@ Everything is drag and drop. No measuring.
   - **Cupboards:** come with a middle shelf, so each door opens onto a top spot and a bottom spot
   - **Wall shelves:** short or long
   - **Closet:** shown with no doors, so you see the inside: how many rods and shelves, where things hang and where things sit
+    - **Rods:** one high rod, a lower rod a child can reach, or two rods stacked
     - **Furniture can go inside the closet:** the closet has a floor where you place pieces you've already built (like a small dresser or a cubby unit), and they open the same way they do in the room
 - **Step B, the map from above** (like looking down from the ceiling): place the door, the closet and the windows where they really are, rotate the room to match, and drag each piece's top to its spot. Each top matches the piece's shape, so a skinny dresser has a narrow top.
 - **Tapping a piece on the map opens its front view.** Each drawer, cubby, cupboard spot, shelf or rod can be opened to see what's kept there.
