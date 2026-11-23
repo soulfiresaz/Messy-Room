@@ -14,7 +14,7 @@ const Stickers = (() => {
   // ---------- Expression parts ----------
   // Kids build an expression from these pieces. Quick feelings just fill them in.
 
-  const EYES = ['dot', 'shiny', 'wide', 'happy', 'sleepy', 'wink', 'up', 'down', 'side', 'cross', 'cry', 'heart', 'angry', 'sad'];
+  const EYES = ['dot', 'shiny', 'big', 'wide', 'happy', 'sleepy', 'wink', 'up', 'down', 'side', 'cross', 'cry', 'heart', 'angry', 'sad'];
   const MOUTHS = ['smile', 'open', 'teeth', 'small', 'tongue', 'o', 'frown', 'wobble', 'flat'];
   const CHEEKS = ['none', 'blush', 'shy'];
   const EXTRAS = ['none', 'sweat', 'zzz', 'question', 'heart', 'sparkle', 'anger'];
@@ -140,6 +140,8 @@ const Stickers = (() => {
   function eye(kind, side) {
     switch (kind) {
       case 'shiny': return `<ellipse rx="3.4" ry="4.2" fill="${INK}"/><circle cx="-1.1" cy="-1.5" r="1.4" fill="#fff"/><circle cx="1.2" cy="1.6" r=".6" fill="#fff"/>`;
+      case 'big': return `<circle r="5" fill="#fff" stroke="${INK}" stroke-width=".9"/><circle cx=".3" cy="-.3" r="3.4" fill="#1f1f1f"/>` +
+        `<circle cx="-1" cy="-1.8" r="1.3" fill="#fff"/><circle cx="1.6" cy="1.3" r=".65" fill="#fff"/>`;
       case 'wide': return lookEye(0, 0);
       case 'happy': return `<path d="M-4 1.6 Q0 -4 4 1.6" ${line(2)}/>`;
       case 'sleepy': return `<path d="M-4 -1 Q0 3.6 4 -1" ${line(2)}/><path d="M${side * 4} -1 l${side * 1.8} -1.8" ${line(1.4)}/>`;
@@ -417,14 +419,22 @@ const Stickers = (() => {
     }
   }
 
-  // Dragon wing on the left side of the head. The top edge is a thick bone going out
-  // and slightly up to the tip; the wing hangs down from it like an open fan.
-  const WING_PATH = 'M30 37 C28 31 26 27.5 22 27.2 L5 27 Q3 27 4 29 Q8.8 30.5 8.6 34.8 Q13 36 12.8 41.2 Q16.6 42.4 17 47 L27.5 41Z';
-  const WING_RIBS = [[8.6, 34.8], [12.8, 41.2], [17, 47]];
+  // Dragon wing on the left side of the head (the right one is a mirror).
+  // A thick arm bone rises from the top corner of the head to an elbow above the head,
+  // then runs straight out to the tip. Two thin ribs fan down from the elbow to a scalloped
+  // edge, and a fairly straight edge runs from the lowest point back to the head.
+  const WING = { base: [33, 34.5], elbow: [26, 25.5], tip: [5, 26], s1: [10.5, 36], low: [18.5, 44.5], join: [25, 43.5] };
+  const WING_PATH = (() => {
+    const { base, elbow, tip, s1, low, join } = WING;
+    return `M${base} L${elbow} L${tip} Q11.5 30 ${s1} Q17.5 38 ${low} L${join}Z`.replace(/,/g, ' ');
+  })();
   function wingArt(c) {
-    const ribs = WING_RIBS.map(([x, y]) => `<path d="M27 37.5 L${x} ${y}" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>`).join('');
-    return `<g transform="translate(28 37) scale(1.2) translate(-28 -37)"><path d="${WING_PATH}" fill="#f6e2a8" stroke="${c}" stroke-width="1.4" stroke-linejoin="round"/>` + ribs +
-      `<path d="M29 36 C27 31 25.5 27.6 22 27.4 L4.5 27.3" stroke="${c}" stroke-width="3" stroke-linecap="round" fill="none"/></g>`;
+    const { base, elbow, tip, s1, low } = WING;
+    const p = ([x, y]) => `${x} ${y}`;
+    return `<path d="${WING_PATH}" fill="#f9e7b0" stroke="${c}" stroke-width="1" stroke-linejoin="round"/>` +
+      `<path d="M${p(elbow)} L${p(s1)}" stroke="${c}" stroke-width="2" stroke-linecap="round"/>` +
+      `<path d="M${p(elbow)} L${p(low)}" stroke="${c}" stroke-width="2" stroke-linecap="round"/>` +
+      `<path d="M${p(base)} L${p(elbow)} L${p(tip)}" stroke="${c}" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
   }
 
   // Shapes for dogs, bunnies and bears.
@@ -504,24 +514,24 @@ const Stickers = (() => {
         // upper sides of the head that hang down like an open fan, cream freckles, little brows,
         // a soft double-bump nose, and (optional) tiny horns.
         return {
-          head: 'M50 30 C70 30 81 43 81 58 C81 73 68 83 50 83 C32 83 19 73 19 58 C19 43 30 30 50 30Z',
+          head: 'M50 28 C68 28 80 41 80 57.5 C80 74 67 87 50 87 C33 87 20 74 20 57.5 C20 41 32 28 50 28Z',
           wing: true,
-          outlineArt: s2 => tuftShapes(s2.tuft, ''),
+          outlineArt: s2 => `<g transform="translate(0 -2)">${tuftShapes(s2.tuft, '')}</g>`,
           extraArt: (c, s2) => {
             const tuft = shade(c, -0.06), dots = '#fbe3a0', brow = shade(c, -0.25);
             const horns = s2.horns === 'tiny'
-              ? `<path d="M36 36 C35 31 36 28 38 26 C39 29 41 32 42 34Z" fill="#f3e2b3"/><path d="M64 36 C65 31 64 28 62 26 C61 29 59 32 58 34Z" fill="#f3e2b3"/>`
+              ? `<path d="M38 32 C37 27 38 24 40 22 C41 25 43 28 44 30Z" fill="#f3e2b3"/><path d="M62 32 C63 27 62 24 60 22 C59 25 57 28 56 30Z" fill="#f3e2b3"/>`
               : '';
-            return horns + tuftShapes(s2.tuft, `fill="${tuft}"`) +
-              [[44, 41, 1.5], [50, 39, 2], [56, 41, 1.5], [47, 45, 1.2], [53, 45, 1.2], [41, 46, 1], [59, 46, 1], [50, 48, 1.3]]
+            return horns + `<g transform="translate(0 -2)">${tuftShapes(s2.tuft, `fill="${tuft}"`)}</g>` +
+              [[44, 45, 1.5], [50, 43, 2], [56, 45, 1.5], [47, 49, 1.2], [53, 49, 1.2], [41, 50, 1], [59, 50, 1], [50, 52, 1.3]]
                 .map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${dots}"/>`).join('') +
-              `<ellipse cx="31" cy="45" rx="3.6" ry="1.6" transform="rotate(-12 31 45)" fill="${brow}" opacity=".7"/>` +
-              `<ellipse cx="69" cy="45" rx="3.6" ry="1.6" transform="rotate(12 69 45)" fill="${brow}" opacity=".7"/>`;
+              `<ellipse cx="30" cy="49" rx="3.6" ry="1.6" transform="rotate(-12 30 49)" fill="${brow}" opacity=".7"/>` +
+              `<ellipse cx="70" cy="49" rx="3.6" ry="1.6" transform="rotate(12 70 49)" fill="${brow}" opacity=".7"/>`;
           },
           nose: 'bumps',
           humanMouth: true,
-          eyeSize: 1.7,
-          eyes: [[37.5, 56], [62.5, 56]], mouthAt: [50, 68], cheeks: [[27, 66], [73, 66]], top: [76, 34], hat: [50, 30, 28], chin: [50, 83],
+          eyeSize: 1.75,
+          eyes: [[36, 59.5], [64, 59.5]], mouthAt: [50, 71], cheeks: [[27, 69], [73, 69]], top: [76, 32], hat: [50, 28, 28], chin: [50, 87],
         };
       default: // bear
         // Small round ears high on the head, a wide face, a big light muzzle.
@@ -594,7 +604,7 @@ const Stickers = (() => {
       if (k.wing) {
         const mirror = d => `<g transform="translate(100 0) scale(-1 1)">${d}</g>`;
         earsBack = wingArt(c) + mirror(wingArt(c));
-        const wingOutline = `<path transform="translate(28 37) scale(1.2) translate(-28 -37)" d="${WING_PATH}"/>`;
+        const wingOutline = `<path d="${WING_PATH}" stroke-width="7"/>`;
         outlineEars = wingOutline + mirror(wingOutline);
       }
       if (k.earsBack) {
@@ -755,7 +765,7 @@ const Stickers = (() => {
     if (s.type === 'alien') {
       f = { round: [44, 1.08], tall: [42, 1.0], wide: [47, 1.1] }[s.head] || [44, 1.08];
     } else if (s.type === 'animal') {
-      f = { cat: [52, 0.98], dog: [55, 1.0], chihuahua: [45, 0.88], bunny: [46, 0.94], bear: [58, 1.0], mouse: [58, 0.95], fox: [55, 0.98], sheep: [54, 0.98], dragon: [50, 0.84] }[s.kind] || [52, 0.98];
+      f = { cat: [52, 0.98], dog: [55, 1.0], chihuahua: [45, 0.88], bunny: [46, 0.94], bear: [58, 1.0], mouse: [58, 0.95], fox: [55, 0.98], sheep: [54, 0.98], dragon: [51, 0.9] }[s.kind] || [52, 0.98];
       if (s.kind === 'cat' && s.ears === 'big') f = [f[0] - 7, f[1] * 0.91];
     } else {
       f = [50, 1.13];
