@@ -105,8 +105,6 @@ const Stickers = (() => {
       eyes = personEye(s.eyes, 41, 52, s.eyeColor) + personEye(s.eyes, 59, 52, s.eyeColor);
     }
     return back +
-      `<path d="M16 102 Q18 80 50 80 Q82 80 84 102Z" fill="#ffffff" opacity=".85"/>` +
-      `<rect x="44" y="70" width="12" height="13" fill="${skin}"/>` +
       `<circle cx="26" cy="53" r="5" fill="${skin}"/><circle cx="74" cy="53" r="5" fill="${skin}"/>` +
       `<ellipse cx="50" cy="51" rx="24" ry="26" fill="${skin}"/>` +
       front + eyes + cheeks + smile;
@@ -133,7 +131,7 @@ const Stickers = (() => {
     else if (s.eyeCount === 2) eyes = bigEye(41, ey, 7, '#222') + bigEye(59, ey, 7, '#222');
     else eyes = bigEye(37, ey + 2, 6, '#222') + bigEye(50, ey - 6, 6, '#222') + bigEye(63, ey + 2, 6, '#222');
     const mouthY = h.cy + h.ry * 0.45;
-    return `<path d="M18 102 Q20 82 50 82 Q80 82 82 102Z" fill="${dark}"/>` + ant +
+    return ant +
       `<ellipse cx="${h.cx}" cy="${h.cy}" rx="${h.rx}" ry="${h.ry}" fill="${c}"/>` +
       `<circle cx="${h.cx - h.rx * 0.55}" cy="${h.cy + h.ry * 0.5}" r="2.4" fill="${dark}" opacity=".5"/>` +
       `<circle cx="${h.cx + h.rx * 0.6}" cy="${h.cy - h.ry * 0.5}" r="2" fill="${dark}" opacity=".5"/>` +
@@ -146,10 +144,9 @@ const Stickers = (() => {
     const eyes = `<circle cx="41" cy="52" r="3.6" fill="#1a1a1a"/><circle cx="59" cy="52" r="3.6" fill="#1a1a1a"/>` +
       `<circle cx="40" cy="50.8" r="1.1" fill="#fff"/><circle cx="58" cy="50.8" r="1.1" fill="#fff"/>`;
     const head = `<circle cx="50" cy="56" r="26" fill="${c}"/>`;
-    const body = `<path d="M18 102 Q20 82 50 82 Q80 82 82 102Z" fill="${c}"/>`;
     switch (s.kind) {
       case 'dog':
-        return body +
+        return '' +
           head +
           `<ellipse cx="26" cy="54" rx="9" ry="18" fill="${dark}" transform="rotate(14 26 54)"/>` +
           `<ellipse cx="74" cy="54" rx="9" ry="18" fill="${dark}" transform="rotate(-14 74 54)"/>` +
@@ -158,14 +155,14 @@ const Stickers = (() => {
           `<path d="M45 68 Q50 72 55 68" stroke="${INK}" stroke-width="2.2" fill="none" stroke-linecap="round"/>` +
           `<path d="M48 70 Q50 77 52 70Z" fill="#ff7f9f"/>`;
       case 'bunny':
-        return body +
+        return '' +
           `<ellipse cx="39" cy="22" rx="7.5" ry="20" fill="${c}"/><ellipse cx="61" cy="22" rx="7.5" ry="20" fill="${c}"/>` +
           `<ellipse cx="39" cy="23" rx="3.5" ry="14" fill="#ffb3c6"/><ellipse cx="61" cy="23" rx="3.5" ry="14" fill="#ffb3c6"/>` +
           head + eyes + cheeks +
           `<ellipse cx="50" cy="61" rx="3.6" ry="2.6" fill="#ff7f9f"/>` +
           `<rect x="46.5" y="65" width="7" height="6" rx="1.5" fill="#fff" stroke="${INK}" stroke-width="1"/>`;
       case 'bear':
-        return body +
+        return '' +
           `<circle cx="29" cy="35" r="10" fill="${c}"/><circle cx="71" cy="35" r="10" fill="${c}"/>` +
           `<circle cx="29" cy="35" r="5" fill="${light}"/><circle cx="71" cy="35" r="5" fill="${light}"/>` +
           head +
@@ -173,7 +170,7 @@ const Stickers = (() => {
           `<ellipse cx="50" cy="61" rx="4.5" ry="3.2" fill="#1a1a1a"/>` +
           `<path d="M45 67 Q50 71 55 67" stroke="${INK}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
       default: // cat
-        return body +
+        return '' +
           `<path d="M27 44 L29 17 L47 33Z" fill="${c}"/><path d="M73 44 L71 17 L53 33Z" fill="${c}"/>` +
           `<path d="M31 37 L32 24 L41 32Z" fill="#ffb3c6"/><path d="M69 37 L68 24 L59 32Z" fill="#ffb3c6"/>` +
           head + eyes + cheeks +
@@ -181,6 +178,18 @@ const Stickers = (() => {
           `<path d="M50 63.5 Q47 67 44 65 M50 63.5 Q53 67 56 65" stroke="${INK}" stroke-width="2" fill="none" stroke-linecap="round"/>` +
           `<g stroke="${INK}" stroke-width="1.2" opacity=".6" stroke-linecap="round"><line x1="22" y1="60" x2="36" y2="62"/><line x1="22" y1="66" x2="36" y2="65"/><line x1="78" y1="60" x2="64" y2="62"/><line x1="78" y1="66" x2="64" y2="65"/></g>`;
     }
+  }
+
+  // Where the middle of each floating face is, and how much to enlarge it,
+  // so every face sits centered in its circle.
+  function frame(s) {
+    if (s.type === 'alien') {
+      return { round: [44, 1.08], tall: [42, 1.0], wide: [47, 1.1] }[s.head] || [44, 1.08];
+    }
+    if (s.type === 'animal') {
+      return { cat: [50, 1.12], dog: [55, 1.15], bunny: [43, 0.98], bear: [53, 1.12] }[s.kind] || [50, 1.12];
+    }
+    return [49, 1.15];
   }
 
   let clipCounter = 0;
@@ -193,9 +202,11 @@ const Stickers = (() => {
     if (s.type === 'alien') art = alien(s);
     else if (s.type === 'animal') art = animal(s);
     else art = person(s);
+    const [cy, scale] = frame(s);
     return `<svg class="sticker-svg" viewBox="0 0 100 100" aria-hidden="true">` +
       `<defs><clipPath id="${id}"><circle cx="50" cy="50" r="50"/></clipPath></defs>` +
-      `<g clip-path="url(#${id})"><rect width="100" height="100" fill="${s.bg}"/>${art}</g></svg>`;
+      `<g clip-path="url(#${id})"><rect width="100" height="100" fill="${s.bg}"/>` +
+      `<g transform="translate(50 50) scale(${scale}) translate(-50 ${-cy})">${art}</g></g></svg>`;
   }
 
   return { COLORS, OPTIONS, DEFAULTS, render };
