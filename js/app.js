@@ -458,12 +458,15 @@
       currentId = draft.id;
       location.hash = '#/';
     },
+    // Deleting a person needs the parent PIN.
     'sticker-delete'() {
-      confirmBox(Stickers.render(draft), 'Delete this person?', () => {
-        S.data.stickers = S.data.stickers.filter(s => s.id !== draft.id);
-        saveOrWarn();
-        if (currentId === draft.id) currentId = null;
-        location.hash = '#/who';
+      askPin(() => {
+        confirmBox(Stickers.render(draft), 'Delete this person?', () => {
+          S.data.stickers = S.data.stickers.filter(s => s.id !== draft.id);
+          saveOrWarn();
+          if (currentId === draft.id) currentId = null;
+          location.hash = '#/who';
+        });
       });
     },
     'pick-profile'(el) {

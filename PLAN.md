@@ -48,6 +48,7 @@ One PIN guards everything parent-only:
 - Adding rewards, changing their pictures and goals, and deleting them
 - Changing how often cleaning jobs come up
 - Deleting a room
+- Deleting a person (changing how a sticker looks stays free for kids)
 
 ---
 
