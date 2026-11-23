@@ -110,8 +110,15 @@ One PIN guards everything parent-only:
 Everything is drag and drop. No measuring.
 
 ### How the room is shown (decided)
-- **A map from above**, like looking down from the ceiling. That's where kids place the door, rotate the room and drag furniture.
-- **Tapping a piece of furniture opens a front view** of it, showing its drawers, cubbies and cupboard doors. Each part can be opened to see what's inside.
+- **Front view is for building pieces; the map from above is for placing them.**
+- **Step A, pick your furniture first (front view):** choose a piece and shape it to match the real one
+  - **Dressers:** how many drawers; tall and skinny or short and wide. Drawers are plain spaces with no inserts.
+  - **Cubby units:** how many cubbies; each cubby is empty, has a drawer (bin), or has a paper sorter
+  - **Cupboards:** come with a middle shelf, so each door opens onto a top spot and a bottom spot
+  - **Wall shelves:** short or long
+  - **Closet:** shown with no doors, so you see the inside: how many rods and shelves, where things hang and where things sit
+- **Step B, the map from above** (like looking down from the ceiling): place the door, the closet and the windows where they really are, rotate the room to match, and drag each piece's top to its spot. Each top matches the piece's shape, so a skinny dresser has a narrow top.
+- **Tapping a piece on the map opens its front view.** Each drawer, cubby, cupboard spot, shelf or rod can be opened to see what's kept there.
 
 ### Step 1: Place the door
 The child (with a parent's help if needed) places the door on a wall first.
