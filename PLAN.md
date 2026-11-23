@@ -10,7 +10,7 @@ A row of **big, round circles**, each with a picture sticker so it's easy to see
 
 | Circle | What happens when you tap it | When |
 |---|---|---|
-| **Messy Room** | Opens more circles, one for each room: **My Room** first. Later: Bathroom, Living Room, Kitchen and more. | My Room now, other rooms later |
+| **Rooms** | Opens a list of circles, one for each room: **My Room** first. Later: Bathroom, Living Room, Kitchen and more. | My Room now, other rooms later |
 | **Clean** | A parent or child lists jobs the parent asked for, like "pick up my stuff from the living room," "vacuum the living room" or "wipe the kitchen counters." Each job shows a picture of the room plus a picture of the tool (rag, spray bottle, sponge, vacuum). Choosing a job highlights that part of the room, like the kitchen counter. | Later |
 | **Rewards** | Opens a page where kids collect the rewards their parents promised them, like money, a game, or a special date or outing. | Now |
 
@@ -20,6 +20,9 @@ All buttons that lead to more choices are also round circles with pictures, so e
 
 ### Rewards
 
+- **Rewards are listed as circles**, the same way rooms are
+- **Each reward has a picture:** take a photo (candy, a toy, a trip to a favorite restaurant) or choose a picture already on the device
+- **Parents can add a reward, change its picture or delete it** (behind the PIN)
 - **The parent sets a goal** for each reward, like "5 cleanups = a game"
 - **A cleanup counts automatically** when the child puts everything away in a room or finishes a deep clean. Each one counts toward the reward right away.
 - **When the goal is reached**, the reward is ready to collect on the Rewards page
@@ -30,7 +33,7 @@ All buttons that lead to more choices are also round circles with pictures, so e
 One PIN guards everything parent-only:
 
 - Marking a reward as earned
-- Setting up rewards and their goals
+- Adding rewards, changing their pictures and goals, and deleting them
 - Changing how often cleaning jobs come up
 - Deleting a room
 
