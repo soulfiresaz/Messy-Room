@@ -124,14 +124,13 @@ Everything is drag and drop. No measuring.
 - **Step B, the map from above** (like looking down from the ceiling): place the door, the closet and the windows where they really are, rotate the room to match, and drag each piece's top to its spot. Each top matches the piece's shape, so a skinny dresser has a narrow top.
 - **Tapping a piece on the map opens its front view.** Each drawer, cubby, cupboard spot, shelf or rod can be opened to see what's kept there.
 
-### Step 1: Place the door
-The child (with a parent's help if needed) places the door on a wall first.
+### The map, in order (decided)
+1. **📐 Room size first:** set how wide and how deep the room is, by eye, by dragging its edges (or ➖ ➕). It can still be stretched later.
+2. **🚪 Walls next:** the door, the closet and the windows (and the light switch) go on the walls before any furniture
+3. **🛏️ Furniture last:** every piece already built waits beside the room, ready to drag in. A piece dropped near a wall turns so its back is against the wall.
+- **Turn the room to match what you see:** a big **rotate button** turns the map a quarter turn each tap, at any step, until it matches what the child sees from where they're sitting
 
-### Step 2: Turn the room to match what you see
-- A big **rotate button** turns the room a quarter turn each tap
-- The child spins it until the map matches what they see from where they're sitting
-
-### Step 3: Add furniture and wall pieces
+### Furniture and wall pieces
 Ready-made pieces to start from (not every possible option, just good ones). Any of them can be changed with "change the parts."
 
 - **Beds:** twin, bunk bed, queen, king, and a loft bed with a couch underneath that folds down into a bed. Bed frames count as something to clean later.
