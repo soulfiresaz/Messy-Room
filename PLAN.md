@@ -133,7 +133,7 @@ The child (with a parent's help if needed) places the door on a wall first.
 Ready-made pieces to start from (not every possible option, just good ones). Any of them can be changed with "change the parts."
 
 - **Beds:** twin, bunk bed, queen, king, and a loft bed with a couch underneath that folds down into a bed. Bed frames count as something to clean later.
-- **Dressers:** 4 drawers; wide with 4 or 5 wide drawers; tall and skinny with 6; short and wide with 2 × 3; a short one with 2 drawers over 2 cupboard doors; and a long one with 3 drawers on each side and a cubby over a cupboard door in the middle
+- **Dressers:** 4 drawers; wide with 4 or 5 wide drawers; tall and skinny with 6; short and wide with 2 × 3; a short one with 2 drawers over 2 cupboard doors; and a long one with 3 drawers on each side and a cupboard in the middle (one door, with a middle shelf inside making a top spot and a bottom spot; no open cubby)
 - **Side tables:** 1 drawer (with an open space under it) or 2 drawers
 - **Drawer containers:** the small plastic kind with 3, 4 or 5 drawers
 - **Cubby units:** 2 × 4 tall, 3 × 4 (12) and 4 × 4. Each cubby is empty, has a bin, or has a paper sorter.
