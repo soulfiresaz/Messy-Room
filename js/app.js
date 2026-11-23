@@ -210,10 +210,10 @@
     </button>`;
   }
 
-  function renderMyRoom() {
+  function renderFurnitureList() {
     const pieces = room().pieces.filter(p => !p.insideId);
     $app.innerHTML = `
-      ${topBar('My Room', '#/rooms')}
+      ${topBar('', '#/rooms/my-room')}
       <main>
         <div class="furn-grid">
           <a class="furn-card add-card" href="#/rooms/my-room/add" aria-label="Add furniture">
@@ -223,6 +223,221 @@
         </div>
       </main>`;
   }
+
+  // ---------- My Room: the map from above ----------
+  // 1 📐 room size, 2 🚪 door, closet, windows and light switch, 3 🛏️ furniture.
+
+  let mapStep = null;
+  let mapSelected = null;
+  let drag = null;
+
+  const mapPieces = () => room().pieces.filter(p => !p.insideId);
+  const isWallPiece = p => p.kind === 'closet';
+
+  function firstStep(r) {
+    if (!r.sizeSet) return 1;
+    if (!r.wallItems.some(it => it.type === 'door')) return 2;
+    return 3;
+  }
+
+  function rotateIcon() {
+    return `<svg viewBox="0 0 60 60" aria-hidden="true"><path d="M18 36 A16 16 0 1 1 34 46" fill="none" stroke="#3a2a2a" stroke-width="6" stroke-linecap="round"/><path d="M8 30 L18 40 L28 30" fill="none" stroke="#3a2a2a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+
+  function renderMap() {
+    const r = RoomMap.defaults(room());
+    if (mapStep == null) mapStep = firstStep(r);
+    const steps = [[1, '📐', 'Room size'], [2, '🚪', 'Door, closet, windows'], [3, '🛏️', 'Furniture']].map(([n, icon, label]) =>
+      `<button type="button" class="step-btn ${mapStep === n ? 'on' : ''}" data-act="map-step" data-value="${n}" aria-label="${label}" aria-pressed="${mapStep === n}">
+        <span class="step-pic" aria-hidden="true">${icon}</span><span class="step-n" aria-hidden="true">${n}</span></button>`).join('<span class="step-line" aria-hidden="true"></span>');
+    $app.innerHTML = `
+      ${topBar('My Room', '#/rooms', `<a class="round-btn" href="#/rooms/my-room/furniture" aria-label="All furniture">🧰</a>`)}
+      <main class="map-page">
+        <div class="map-head">
+          <div class="map-steps">${steps}</div>
+          <button type="button" class="rotate-btn" data-act="map-rotate" aria-label="Turn the room">${rotateIcon()}</button>
+        </div>
+        <div class="map-area">
+          <div id="map-wrap" class="map-wrap">${RoomMap.render(r, mapPieces(), { step: mapStep, selected: mapSelected })}</div>
+        </div>
+        <div id="map-below">${mapBelow()}</div>
+      </main>`;
+  }
+
+  // Tools under the map: what's picked, or what this step needs.
+  function mapBelow() {
+    const r = room();
+    const sel = mapSelected && (r.wallItems.find(it => it.id === mapSelected) || mapPieces().find(p => p.id === mapSelected && p.place));
+    if (sel) {
+      const isItem = !!sel.type && !sel.kind;
+      const tools = isItem
+        ? (sel.type === 'door' ? stepBtn('map-flip', '🔄', 'Swing the door the other way') : '') + stepBtn('map-remove', '🗑️', 'Take it away')
+        : stepBtn('map-turn', '🔄', 'Turn it') + stepBtn('map-open', '👀', 'Open it') + stepBtn('map-unplace', '↩️', 'Take it off the map');
+      return `<div class="map-tools">${tools}${stepBtn('map-deselect', '✔️', 'Done')}</div>`;
+    }
+    if (mapStep === 1) {
+      return `<div class="map-tools">
+        <div class="step-group"><span class="step-icon" aria-hidden="true">↔️</span>${stepBtn('map-size', '➖', 'Narrower room', 'data-dim="w" data-dir="-1"')}${stepBtn('map-size', '➕', 'Wider room', 'data-dim="w" data-dir="1"')}</div>
+        <div class="step-group"><span class="step-icon" aria-hidden="true">↕️</span>${stepBtn('map-size', '➖', 'Shorter room', 'data-dim="d" data-dir="-1"')}${stepBtn('map-size', '➕', 'Longer room', 'data-dim="d" data-dir="1"')}</div>
+        <button type="button" class="big-btn yes" data-act="map-next" aria-label="Next">➡️</button>
+      </div>`;
+    }
+    const tray = [];
+    if (mapStep === 2) {
+      ['door', 'window', 'switch'].forEach(t => {
+        tray.push(`<div class="tray-item" data-tray="${t}" role="button" aria-label="${t}">${RoomMap.itemIcon(t)}</div>`);
+      });
+      mapPieces().filter(p => isWallPiece(p) && !p.place).forEach(p => {
+        tray.push(`<div class="tray-item piece" data-tray="piece" data-id="${p.id}" role="button" aria-label="Closet">${Furniture.renderTop(p, 8)}</div>`);
+      });
+    } else {
+      mapPieces().filter(p => !isWallPiece(p) && !p.place).forEach(p => {
+        tray.push(`<div class="tray-item piece" data-tray="piece" data-id="${p.id}" role="button" aria-label="${esc(p.label || 'Furniture')}">${Furniture.renderTop(p, 8)}</div>`);
+      });
+    }
+    const add = `<a class="tray-item add" href="#/rooms/my-room/add" aria-label="Make furniture">➕</a>`;
+    const hasDoor = r.wallItems.some(it => it.type === 'door');
+    const next = mapStep === 2 && hasDoor
+      ? `<button type="button" class="big-btn yes" data-act="map-next" aria-label="Next">➡️</button>` : '';
+    return `<div class="map-tray">${tray.join('')}${add}</div>${next ? `<div class="action-row">${next}</div>` : ''}`;
+  }
+
+  function drawMapOnly() {
+    const wrap = document.getElementById('map-wrap');
+    if (wrap) wrap.innerHTML = RoomMap.render(room(), mapPieces(), { step: mapStep, selected: mapSelected });
+  }
+
+  function drawMapAll() {
+    drawMapOnly();
+    const below = document.getElementById('map-below');
+    if (below) below.innerHTML = mapBelow();
+  }
+
+  // Where a finger is, in room units.
+  function toRoom(e) {
+    const g = document.getElementById('room-g');
+    if (!g) return null;
+    const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(g.getScreenCTM().inverse());
+    return { x: pt.x / RoomMap.S, y: pt.y / RoomMap.S };
+  }
+
+  function canDrag(kind, obj) {
+    if (mapStep === 1) return kind === 'handle';
+    if (kind === 'handle') return false;
+    if (mapStep === 2) return kind === 'wall' || (kind === 'piece' && isWallPiece(obj));
+    return true;
+  }
+
+  document.addEventListener('pointerdown', e => {
+    const el = e.target.closest('#map-wrap [data-map], [data-tray]');
+    if (!el || drag) return;
+    const r = room();
+    let d = null;
+    if (el.dataset.tray) {
+      d = { kind: el.dataset.tray === 'piece' ? 'new-piece' : 'new-wall', type: el.dataset.tray, id: el.dataset.id, el };
+    } else if (el.dataset.map === 'handle') {
+      d = { kind: 'handle', dim: el.dataset.dim };
+    } else if (el.dataset.map === 'wall') {
+      d = { kind: 'wall', id: el.dataset.id, item: r.wallItems.find(it => it.id === el.dataset.id) };
+    } else if (el.dataset.map === 'piece') {
+      const p = pieceById(el.dataset.id);
+      d = { kind: 'piece', id: el.dataset.id, piece: p };
+    }
+    if (!d) return;
+    d.allowed = canDrag(d.kind === 'new-piece' ? 'piece' : d.kind === 'new-wall' ? 'wall' : d.kind, d.piece || (d.id && pieceById(d.id)));
+    d.x0 = e.clientX;
+    d.y0 = e.clientY;
+    d.moved = false;
+    if (d.kind === 'piece' && d.piece && d.piece.place) {
+      const pt = toRoom(e);
+      d.off = { x: pt.x - d.piece.place.x, y: pt.y - d.piece.place.y };
+    }
+    drag = d;
+    e.preventDefault();
+  });
+
+  let dragFrame = 0;
+  document.addEventListener('pointermove', e => {
+    if (!drag || !drag.allowed) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 8) return;
+    drag.moved = true;
+    const pt = toRoom(e);
+    if (!pt) return;
+    const r = room();
+    if (drag.kind === 'new-piece') {
+      drag.piece = pieceById(drag.id);
+      if (!drag.piece) { drag = null; return; }
+      drag.piece.place = { x: pt.x, y: pt.y, rot: 0 };
+      drag.off = { x: 0, y: 0 };
+      drag.kind = 'piece';
+      mapSelected = null;
+      drag.el.classList.add('lifted');
+    } else if (drag.kind === 'new-wall') {
+      drag.item = { id: S.uid(), type: drag.type, wall: 2, pos: 0, flip: false };
+      r.wallItems.push(drag.item);
+      drag.kind = 'wall';
+      mapSelected = null;
+    }
+    if (drag.kind === 'handle') {
+      RoomMap.resize(r, drag.dim, drag.dim === 'w' ? pt.x : pt.y, mapPieces());
+    } else if (drag.kind === 'piece') {
+      drag.piece.place.x = pt.x - drag.off.x;
+      drag.piece.place.y = pt.y - drag.off.y;
+    } else if (drag.kind === 'wall') {
+      RoomMap.settleWallItem(r, drag.item, pt.x, pt.y);
+    }
+    drag.last = pt;
+    if (!dragFrame) dragFrame = requestAnimationFrame(() => { dragFrame = 0; drawMapOnly(); });
+  });
+
+  // Far outside the walls means "take it off the map".
+  function farOutside(r, pt) {
+    return !pt || pt.x < -2.5 || pt.y < -2.5 || pt.x > r.size.w + 2.5 || pt.y > r.size.d + 2.5;
+  }
+
+  document.addEventListener('pointerup', e => {
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+    const r = room();
+    if (!d.moved) {
+      // A tap: pick it, or put a tray item straight into the room.
+      if (d.kind === 'new-piece' && d.allowed) {
+        const p = pieceById(d.id);
+        if (p) {
+          p.place = { x: r.size.w / 2, y: r.size.d / 2, rot: 0 };
+          if (isWallPiece(p)) p.place.y = 0;
+          RoomMap.settle(r, p);
+          mapSelected = p.id;
+        }
+      } else if (d.kind === 'new-wall' && d.allowed) {
+        const it = { id: S.uid(), type: d.type, wall: 2, pos: r.size.w / 2, flip: false };
+        RoomMap.settleWallItem(r, it);
+        r.wallItems.push(it);
+        mapSelected = it.id;
+      } else if (d.kind === 'piece' || d.kind === 'wall') {
+        mapSelected = mapSelected === d.id ? null : d.id;
+      } else {
+        return;
+      }
+      saveOrWarn();
+      Effects.pop();
+      drawMapAll();
+      return;
+    }
+    const pt = toRoom(e) || d.last;
+    if (d.kind === 'piece') {
+      if (farOutside(r, pt)) delete d.piece.place;
+      else RoomMap.settle(r, d.piece);
+    } else if (d.kind === 'wall') {
+      if (farOutside(r, pt)) r.wallItems = r.wallItems.filter(it => it !== d.item);
+    }
+    saveOrWarn();
+    Effects.pop();
+    drawMapAll();
+  });
+
+  document.addEventListener('pointercancel', () => { drag = null; });
 
   // Ready-made pieces, shown as pictures. Inside a closet, only pieces that stand on its floor.
   function renderCatalog(closetId) {
@@ -868,6 +1083,82 @@
       });
     },
 
+    // Map
+    'map-step'(el) {
+      mapStep = Number(el.dataset.value);
+      mapSelected = null;
+      Effects.pop();
+      renderMap();
+    },
+    'map-next'() {
+      const r = room();
+      if (mapStep === 1) r.sizeSet = true;
+      saveOrWarn();
+      mapStep = Math.min(3, mapStep + 1);
+      mapSelected = null;
+      Effects.chime();
+      renderMap();
+    },
+    'map-rotate'() {
+      const r = room();
+      r.view = (r.view + 1) % 4;
+      saveOrWarn();
+      Effects.pop();
+      drawMapAll();
+    },
+    'map-size'(el) {
+      const r = room();
+      const dim = el.dataset.dim;
+      RoomMap.resize(r, dim, r.size[dim] + Number(el.dataset.dir), mapPieces());
+      saveOrWarn();
+      Effects.pop();
+      drawMapAll();
+    },
+    'map-deselect'() {
+      mapSelected = null;
+      drawMapAll();
+    },
+    'map-turn'() {
+      const p = pieceById(mapSelected);
+      if (!p || !p.place) return;
+      p.place.rot = ((p.place.rot || 0) + 1) % 4;
+      const keep = { ...p.place };
+      // Turning a piece away from the wall shouldn't snap it right back.
+      const { hx, hy } = RoomMap.halfSize(p);
+      const r = room();
+      p.place.x = Math.max(hx, Math.min(r.size.w - hx, keep.x));
+      p.place.y = Math.max(hy, Math.min(r.size.d - hy, keep.y));
+      saveOrWarn();
+      Effects.pop();
+      drawMapAll();
+    },
+    'map-open'() {
+      if (mapSelected) location.hash = `#/rooms/my-room/piece/${mapSelected}`;
+    },
+    'map-unplace'() {
+      const p = pieceById(mapSelected);
+      if (p) delete p.place;
+      mapSelected = null;
+      saveOrWarn();
+      Effects.pop();
+      drawMapAll();
+    },
+    'map-flip'() {
+      const it = room().wallItems.find(x => x.id === mapSelected);
+      if (it) it.flip = !it.flip;
+      saveOrWarn();
+      Effects.pop();
+      drawMapAll();
+    },
+    'map-remove'() {
+      const r = room();
+      r.wallItems = r.wallItems.filter(x => x.id !== mapSelected);
+      mapSelected = null;
+      saveOrWarn();
+      Effects.pop();
+      drawMapAll();
+    },
+
     // My Room furniture
     'add-piece'(el) {
       const p = Furniture.make(el.dataset.key);
@@ -1305,7 +1596,8 @@
   const routes = [
     [/^#\/?$/, renderHome],
     [/^#\/rooms$/, renderRooms],
-    [/^#\/rooms\/my-room$/, renderMyRoom],
+    [/^#\/rooms\/my-room$/, renderMap],
+    [/^#\/rooms\/my-room\/furniture$/, renderFurnitureList],
     [/^#\/rooms\/my-room\/add$/, () => renderCatalog(null)],
     [/^#\/rooms\/my-room\/add\/([\w-]+)$/, m => renderCatalog(m[1])],
     [/^#\/rooms\/my-room\/piece\/([\w-]+)$/, m => renderPiece(m[1])],
@@ -1340,6 +1632,8 @@
     const hash = location.hash || '#/';
     // Parent mode turns off whenever you leave the page.
     if (hash !== lastHash) parentUnlocked = false;
+    if (hash !== lastHash && !hash.startsWith('#/rooms/my-room')) mapStep = null;
+    if (hash !== lastHash) mapSelected = null;
     lastHash = hash;
     closeModal();
     if (!currentPerson() && !openToEveryone.test(hash)) {
