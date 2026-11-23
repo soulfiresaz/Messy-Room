@@ -269,6 +269,7 @@
       selected: partsMode ? selectedPart : null,
       inside,
       addInside: p.kind === 'closet',
+      pickSection: partsMode && p.kind === 'closet',
     });
     const colors = Furniture.COLORS.map(c =>
       `<button type="button" class="swatch ${p.color === c ? 'picked' : ''}" style="--swatch:${c}" data-act="piece-color" data-value="${c}" aria-label="Color" aria-pressed="${p.color === c}"></button>`).join('');
@@ -302,11 +303,26 @@
     rows.push(`<section class="opt-row"><h2 class="opt-head">Size</h2><div class="opt-choices">${size}</div></section>`);
 
     if (p.kind === 'closet') {
-      rows.push(`<section class="opt-row"><h2 class="opt-head">Shelves</h2><div class="opt-choices">
-        <div class="step-group"><span class="step-num">${p.shelves.length}</span>${stepBtn('closet-shelves', '➖', 'Fewer shelves', 'data-dir="-1"')}${stepBtn('closet-shelves', '➕', 'More shelves', 'data-dir="1"')}</div></div></section>`);
-      const rods = ['high', 'low', 'two'].map(r =>
-        `<button type="button" class="pick small square ${p.rods === r ? 'picked' : ''}" data-act="closet-rods" data-value="${r}" aria-label="Rods ${r}" aria-pressed="${p.rods === r}">${Furniture.rodIcon(r)}</button>`).join('');
-      rows.push(`<section class="opt-row"><h2 class="opt-head">Rods</h2><div class="opt-choices">${rods}</div></section>`);
+      Furniture.fixCloset(p);
+      rows.push(`<section class="opt-row"><h2 class="opt-head">Top shelf</h2><div class="opt-choices">
+        <div class="step-group"><span class="step-num">${p.shelves.length}</span>${stepBtn('closet-shelves', '➖', 'Fewer top shelves', 'data-dir="-1"')}${stepBtn('closet-shelves', '➕', 'More top shelves', 'data-dir="1"')}</div></div></section>`);
+      rows.push(`<section class="opt-row"><h2 class="opt-head">Sections</h2><div class="opt-choices">
+        <div class="step-group"><span class="step-num">${p.sections.length}</span>${stepBtn('sections', '➖', 'Fewer sections', 'data-dir="-1"')}${stepBtn('sections', '➕', 'More sections', 'data-dir="1"')}</div></div></section>`);
+      const sec = selectedPart && Furniture.findSection(p, selectedPart);
+      if (!sec) {
+        rows.push(`<p class="parts-hint"><span aria-hidden="true">👆</span> Tap a section to change it</p>`);
+      } else {
+        const kinds = [['high', 'One high rod'], ['low', 'One low rod'], ['two', 'Two rods'], ['shelves', 'Shelves']].map(([k, label]) =>
+          `<button type="button" class="pick small square ${sec.kind === k ? 'picked' : ''}" data-act="section-kind" data-value="${k}" aria-label="${label}" aria-pressed="${sec.kind === k}">${Furniture.sectionIcon(k)}</button>`).join('');
+        rows.push(`<section class="opt-row"><h2 class="opt-head">This section</h2><div class="opt-choices">${kinds}</div></section>`);
+        const more = sec.kind === 'shelves'
+          ? `<div class="step-group"><span class="step-num">${sec.shelves.length}</span>${stepBtn('section-shelves', '➖', 'Fewer shelves', 'data-dir="-1"')}${stepBtn('section-shelves', '➕', 'More shelves', 'data-dir="1"')}</div>`
+          : '';
+        rows.push(`<section class="opt-row"><h2 class="opt-head">${sec.kind === 'shelves' ? 'Shelves and width' : 'Width'}</h2><div class="opt-choices">
+          ${more}
+          <div class="step-group"><span class="step-icon" aria-hidden="true">↔️</span>${stepBtn('section-width', '➖', 'Narrower section', 'data-dir="-1"')}${stepBtn('section-width', '➕', 'Wider section', 'data-dir="1"')}</div>
+        </div></section>`);
+      }
       return `<div class="parts-panel">${rows.join('')}</div>`;
     }
     if (!Furniture.hasParts(p)) return `<div class="parts-panel">${rows.join('')}</div>`;
@@ -375,7 +391,7 @@
     redrawPiece();
   }
 
-  const clampSize = v => Math.round(Math.max(1, Math.min(14, v)) * 10) / 10;
+  const clampSize = v => Math.round(Math.max(1, Math.min(30, v)) * 10) / 10;
 
   // Where the selected part is: its column and its place in the column.
   function partPlace(p, id) {
@@ -869,7 +885,7 @@
       const p = pieceById(pagePieceId);
       if (!p) return;
       const id = el.dataset.id;
-      if (partsMode && Furniture.hasParts(p) && p.style !== 'plastic') {
+      if (partsMode && ((Furniture.hasParts(p) && p.style !== 'plastic') || p.kind === 'closet')) {
         selectedPart = selectedPart === id ? null : id;
         Effects.pop();
         redrawPiece();
@@ -902,7 +918,18 @@
     },
     'size'(el) {
       const dim = el.dataset.dim, dir = Number(el.dataset.dir);
-      changePiece(p => { p[dim] = clampSize(p[dim] + dir * 0.5); });
+      changePiece(p => {
+        if (p.kind === 'closet' && dim === 'w') {
+          // A wider or narrower closet stretches every section a little.
+          Furniture.fixCloset(p);
+          const total = p.sections.reduce((a, x) => a + x.w, 0);
+          const next = clampSize(total + dir);
+          p.sections.forEach(x => { x.w = Math.max(1, Math.round(x.w * next / total * 10) / 10); });
+          p.w = p.sections.reduce((a, x) => a + x.w, 0);
+          return;
+        }
+        p[dim] = clampSize(p[dim] + dir * 0.5);
+      });
     },
     'cols'(el) {
       const p = pieceById(pagePieceId);
@@ -1038,12 +1065,64 @@
         q.h = clampSize(q.h - 1.3);
       }));
     },
-    'closet-rods'(el) {
+    'sections'(el) {
       const p = pieceById(pagePieceId);
-      if (!p || p.rods === el.dataset.value) return;
-      // Going from two rods to one drops the lower rod's space.
-      const losing = p.rods === 'two' && el.dataset.value !== 'two' && Furniture.spaceUsed(p.rodSpots[1]);
-      guardUsed(losing, () => changePiece(q => { q.rods = el.dataset.value; }));
+      if (!p) return;
+      Furniture.fixCloset(p);
+      if (Number(el.dataset.dir) > 0) {
+        if (p.sections.length >= 4) { wiggle(el); return; }
+        changePiece(q => {
+          const sec = Furniture.section('high', 5);
+          q.sections.push(sec);
+          q.w = q.sections.reduce((a, x) => a + x.w, 0);
+          selectedPart = sec.id;
+        });
+        return;
+      }
+      if (p.sections.length <= 1) { wiggle(el); return; }
+      const sel = Furniture.findSection(p, selectedPart);
+      const gone = sel || p.sections[p.sections.length - 1];
+      guardUsed(Furniture.sectionSpaces(gone).some(Furniture.spaceUsed), () => changePiece(q => {
+        q.sections = q.sections.filter(x => x.id !== gone.id);
+        q.w = q.sections.reduce((a, x) => a + x.w, 0);
+        selectedPart = null;
+      }));
+    },
+    'section-kind'(el) {
+      const p = pieceById(pagePieceId);
+      const sec = p && Furniture.findSection(p, selectedPart);
+      if (!sec || sec.kind === el.dataset.value) return;
+      const kind = el.dataset.value;
+      // Spaces the section stops using: shelves, or the lower rod.
+      const after = { ...sec, kind };
+      if (kind === 'shelves' && !sec.shelves.length) after.shelves = [1, 2, 3, 4].map(() => ({ id: Furniture.uid() }));
+      const keep = new Set(Furniture.sectionSpaces(after).map(x => x.id));
+      const losing = Furniture.sectionSpaces(sec).some(x => !keep.has(x.id) && Furniture.spaceUsed(x));
+      guardUsed(losing, () => changePiece(() => {
+        sec.kind = kind;
+        sec.shelves = after.shelves;
+      }));
+    },
+    'section-width'(el) {
+      const p = pieceById(pagePieceId);
+      const sec = p && Furniture.findSection(p, selectedPart);
+      if (!sec) return;
+      const d = Number(el.dataset.dir);
+      if (d < 0 && sec.w <= 2) { wiggle(el); return; }
+      if (d > 0 && p.w >= 28) { wiggle(el); return; }
+      changePiece(q => { sec.w += d; q.w = q.sections.reduce((a, x) => a + x.w, 0); });
+    },
+    'section-shelves'(el) {
+      const p = pieceById(pagePieceId);
+      const sec = p && Furniture.findSection(p, selectedPart);
+      if (!sec || sec.kind !== 'shelves') return;
+      if (Number(el.dataset.dir) > 0) {
+        if (sec.shelves.length >= 7) { wiggle(el); return; }
+        changePiece(() => { sec.shelves.push({ id: Furniture.uid() }); });
+        return;
+      }
+      if (sec.shelves.length <= 1) { wiggle(el); return; }
+      guardUsed(Furniture.spaceUsed(sec.shelves[sec.shelves.length - 1]), () => changePiece(() => { sec.shelves.pop(); }));
     },
 
     // Parent mode (Rewards and sticker pages)

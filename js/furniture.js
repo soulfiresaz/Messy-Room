@@ -48,6 +48,26 @@ const Furniture = (() => {
     return cell('open', 1, { insert: ins, binColor: BIN_COLORS[i % 4] });
   });
 
+  // One section of a closet: one high rod, one low rod, two rods, or a stack of shelves.
+  // It keeps two rod spaces and its shelf spaces, so switching back and forth keeps their ids.
+  function section(kind = 'high', w = 5) {
+    return { id: uid(), kind, w, rods: [{ id: uid() }, { id: uid() }], shelves: Array.from({ length: kind === 'shelves' ? 4 : 0 }, () => ({ id: uid() })) };
+  }
+
+  // Closets saved before sections existed had one set of rods for the whole closet.
+  function fixCloset(p) {
+    if (p.kind !== 'closet' || p.sections) return p;
+    p.sections = [{ id: uid(), kind: p.rods || 'high', w: p.w, rods: p.rodSpots || [{ id: uid() }, { id: uid() }], shelves: [] }];
+    delete p.rods; delete p.rodSpots;
+    return p;
+  }
+
+  // The spaces a closet section is using right now.
+  function sectionSpaces(sec) {
+    if (sec.kind === 'shelves') return sec.shelves;
+    return sec.rods.slice(0, sec.kind === 'two' ? 2 : 1);
+  }
+
   const base = (kind, style, color, w, h, d, extra = {}) => ({ id: uid(), kind, style, color, label: '', w, h, d, ...extra });
 
   // Cubbies laid out in a grid, filled with a mix of bins and sorters to start.
@@ -98,10 +118,16 @@ const Furniture = (() => {
     { key: 'bookshelf', group: 'shelves', make: () => base('bookshelf', 'cube', '#c98b5a', 3.4, 7, 1, { cols: [col(opens(5))] }) },
     { key: 'wallShort', group: 'shelves', make: () => base('wallshelf', 'wallshelf', '#7fd8c0', 3.4, 1.4, 0.6, { spot: { id: uid() } }) },
     { key: 'wallLong', group: 'shelves', make: () => base('wallshelf', 'wallshelf', '#ff9fb8', 6.5, 1.4, 0.6, { spot: { id: uid() } }) },
-    // Closet
+    // Closets: built from sections side by side, with a top shelf across.
+    { key: 'closet', group: 'closet', make: () => base('closet', 'closet', '#e9dcc6', 10, 13, 2, { shelves: [{ id: uid() }], sections: [section('high', 10)], floor: { id: uid() } }) },
     {
-      key: 'closet', group: 'closet', make: () => base('closet', 'closet', '#e9dcc6', 10, 13, 2, {
-        shelves: [{ id: uid() }], rods: 'high', rodSpots: [{ id: uid() }, { id: uid() }], floor: { id: uid() },
+      key: 'closetHalf', group: 'closet', make: () => base('closet', 'closet', '#e9dcc6', 10, 13, 2, {
+        shelves: [{ id: uid() }], sections: [section('high', 5), section('two', 5)], floor: { id: uid() },
+      }),
+    },
+    {
+      key: 'closetDouble', group: 'closet', make: () => base('closet', 'closet', '#e9dcc6', 18, 13, 2.2, {
+        shelves: [{ id: uid() }], sections: [section('high', 9), section('two', 9)], floor: { id: uid() },
       }),
     },
     // Seats
@@ -117,7 +143,7 @@ const Furniture = (() => {
     { key: 'containers', icon: '📦', label: 'Drawer containers' },
     { key: 'cubbies', icon: '🔲', label: 'Cubbies' },
     { key: 'shelves', icon: '📚', label: 'Shelves' },
-    { key: 'closet', icon: '👕', label: 'Closet' },
+    { key: 'closet', icon: '👕', label: 'Closets' },
     { key: 'seats', icon: '💺', label: 'Seats' },
   ];
 
@@ -139,7 +165,7 @@ const Furniture = (() => {
       return p.cols.flatMap(c => c.cells.flatMap(x => x.type === 'cupboard' ? x.spots : [x]));
     }
     if (p.kind === 'wallshelf') return [p.spot];
-    if (p.kind === 'closet') return [...p.shelves, ...p.rodSpots.slice(0, p.rods === 'two' ? 2 : 1), p.floor];
+    if (p.kind === 'closet') { fixCloset(p); return [...p.shelves, ...p.sections.flatMap(sectionSpaces), p.floor]; }
     return [];
   }
 
@@ -329,12 +355,11 @@ const Furniture = (() => {
 
   // ---------- Closet ----------
 
-  const CLOSET_FLOOR = 3.6;   // units of floor height under the high rod's clothes
-
   function closetInner(p, inside, addInside) {
     // The closet grows on its own to fit what stands on its floor (and the ➕ next to it).
     const need = inside.reduce((a, q) => a + frontBox(q).W + 14, 40) + (addInside ? 80 : 0);
-    return { w: Math.max(p.w * U, need), h: p.h * U };
+    const w = fixCloset(p).sections.reduce((a, x) => a + x.w, 0);
+    return { w: Math.max(w * U, need), h: p.h * U };
   }
 
   function closetBox(p, inside = [], addInside = false) {
@@ -353,30 +378,44 @@ const Furniture = (() => {
     return o;
   }
 
-  // Where the shelves, rods and floor sit inside a closet (heights in units, like real closets).
+  // Where the top shelves, sections, rods and floor sit inside a closet (heights in units, like real closets).
   function closetLayout(p, inside, addInside) {
+    fixCloset(p);
     const { w, h } = closetInner(p, inside, addInside);
-    const ox = 4, oy = 4, pad = 16;
+    const ox = 4, oy = 4, pad = 16, DIV = 12;
     const x0 = ox + pad, x1 = ox + w - pad;
     const floorY = oy + h - pad;
     const shelves = p.shelves.map((s, i) => ({ spot: s, y: oy + pad + U * 1.4 + i * U * 1.3 }));
     const topY = shelves.length ? shelves[shelves.length - 1].y + 12 : oy + pad;
-    const rods = [];
-    if (p.rods === 'two') {
-      rods.push({ spot: p.rodSpots[0], y: topY + U * 0.6, s: 1.3 });
-      rods.push({ spot: p.rodSpots[1], y: topY + U * 0.6 + (floorY - topY) * 0.45, s: 1.3 });
-    } else if (p.rods === 'low') {
-      rods.push({ spot: p.rodSpots[0], y: floorY - U * 7, s: 1.5 });
-    } else {
-      rods.push({ spot: p.rodSpots[0], y: topY + U * 0.6, s: 1.6 });
-    }
-    return { ox, oy, w, h, x0, x1, floorY, shelves, rods };
+    const total = p.sections.reduce((a, x) => a + x.w, 0);
+    const usable = x1 - x0 - DIV * (p.sections.length - 1);
+    let sx = x0;
+    const sections = p.sections.map(sec => {
+      const sw = usable * sec.w / total;
+      const out = { sec, x0: sx, x1: sx + sw, rods: [], shelves: [] };
+      if (sec.kind === 'two') {
+        out.rods.push({ spot: sec.rods[0], y: topY + U * 0.6, s: 1.3 });
+        out.rods.push({ spot: sec.rods[1], y: topY + U * 0.6 + (floorY - topY) * 0.45, s: 1.3 });
+      } else if (sec.kind === 'low') {
+        out.rods.push({ spot: sec.rods[0], y: floorY - U * 7, s: 1.5 });
+      } else if (sec.kind === 'shelves') {
+        const n = sec.shelves.length;
+        const gap = (floorY - topY) / (n + 1);
+        out.shelves = sec.shelves.map((spot, i) => ({ spot, y: topY + gap * (i + 1) - 6 }));
+      } else {
+        out.rods.push({ spot: sec.rods[0], y: topY + U * 0.6, s: 1.6 });
+      }
+      sx += sw + DIV;
+      return out;
+    });
+    return { ox, oy, w, h, x0, x1, floorY, topY, shelves, sections, DIV };
   }
 
   function closetArt(p, inside, state) {
     const L = closetLayout(p, inside, state.addInside);
-    const { ox, oy, w, h, x0, x1, floorY } = L;
-    const wrap = (spotId, hit, art) => state.interactive
+    const { ox, oy, w, h, x0, x1, floorY, topY } = L;
+    const picking = state.interactive && state.pickSection;
+    const wrap = (spotId, hit, art) => state.interactive && !picking
       ? `<g class="fpart" data-act="part" data-id="${spotId}" role="button" aria-label="Open">${hit}${art}</g>`
       : art;
     let o = rect(ox, oy, w, h, p.color, 10) + rect(ox + 16, oy + 16, w - 32, h - 32, '#fffaf0', 4, 2);
@@ -384,16 +423,35 @@ const Furniture = (() => {
       o += wrap(s.spot.id, `<rect x="${x0}" y="${s.y - 40}" width="${x1 - x0}" height="52" fill="transparent"/>`,
         rect(x0, s.y, x1 - x0, 12, shade(p.color, -0.12), 4));
     });
+    // Dividers between sections
+    L.sections.slice(1).forEach(S => {
+      o += rect(S.x0 - L.DIV, topY, L.DIV, floorY - topY, shade(p.color, -0.08), 3, 2);
+    });
     const cl = ['#ff9fb8', '#8fd3ff', '#ffd54a', '#b9a2ff', '#7fd8c0'];
-    L.rods.forEach((r, ri) => {
-      let art = rect(x0 + 10, r.y, x1 - x0 - 20, 8, '#b8b8c8', 4, 2);
-      const step = 46 * r.s;
-      const n = Math.max(2, Math.floor((x1 - x0 - 40) / step));
-      for (let i = 0; i < n; i++) {
-        if (i % 6 === 4) continue;   // a little gap, like real clothes
-        art += hanger(x0 + 30 + i * step, r.y + 16, cl[(i + ri * 2) % cl.length], i % 4 === 1 ? 'dress' : 'shirt', r.s);
+    L.sections.forEach((S, si) => {
+      let secArt = '';
+      S.rods.forEach((r, ri) => {
+        let art = rect(S.x0 + 6, r.y, S.x1 - S.x0 - 12, 8, '#b8b8c8', 4, 2);
+        const step = 46 * r.s;
+        const n = Math.max(1, Math.floor((S.x1 - S.x0 - 30) / step));
+        for (let i = 0; i < n; i++) {
+          if (i % 6 === 4) continue;   // a little gap, like real clothes
+          art += hanger(S.x0 + 24 * r.s + i * step, r.y + 16, cl[(i + ri * 2 + si) % cl.length], i % 4 === 1 ? 'dress' : 'shirt', r.s);
+        }
+        secArt += wrap(r.spot.id, `<rect x="${S.x0}" y="${r.y - 10}" width="${S.x1 - S.x0}" height="${70 * r.s + 20}" fill="transparent"/>`, art);
+      });
+      S.shelves.forEach(sh => {
+        secArt += wrap(sh.spot.id, `<rect x="${S.x0}" y="${sh.y - 44}" width="${S.x1 - S.x0}" height="56" fill="transparent"/>`,
+          rect(S.x0, sh.y, S.x1 - S.x0, 12, shade(p.color, -0.12), 4));
+      });
+      if (picking) {
+        const sel = state.selected === S.sec.id
+          ? `<rect x="${S.x0 - 4}" y="${topY + 2}" width="${S.x1 - S.x0 + 8}" height="${floorY - topY - 4}" rx="10" fill="#3a86ff" fill-opacity=".08" stroke="#3a86ff" stroke-width="5" stroke-dasharray="12 7"/>`
+          : '';
+        secArt = `<g class="fpart" data-act="part" data-id="${S.sec.id}" role="button" aria-label="Pick this section">` +
+          `<rect x="${S.x0}" y="${topY}" width="${S.x1 - S.x0}" height="${floorY - topY}" fill="transparent"/>${secArt}</g>${sel}`;
       }
-      o += wrap(r.spot.id, `<rect x="${x0}" y="${r.y - 10}" width="${x1 - x0}" height="${70 * r.s + 20}" fill="transparent"/>`, art);
+      o += secArt;
     });
     // Floor: furniture standing in the closet, then the floor itself for shoes and bins.
     o += wrap(p.floor.id, `<rect x="${x0}" y="${floorY - 40}" width="${x1 - x0}" height="40" fill="transparent"/>`,
@@ -401,16 +459,14 @@ const Furniture = (() => {
     let fx = x0 + 10;
     inside.forEach(q => {
       const box = frontBox(q);
-      const s = 1;
       const art = render(q, { bare: true });
-      const y = floorY - box.H * s;
-      const g = `<svg x="${fx}" y="${y}" width="${box.W * s}" height="${box.H * s}" viewBox="0 0 ${box.W} ${box.H}">${art}</svg>`;
-      o += state.interactive
+      const g = `<svg x="${fx}" y="${floorY - box.H}" width="${box.W}" height="${box.H}" viewBox="0 0 ${box.W} ${box.H}">${art}</svg>`;
+      o += state.interactive && !picking
         ? `<g class="fpart" data-act="open-piece" data-id="${q.id}" role="button" aria-label="Open">${g}</g>`
-        : g;
-      fx += box.W * s + 14;
+        : (picking ? `<g opacity=".35" pointer-events="none">${g}</g>` : g);
+      fx += box.W + 14;
     });
-    if (state.interactive && state.addInside) {
+    if (state.interactive && state.addInside && !picking) {
       const bx = fx + 34;
       o += `<g class="fpart add-in" data-act="closet-add" role="button" aria-label="Add furniture to the closet">` +
         `<circle cx="${bx}" cy="${floorY - 34}" r="26" fill="#ffd54a" ${line()}/>` +
@@ -456,8 +512,9 @@ const Furniture = (() => {
         `<rect x="30" y="30" width="300" height="104" rx="14" fill="${empty}" stroke="#d8c8b4" stroke-width="3" stroke-dasharray="10 8"/>`, 'inside-svg');
     }
     if (p.kind === 'closet') {
-      const isShelf = p.shelves.some(s => s.id === partId);
-      const isRod = p.rodSpots.some(s => s.id === partId);
+      fixCloset(p);
+      const isShelf = p.shelves.some(s => s.id === partId) || p.sections.some(x => x.kind === 'shelves' && x.shelves.some(s => s.id === partId));
+      const isRod = p.sections.some(x => x.kind !== 'shelves' && x.rods.some(s => s.id === partId));
       if (isShelf) {
         return svg(360, 200, rect(20, 140, 320, 18, shade(p.color, -0.12), 6) +
           `<rect x="30" y="30" width="300" height="104" rx="14" fill="${empty}" stroke="#d8c8b4" stroke-width="3" stroke-dasharray="10 8"/>`, 'inside-svg');
@@ -511,20 +568,27 @@ const Furniture = (() => {
     return svg(60, 60, partArt({ color: type === 'open' ? c : '#ffd27a', style: 'wood' }, b, {}), 'icon-svg');
   }
 
-  function rodIcon(kind) {
+  // Small pictures for a closet section's setup.
+  function sectionIcon(kind) {
     let o = rect(4, 4, 52, 52, '#e9dcc6', 6, 2) + rect(10, 10, 40, 40, '#fffaf0', 3, 1.5);
     const rod = (y, s) => `<path d="M14 ${y} L46 ${y}" stroke="#8a8aa0" stroke-width="3" stroke-linecap="round"/>` +
       [20, 30, 40].map(x => `<rect x="${x - 4}" y="${y + 2}" width="8" height="${12 * s}" rx="2" fill="#ff9fb8" stroke="${INK}" stroke-width="1.2"/>`).join('');
     if (kind === 'two') o += rod(16, 1) + rod(34, 1);
     else if (kind === 'low') o += rod(28, 1.1);
+    else if (kind === 'shelves') o += [18, 27, 36, 45].map(y => `<rect x="12" y="${y}" width="36" height="3.5" rx="1.5" fill="#c9b08a"/>`).join('');
     else o += rod(16, 1.6);
     return svg(60, 60, o, 'icon-svg');
   }
 
+  function findSection(p, id) {
+    return p.kind === 'closet' ? (fixCloset(p).sections.find(x => x.id === id) || null) : null;
+  }
+
   return {
     COLORS, BIN_COLORS, CATALOG, GROUPS,
-    make, render, renderInside, partIcon, rodIcon,
+    make, render, renderInside, partIcon, sectionIcon,
     hasParts, fitsInCloset, spacesOf, spaceUsed, cellUsed, findCell,
+    section, fixCloset, sectionSpaces, findSection,
     cell, col, uid, shade,
   };
 })();
