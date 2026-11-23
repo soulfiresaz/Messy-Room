@@ -76,9 +76,11 @@ One PIN guards everything parent-only:
 - **Deleting a person** also needs the PIN. Their sticker goes back into the collection.
 
 ### Making a sticker
-- **Person:** background color, skin color, hair style, hair color, eyes, eye color
-- **Alien:** color, head shape, 1 to 3 eyes, antennae, background
-- **Animal:** pick a ready-made animal (cat, dog, bunny, bear), then its color and the background color
+- **Style:** floating faces (no bodies), flat shapes, a white sticker outline, and simple line eyes and mouths
+- **Feeling** (every sticker): happy, cute, silly, love, shy, sleepy, surprised, nervous, confused, grumpy. Small changes to the eyes and mouth, plus little extras like blush, Zzz, a sweat drop or question marks.
+- **Person:** feeling, skin color, hair style, hair color, background
+- **Alien:** feeling, color, head shape, 1 to 3 eyes, antennae, background
+- **Animal:** cat, dog, bunny or bear, then feeling, coat (plain, tabby, patch, two-tone, calico), fur color, patch color and background. Calico cat is the starting animal.
 - **Keep it really simple:** a few big choices per step, each shown as a small picture
 - **"This is me" on the map:** the child can drag their sticker to where they're sitting (like on the bed) and play with it
 

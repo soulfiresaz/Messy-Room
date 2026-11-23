@@ -293,7 +293,7 @@
         ${Stickers.render(preview)}<span class="pick-label">${t.label}</span></button>`;
     }).join('');
 
-    const optionRows = Stickers.OPTIONS[draft.type].map(opt => {
+    const optionRows = Stickers.OPTIONS[draft.type].filter(opt => !opt.when || opt.when(draft)).map(opt => {
       let choices;
       if (opt.colors) {
         choices = opt.colors.map(c =>
