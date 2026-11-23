@@ -3,7 +3,9 @@
 //
 // A storage piece is built from columns of parts:
 //   piece = { id, kind, style, color, label, w, h, d, cols: [ { id, w, cells: [cell] } ] }
-//   cell  = { id, type: 'drawer' | 'open' | 'cupboard', h, insert, binColor, shelves, hinge, spots }
+//   cell  = { id, type: 'drawer' | 'open' | 'cupboard', h, insert, binColor, count, shelves, hinge, spots }
+//   An open cubby can be empty (books fit here), hold a bin, a paper sorter (each tray is a space)
+//   or a small box of paper drawers (each drawer is a space).
 // w and h are sizes "by eye" (about one unit per hand width), d is how deep it is on the map.
 // Every space that can hold things has its own id, so what's kept there stays put
 // when other parts change.
@@ -13,7 +15,7 @@ const Furniture = (() => {
   const P = 8;           // gap between parts
 
   const COLORS = ['#ffb3d1', '#ff8fa3', '#ffd27a', '#ffd54a', '#7fd8c0', '#8fd3ff', '#9db8ff', '#b9a2ff', '#f4ead8', '#ffffff', '#c98b5a', '#8a6a5a', '#9aa7b8', '#4a4a5a'];
-  const BIN_COLORS = ['#ff9fb8', '#8fd3ff', '#ffd54a', '#b9a2ff', '#7fd8c0', '#f4ead8', '#9aa7b8'];
+  const BIN_COLORS = ['#ff9fb8', '#8fd3ff', '#ffd54a', '#b9a2ff', '#7fd8c0', '#ffffff', '#f4ead8', '#9aa7b8', '#3d4a45'];
 
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
@@ -34,13 +36,28 @@ const Furniture = (() => {
 
   const cell = (type, h = 1, extra = {}) => {
     const c = { id: uid(), type, h, ...extra };
-    if (type === 'open' && !c.insert) c.insert = 'empty';
+    if (type === 'open') setInsert(c, c.insert || 'empty', c.count);
     if (type === 'cupboard') {
       if (c.shelves == null) c.shelves = 1;
       c.spots = c.spots || Array.from({ length: c.shelves + 1 }, () => ({ id: uid() }));
     }
     return c;
   };
+  // Inserts with their own little spaces: sorter trays or paper drawers.
+  const INSERT_COUNTS = { sorter: [5, 2, 8], drawers: [3, 1, 5] };   // [start, fewest, most]
+
+  function setInsert(c, insert, count) {
+    c.insert = insert;
+    const range = INSERT_COUNTS[insert];
+    if (!range) { delete c.spots; delete c.count; return c; }
+    const n = Math.max(range[1], Math.min(range[2], count || range[0]));
+    c.count = n;
+    const spots = (c.spots || []).slice(0, n);
+    while (spots.length < n) spots.push({ id: uid() });
+    c.spots = spots;
+    return c;
+  }
+
   const col = (cells, w = 1) => ({ id: uid(), w, cells });
   const drawers = n => Array.from({ length: n }, () => cell('drawer'));
   const opens = (n, inserts = []) => Array.from({ length: n }, (_, i) => {
@@ -70,13 +87,19 @@ const Furniture = (() => {
 
   const base = (kind, style, color, w, h, d, extra = {}) => ({ id: uid(), kind, style, color, label: '', w, h, d, ...extra });
 
-  // Cubbies laid out in a grid, filled with a mix of bins and sorters to start.
+  // Cubbies laid out in a grid, filled with a mix to start (row by row, top to bottom).
+  // The 4 x 4 starts like a real one: sorters, paper drawers and bins up top, books below.
+  const CUBBY_FILL = {
+    4: ['sorter', 'sorter', 'bin', 'bin', 'drawers', 'drawers', 'bin', 'bin', 'bin', 'empty', 'empty', 'empty', 'empty', 'empty', 'bin', 'empty'],
+    other: ['bin', 'sorter', 'empty', 'bin', 'drawers', 'empty', 'bin', 'empty'],
+  };
+
   function cubbyGrid(cols, rows) {
-    const pattern = ['bin', 'empty', 'sorter', 'bin', 'empty', 'bin', 'empty', 'empty'];
-    let k = 0;
-    return Array.from({ length: cols }, () => col(Array.from({ length: rows }, () => {
-      const ins = pattern[k % pattern.length];
-      return cell('open', 1, { insert: ins, binColor: BIN_COLORS[k++ % 4] });
+    const fill = cols === 4 && rows === 4 ? CUBBY_FILL[4] : CUBBY_FILL.other;
+    return Array.from({ length: cols }, (_, c) => col(Array.from({ length: rows }, (_, r) => {
+      const i = r * cols + c;
+      const ins = fill[i % fill.length];
+      return cell('open', 1, { insert: ins, binColor: ins === 'drawers' ? '#3d4a45' : BIN_COLORS[i % 5] });
     })));
   }
 
@@ -126,6 +149,11 @@ const Furniture = (() => {
       }),
     },
     {
+      key: 'closetMiddle', group: 'closet', make: () => base('closet', 'closet', '#e9dcc6', 16, 13, 2.2, {
+        shelves: [{ id: uid() }], sections: [section('high', 6), section('shelves', 4), section('high', 6)], floor: { id: uid() },
+      }),
+    },
+    {
       key: 'closetDouble', group: 'closet', make: () => base('closet', 'closet', '#e9dcc6', 18, 13, 2.2, {
         shelves: [{ id: uid() }], sections: [section('high', 9), section('two', 9)], floor: { id: uid() },
       }),
@@ -162,7 +190,7 @@ const Furniture = (() => {
   // Every space in a piece, so later stages can assign what it holds and who owns it.
   function spacesOf(p) {
     if (hasParts(p)) {
-      return p.cols.flatMap(c => c.cells.flatMap(x => x.type === 'cupboard' ? x.spots : [x]));
+      return p.cols.flatMap(c => c.cells.flatMap(x => (x.spots && x.spots.length) ? x.spots : [x]));
     }
     if (p.kind === 'wallshelf') return [p.spot];
     if (p.kind === 'closet') { fixCloset(p); return [...p.shelves, ...p.sections.flatMap(sectionSpaces), p.floor]; }
@@ -171,7 +199,7 @@ const Furniture = (() => {
 
   // A space is "used" once something is assigned to it or someone owns it.
   const spaceUsed = s => !!s && ((s.holds && s.holds.length > 0) || (s.owners && s.owners.length > 0));
-  const cellUsed = c => (c.type === 'cupboard' ? c.spots.some(spaceUsed) : spaceUsed(c));
+  const cellUsed = c => spaceUsed(c) || (c.spots || []).some(spaceUsed);
 
   // ---------- Front view drawings ----------
 
@@ -213,13 +241,28 @@ const Furniture = (() => {
       `<rect x="${x + w / 2 - hw / 2}" y="${y + h * 0.3}" width="${hw}" height="${Math.max(6, h * 0.14)}" rx="${Math.max(3, h * 0.07)}" fill="${shade(c, -0.4)}"/>`;
   }
 
-  function sorterArt(x, y, w, h) {
-    let o = '';
-    const th = (h - 8) / 3;
-    for (let i = 0; i < 3; i++) {
-      const ty = y + 4 + i * th;
-      o += `<rect x="${x + 8}" y="${ty + th * 0.3}" width="${w - 16}" height="${th * 0.4}" rx="2" fill="#fff" stroke="${INK}" stroke-width="1.4"/>`;
-      o += `<rect x="${x + 4}" y="${ty + th * 0.52}" width="${w - 8}" height="${th * 0.42}" rx="3" fill="#9aa7b8" stroke="${INK}" stroke-width="2"/>`;
+  // A clear paper sorter with little stacked trays.
+  function sorterArt(x, y, w, h, n = 5) {
+    let o = `<rect x="${x + 4}" y="${y + 4}" width="${w - 8}" height="${h - 6}" rx="4" fill="#eef4f8" fill-opacity=".6" stroke="${INK}" stroke-width="1.6"/>`;
+    const th = (h - 10) / n;
+    for (let i = 0; i < n; i++) {
+      const ty = y + 6 + i * th;
+      o += `<rect x="${x + 9}" y="${ty + th * 0.25}" width="${w - 18}" height="${th * 0.4}" rx="1.5" fill="#fff" stroke="${INK}" stroke-width="1"/>`;
+      o += `<rect x="${x + 6}" y="${ty + th * 0.62}" width="${w - 12}" height="${Math.max(3, th * 0.3)}" rx="2" fill="#fff" stroke="${INK}" stroke-width="1.6"/>`;
+    }
+    return o;
+  }
+
+  // A small box of paper drawers with round finger holes.
+  function drawerBoxArt(x, y, w, h, n = 3, c = '#3d4a45') {
+    const bx = x + 3, by = y + h * 0.08, bw = w - 6, bh = h * 0.9;
+    let o = rect(bx, by, bw, bh, c, 4, 2);
+    const dh = bh / n;
+    const ring = shade(c, 0.6);
+    for (let i = 0; i < n; i++) {
+      const dy = by + i * dh;
+      if (i) o += `<path d="M${bx} ${dy} L${bx + bw} ${dy}" stroke="${INK}" stroke-width="1.6"/>`;
+      o += `<circle cx="${bx + bw / 2}" cy="${dy + dh / 2}" r="${Math.max(2.5, Math.min(7, dh * 0.2))}" fill="${shade(c, -0.3)}" stroke="${ring}" stroke-width="1.8"/>`;
     }
     return o;
   }
@@ -243,7 +286,8 @@ const Furniture = (() => {
     } else if (k.type === 'open') {
       o += rect(b.x, b.y, b.w, b.h, hole, 4, 2);
       if (k.insert === 'bin') o += binArt(b.x, b.y, b.w, b.h, k.binColor || BIN_COLORS[0]);
-      if (k.insert === 'sorter') o += sorterArt(b.x, b.y, b.w, b.h);
+      if (k.insert === 'sorter') o += sorterArt(b.x, b.y, b.w, b.h, k.count);
+      if (k.insert === 'drawers') o += drawerBoxArt(b.x, b.y, b.w, b.h, k.count, k.binColor);
     } else if (k.type === 'cupboard') {
       o += rect(b.x, b.y, b.w, b.h, front, 6);
       const kx = k.hinge === 'r' ? b.x + 13 : b.x + b.w - 13;
@@ -478,7 +522,17 @@ const Furniture = (() => {
   // ---------- Public drawing ----------
 
   // state: { interactive, selected, inside (pieces in a closet), addInside, bare }
+  // Pieces saved by older versions get the newer layout (closet sections, sorter trays).
+  function fixPiece(p) {
+    fixCloset(p);
+    if (hasParts(p)) p.cols.forEach(c => c.cells.forEach(k => {
+      if (k.type === 'open' && INSERT_COUNTS[k.insert] && !k.spots) setInsert(k, k.insert);
+    }));
+    return p;
+  }
+
   function render(p, state = {}) {
+    fixPiece(p);
     const inside = state.inside || [];
     const box = p.kind === 'closet' ? closetBox(p, inside, state.addInside) : frontBox(p);
     let art;
@@ -497,7 +551,7 @@ const Furniture = (() => {
     if (!hasParts(p)) return null;
     for (const c of p.cols) for (const k of c.cells) {
       if (k.id === id) return k;
-      if (k.type === 'cupboard' && k.spots.some(s => s.id === id)) return k;
+      if (k.spots && k.spots.some(s => s.id === id)) return k;
     }
     return null;
   }
@@ -541,7 +595,8 @@ const Furniture = (() => {
     if (k.type === 'open') {
       let o = rect(30, 20, 300, 220, shade(c, -0.45), 10);
       if (k.insert === 'bin') o += binArt(60, 50, 240, 190, k.binColor || BIN_COLORS[0]);
-      else if (k.insert === 'sorter') o += sorterArt(46, 40, 268, 190);
+      else if (k.insert === 'sorter') o += sorterArt(46, 30, 268, 206, k.count);
+      else if (k.insert === 'drawers') o += drawerBoxArt(50, 30, 260, 210, k.count, k.binColor);
       else o += `<rect x="60" y="50" width="240" height="160" rx="14" fill="${empty}" opacity=".9" stroke="#d8c8b4" stroke-width="3" stroke-dasharray="10 8"/>`;
       return svg(360, 260, o, 'inside-svg');
     }
@@ -564,7 +619,7 @@ const Furniture = (() => {
   function partIcon(type, insert) {
     const c = '#f4ead8';
     const shape = type === 'drawer' ? { x: 4, y: 18, w: 52, h: 24 } : type === 'cupboard' ? { x: 14, y: 4, w: 32, h: 52 } : { x: 6, y: 6, w: 48, h: 48 };
-    const b = { cell: { id: 'x', type, insert: insert || 'empty', binColor: '#8fd3ff', hinge: 'l' }, ...shape };
+    const b = { cell: { id: 'x', type, insert: insert || 'empty', binColor: insert === 'drawers' ? '#3d4a45' : '#8fd3ff', count: insert === 'drawers' ? 3 : 5, hinge: 'l' }, ...shape };
     return svg(60, 60, partArt({ color: type === 'open' ? c : '#ffd27a', style: 'wood' }, b, {}), 'icon-svg');
   }
 
@@ -589,6 +644,6 @@ const Furniture = (() => {
     make, render, renderInside, partIcon, sectionIcon,
     hasParts, fitsInCloset, spacesOf, spaceUsed, cellUsed, findCell,
     section, fixCloset, sectionSpaces, findSection,
-    cell, col, uid, shade,
+    cell, col, uid, shade, setInsert, INSERT_COUNTS, fixPiece,
   };
 })();

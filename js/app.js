@@ -345,13 +345,17 @@
         `<button type="button" class="pick small square ${k.type === t ? 'picked' : ''}" data-act="part-type" data-value="${t}" aria-label="${label}" aria-pressed="${k.type === t}">${Furniture.partIcon(t)}</button>`).join('');
       rows.push(`<section class="opt-row"><h2 class="opt-head">This part</h2><div class="opt-choices">${types}</div></section>`);
       if (k.type === 'open') {
-        const ins = [['empty', 'Empty'], ['bin', 'Bin'], ['sorter', 'Paper sorter']].map(([v, label]) =>
+        const ins = [['empty', 'Open'], ['bin', 'Bin'], ['sorter', 'Paper sorter'], ['drawers', 'Paper drawers']].map(([v, label]) =>
           `<button type="button" class="pick small square ${k.insert === v ? 'picked' : ''}" data-act="part-insert" data-value="${v}" aria-label="${label}" aria-pressed="${k.insert === v}">${Furniture.partIcon('open', v)}</button>`).join('');
         rows.push(`<section class="opt-row"><h2 class="opt-head">Inside</h2><div class="opt-choices">${ins}</div></section>`);
-        if (k.insert === 'bin') {
+        if (Furniture.INSERT_COUNTS[k.insert]) {
+          rows.push(`<section class="opt-row"><h2 class="opt-head">${k.insert === 'sorter' ? 'Trays' : 'Drawers'}</h2><div class="opt-choices">
+            <div class="step-group"><span class="step-num">${k.count}</span>${stepBtn('insert-count', '➖', 'Fewer', 'data-dir="-1"')}${stepBtn('insert-count', '➕', 'More', 'data-dir="1"')}</div></div></section>`);
+        }
+        if (k.insert === 'bin' || k.insert === 'drawers') {
           const bins = Furniture.BIN_COLORS.map(c =>
             `<button type="button" class="swatch ${k.binColor === c ? 'picked' : ''}" style="--swatch:${c}" data-act="bin-color" data-value="${c}" aria-label="Bin color" aria-pressed="${k.binColor === c}"></button>`).join('');
-          rows.push(`<section class="opt-row"><h2 class="opt-head">Bin color</h2><div class="opt-choices">${bins}</div></section>`);
+          rows.push(`<section class="opt-row"><h2 class="opt-head">Color</h2><div class="opt-choices">${bins}</div></section>`);
         }
       }
       if (k.type === 'cupboard') {
@@ -938,7 +942,7 @@
       if (dir > 0) {
         changePiece(q => {
           const last = q.cols[q.cols.length - 1];
-          const cells = last.cells.map(k => Furniture.cell(k.type, k.h, { insert: k.insert, binColor: k.binColor, shelves: k.shelves, hinge: k.hinge }));
+          const cells = last.cells.map(k => Furniture.cell(k.type, k.h, { insert: k.insert, count: k.count, binColor: k.binColor, shelves: k.shelves, hinge: k.hinge }));
           q.w = clampSize(q.w + q.w / q.cols.length);
           q.cols.push(Furniture.col(cells, last.w));
         });
@@ -967,10 +971,26 @@
       }));
     },
     'part-insert'(el) {
-      changePiece(p => {
-        const k = Furniture.findCell(p, selectedPart);
-        if (k && k.type === 'open') k.insert = el.dataset.value;
-      });
+      const p = pieceById(pagePieceId);
+      const k = p && Furniture.findCell(p, selectedPart);
+      if (!k || k.type !== 'open' || k.insert === el.dataset.value) return;
+      const insert = el.dataset.value;
+      // Trays or paper drawers that already hold things would go away.
+      const losing = (k.spots || []).some(Furniture.spaceUsed);
+      guardUsed(losing, () => changePiece(() => {
+        Furniture.setInsert(k, insert);
+        if (insert === 'drawers' && !['#3d4a45', '#ffffff'].includes(k.binColor)) k.binColor = '#3d4a45';
+      }));
+    },
+    'insert-count'(el) {
+      const p = pieceById(pagePieceId);
+      const k = p && Furniture.findCell(p, selectedPart);
+      if (!k || !k.spots) return;
+      const next = k.count + Number(el.dataset.dir);
+      const [, lo, hi] = Furniture.INSERT_COUNTS[k.insert];
+      if (next < lo || next > hi) { wiggle(el); return; }
+      const losing = next < k.count && Furniture.spaceUsed(k.spots[k.spots.length - 1]);
+      guardUsed(losing, () => changePiece(() => { Furniture.setInsert(k, k.insert, next); }));
     },
     'bin-color'(el) {
       changePiece(p => {
@@ -1007,7 +1027,7 @@
         if (!place) return;
         const k = place.col.cells[place.i];
         const n = place.col.cells.length;
-        const fresh = Furniture.cell(k.type, k.h, { insert: k.insert, binColor: k.binColor, shelves: k.shelves, hinge: k.hinge });
+        const fresh = Furniture.cell(k.type, k.h, { insert: k.insert, count: k.count, binColor: k.binColor, shelves: k.shelves, hinge: k.hinge });
         place.col.cells.splice(place.i + 1, 0, fresh);
         p.h = clampSize(p.h * (n + 1) / n);
         selectedPart = fresh.id;

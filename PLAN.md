@@ -113,13 +113,13 @@ Everything is drag and drop. No measuring.
 - **Front view is for building pieces; the map from above is for placing them.**
 - **Step A, pick your furniture first (front view):** choose a piece and shape it to match the real one
   - **Dressers:** how many drawers; tall and skinny or short and wide. Drawers are plain spaces with no inserts.
-  - **Cubby units:** how many cubbies; each cubby is empty, has a drawer (bin), or has a paper sorter
+  - **Cubby units:** how many cubbies; each cubby is open, has a bin, a paper sorter or a paper drawer box
   - **Cupboards:** come with a middle shelf, so each door opens onto a top spot and a bottom spot
   - **Wall shelves:** short or long
   - **Closet:** shown with no doors, so you see the inside: how many rods and shelves, where things hang and where things sit
     - **Sections:** a closet is split into sections side by side, with a divider between them. Each section has its own width and is one high rod, one low rod a child can reach, two rods (top and bottom), or a stack of shelves. A narrower section gives a shorter rod.
     - **Top shelf** goes all the way across, over every section (0 to 3 of them)
-    - **Ready-made closets:** single (one rod), single split in half (one rod, and two rods on the other half), double wide with a divider (one rod, and two rods on the other side)
+    - **Ready-made closets:** single (one rod), single split in half (one rod, and two rods on the other half), a rod on each side with shelves in the middle, and double wide with a divider (one rod on the left; two rods on the right, one for shirts and one for pants)
     - **Furniture can go inside the closet:** the closet has a floor where you place pieces you've already built (like a small dresser or a cubby unit), and they open the same way they do in the room
 - **Step B, the map from above** (like looking down from the ceiling): place the door, the closet and the windows where they really are, rotate the room to match, and drag each piece's top to its spot. Each top matches the piece's shape, so a skinny dresser has a narrow top.
 - **Tapping a piece on the map opens its front view.** Each drawer, cubby, cupboard spot, shelf or rod can be opened to see what's kept there.
@@ -138,7 +138,11 @@ Ready-made pieces to start from (not every possible option, just good ones). Any
 - **Dressers:** 4 drawers; wide with 4 or 5 wide drawers; tall and skinny with 6; short and wide with 2 × 3; a short one with 2 drawers over 2 cupboard doors; and a long one with 3 drawers on each side and a cupboard in the middle (one door, with a middle shelf inside making a top spot and a bottom spot; no open cubby)
 - **Side tables:** 1 drawer (with an open space under it) or 2 drawers
 - **Drawer containers:** the small plastic kind with 3, 4 or 5 drawers
-- **Cubby units:** 2 × 4 tall, 3 × 4 (12) and 4 × 4. Each cubby is empty, has a bin, or has a paper sorter.
+- **Cubby units:** 2 × 4 tall, 3 × 4 (12) and 4 × 4. Each cubby is one of:
+  - **open** (books fit here)
+  - **a bin** (any color, including white)
+  - **a paper sorter** with little trays (5 to start, 2 to 8), each tray its own space
+  - **a paper drawer box** (3 drawers to start, 1 to 5, dark or white or any color), each drawer its own space
 - **Bookshelves**
 - **Seats:** chair, beanbag, floor chair
 - **Closet** (inside view, see above)
