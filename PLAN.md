@@ -179,6 +179,7 @@ A picture checklist of cleaning jobs. The app suggests them based on what's in t
 
 Each stage gives something usable before moving on.
 
+0. **Home screen** ✅ built: Rooms, Stickers, Rewards, Clean (grayed out), sticker builder, rewards with parent PIN
 1. **Room builder:** door, rotate, beds, furniture from parts, windows, light switch, colors, labels, stretching the room
 2. **People stickers and ownership:** sticker builder (person and alien), badges on spaces, shared spaces
 3. **Item stickers:** cartoon drawings, color chooser, patterns, photos
