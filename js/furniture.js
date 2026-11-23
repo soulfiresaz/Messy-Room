@@ -134,11 +134,11 @@ const Furniture = (() => {
     { key: 'tower4', group: 'containers', make: () => base('tower', 'plastic', '#8fd3ff', 2, 4.7, 1.2, { cols: [col(drawers(4))] }) },
     { key: 'tower5', group: 'containers', make: () => base('tower', 'plastic', '#b9a2ff', 2, 5.8, 1.2, { cols: [col(drawers(5))] }) },
     // Cubbies
-    { key: 'cubby2x4', group: 'cubbies', make: () => base('cubby', 'cube', '#f4ead8', 3.2, 6.2, 1.2, { cols: cubbyGrid(2, 4) }) },
-    { key: 'cubby4x3', group: 'cubbies', make: () => base('cubby', 'cube', '#f4ead8', 6.2, 4.7, 1.2, { cols: cubbyGrid(4, 3) }) },
-    { key: 'cubby4x4', group: 'cubbies', make: () => base('cubby', 'cube', '#f4ead8', 6.2, 6.2, 1.2, { cols: cubbyGrid(4, 4) }) },
+    { key: 'cubby2x4', group: 'cubbies', make: () => base('cubby', 'cube', '#f4ead8', 4.4, 8.3, 1.2, { cols: cubbyGrid(2, 4) }) },
+    { key: 'cubby4x3', group: 'cubbies', make: () => base('cubby', 'cube', '#f4ead8', 8.3, 6.3, 1.2, { cols: cubbyGrid(4, 3) }) },
+    { key: 'cubby4x4', group: 'cubbies', make: () => base('cubby', 'cube', '#f4ead8', 8.3, 8.3, 1.2, { cols: cubbyGrid(4, 4) }) },
     // Shelves
-    { key: 'bookshelf', group: 'shelves', make: () => base('bookshelf', 'cube', '#c98b5a', 3.4, 7, 1, { cols: [col(opens(5))] }) },
+    { key: 'bookshelf', group: 'shelves', make: () => base('bookshelf', 'cube', '#c98b5a', 4.4, 11, 1, { cols: [col(opens(5))] }) },
     { key: 'wallShort', group: 'shelves', make: () => base('wallshelf', 'wallshelf', '#7fd8c0', 3.4, 1.4, 0.6, { spot: { id: uid() } }) },
     { key: 'wallLong', group: 'shelves', make: () => base('wallshelf', 'wallshelf', '#ff9fb8', 6.5, 1.4, 0.6, { spot: { id: uid() } }) },
     // Closets: built from sections side by side, with a top shelf across.
@@ -208,7 +208,7 @@ const Furniture = (() => {
     if (p.kind === 'closet') return closetBox(p);
     const w = p.w * U, h = p.h * U;
     if (p.style === 'wood') return { W: w + 24, H: h + 40, ox: 12, oy: 18 };
-    if (p.style === 'plastic') return { W: w + 8, H: h + 24, ox: 4, oy: 4 };
+    if (p.style === 'plastic') return { W: w + 8, H: h + (p.wheels === false ? 8 : 24), ox: 4, oy: 4 };
     if (p.style === 'wallshelf') return { W: w + 8, H: h + 8, ox: 4, oy: 4 };
     return { W: w + 8, H: h + 8, ox: 4, oy: 4 };
   }
@@ -311,7 +311,7 @@ const Furniture = (() => {
       o += rect(ox, oy, w, h, c, 8);
       o += rect(ox - 6, oy - 12, w + 12, 15, shade(c, 0.28), 6);
     } else if (p.style === 'plastic') {
-      o += `<circle cx="${ox + 14}" cy="${oy + h + 8}" r="7" fill="#9aa7b8" ${line(2)}/><circle cx="${ox + w - 14}" cy="${oy + h + 8}" r="7" fill="#9aa7b8" ${line(2)}/>`;
+      if (p.wheels !== false) o += `<circle cx="${ox + 14}" cy="${oy + h + 8}" r="7" fill="#9aa7b8" ${line(2)}/><circle cx="${ox + w - 14}" cy="${oy + h + 8}" r="7" fill="#9aa7b8" ${line(2)}/>`;
       o += rect(ox, oy, w, h, '#eef1f5', 8);
     } else {
       o += rect(ox, oy, w, h, c, 8);
@@ -652,7 +652,30 @@ const Furniture = (() => {
     if (p.kind === 'bed') { const [w, d] = BED_SIZE[p.bed] || BED_SIZE.twin; return { w, d }; }
     if (p.kind === 'seat') { const [w, d] = SEAT_SIZE[p.seat] || SEAT_SIZE.chair; return { w, d }; }
     if (p.kind === 'closet') return { w: fixCloset(p).sections.reduce((a, x) => a + x.w, 0), d: DEPTH.closet };
-    return { w: p.w, d: DEPTH[p.kind] || 2.2 };
+    return { w: p.w, d: p.depth || DEPTH[p.kind] || 2.2 };
+  }
+
+  // Beds come in set sizes (twin, queen...); seats stay as they are.
+  const canStretch = p => hasParts(p) || p.kind === 'closet' || p.kind === 'wallshelf';
+  const canDeepen = p => hasParts(p) || p.kind === 'closet';
+
+  // Make a piece wider or narrower, by eye. A closet stretches every section.
+  function setWidth(p, w) {
+    if (!canStretch(p)) return;
+    w = Math.round(Math.max(1.5, Math.min(40, w)) * 10) / 10;
+    if (p.kind === 'closet') {
+      fixCloset(p);
+      const total = p.sections.reduce((a, x) => a + x.w, 0);
+      p.sections.forEach(x => { x.w = Math.max(1, x.w * w / total); });
+      p.w = p.sections.reduce((a, x) => a + x.w, 0);
+      return;
+    }
+    p.w = w;
+  }
+
+  function setDepth(p, d) {
+    if (!canDeepen(p)) return;
+    p.depth = Math.round(Math.max(0.8, Math.min(8, d)) * 10) / 10;
   }
 
   // The top of a piece, front edge at the bottom. S is pixels per unit.
@@ -720,6 +743,6 @@ const Furniture = (() => {
     hasParts, fitsInCloset, spacesOf, spaceUsed, cellUsed, findCell,
     section, fixCloset, sectionSpaces, findSection,
     cell, col, uid, shade, setInsert, INSERT_COUNTS, fixPiece,
-    footprint, topArt, renderTop,
+    footprint, topArt, renderTop, canStretch, canDeepen, setWidth, setDepth,
   };
 })();

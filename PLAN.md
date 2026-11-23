@@ -136,8 +136,8 @@ Ready-made pieces to start from (not every possible option, just good ones). Any
 - **Beds:** twin, bunk bed, queen, king, and a loft bed with a couch underneath that folds down into a bed. Bed frames count as something to clean later.
 - **Dressers:** 4 drawers; wide with 4 or 5 wide drawers; tall and skinny with 6; short and wide with 2 × 3; a short one with 2 drawers over 2 cupboard doors; and a long one with 3 drawers on each side and a cupboard in the middle (one door, with a middle shelf inside making a top spot and a bottom spot; no open cubby)
 - **Side tables:** 1 drawer (with an open space under it) or 2 drawers
-- **Drawer containers:** the small plastic kind with 3, 4 or 5 drawers
-- **Cubby units:** 2 × 4 tall, 3 × 4 (12) and 4 × 4. Each cubby is one of:
+- **Drawer containers:** the small plastic kind with 3, 4 or 5 drawers, with or without wheels
+- **Cubby units:** 2 × 4 tall, 3 × 4 (12) and 4 × 4, sized like real ones (a 4 × 4 is almost 5 feet each way). Rows and columns can be added or removed. Each cubby is one of:
   - **open** (books fit here)
   - **a bin** (any color, including white)
   - **a paper sorter** with little trays (5 to start, 2 to 8), each tray its own space
@@ -147,12 +147,15 @@ Ready-made pieces to start from (not every possible option, just good ones). Any
 - **Closet** (inside view, see above)
 - **On the walls:** windows, shelves, light switch
 - **Furniture is 3-D on the map:** each piece's top shows its real width and depth. A tall skinny dresser has a narrow top, but it's still a full drawer deep. Beds are their real size next to everything else (twin, bunk and loft are long and narrow; queen and king are wider).
+- **Stretch on the map:** tap a door, window, closet or piece of furniture and drag its yellow handle (or use ➖ ➕) to make it wider. Furniture can also be made deeper or shallower. A double-wide closet can reach halfway across a wall; a cubby unit can fill a third of one.
+- **Closets in the walls step:** the ready-made closets are right in the 🚪 tray
 - **Room size by eye:** the room grows on its own to make space, and you can drag an edge to make it wider or longer
 - **Room shape:** rectangle for now (odd shapes like L-shaped rooms could come later)
 
 ### Who builds it (decided)
 - **Both the child and a grown-up, depending on the step**
 - **Ready-made pieces** (like "6-drawer dresser" or "12-cubby unit") are shown as pictures the child can drag in alone
+- **A big ✔️ Save button** on every piece, so it's clear changes are kept
 - **"Change the parts"** is a simple option a grown-up can open when a ready-made piece doesn't match the real one
 - **Anyone can add parts** or change an empty part
 - **Removing a part that already has things assigned to it needs the parent PIN**, so a child can't lose what they set up by accident

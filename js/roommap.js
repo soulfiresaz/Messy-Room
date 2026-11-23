@@ -16,6 +16,27 @@ const RoomMap = (() => {
   const T = 0.7;         // wall thickness
   const ITEM_W = { door: 4.6, window: 5, switch: 0.9 };
   const MIN = 8, MAX = 60;
+  const itemW = it => it.w || ITEM_W[it.type];
+
+  // Direction along a wall, and along a turned piece's width.
+  const WALL_AXIS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+
+  // Stretch a door, window or piece by dragging its handle to a point.
+  function stretchItem(room, it, x, y) {
+    const f = wallFrame(room, it.wall, it.pos);
+    const [ax, ay] = WALL_AXIS[it.wall];
+    const half = Math.abs((x - f.x) * ax + (y - f.y) * ay);
+    const L = wallLength(room, it.wall);
+    it.w = Math.round(Math.max(it.type === 'switch' ? 0.6 : 1.5, Math.min(L, half * 2)) * 10) / 10;
+    settleWallItem(room, it);
+  }
+
+  function stretchPiece(room, p, x, y) {
+    const [ax, ay] = WALL_AXIS[(p.place.rot || 0) % 4];
+    const half = Math.abs((x - p.place.x) * ax + (y - p.place.y) * ay);
+    Furniture.setWidth(p, half * 2);
+    settle(room, p);
+  }
 
   const line = (w = 3) => `stroke="${INK}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"`;
 
@@ -77,7 +98,7 @@ const RoomMap = (() => {
       item.pos = item.wall % 2 === 0 ? x : y;
     }
     const L = wallLength(room, item.wall);
-    const half = ITEM_W[item.type] / 2;
+    const half = itemW(item) / 2;
     item.pos = Math.max(half, Math.min(L - half, item.pos));
   }
 
@@ -89,9 +110,16 @@ const RoomMap = (() => {
 
   // ---------- Drawing ----------
 
+  // A round yellow handle with arrows, dragged to make something wider.
+  function stretchHandle(x, y, id) {
+    return `<g class="map-handle" data-map="stretch" data-id="${id}" transform="translate(${x} ${y})">` +
+      `<circle r="${S * 1.15}" fill="#ffd54a" ${line(3)}/>` +
+      `<path d="M-11 0 H11 M-5 -6 L-11 0 L-5 6 M5 -6 L11 0 L5 6" fill="none" stroke="${INK}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  }
+
   function wallItemArt(room, it, selected) {
     const f = wallFrame(room, it.wall, it.pos);
-    const w = ITEM_W[it.type] * S;
+    const w = itemW(it) * S;
     let o = '';
     if (it.type === 'door') {
       const hinge = it.flip ? w / 2 : -w / 2;
@@ -151,6 +179,17 @@ const RoomMap = (() => {
     });
     // Doors, windows and light switches
     room.wallItems.forEach(it => { o += wallItemArt(room, it, state.selected === it.id); });
+    // The stretch handle of whatever is picked
+    const pickedItem = room.wallItems.find(it => it.id === state.selected);
+    const pickedPiece = placed.find(p => p.id === state.selected);
+    if (pickedItem) {
+      const f = wallFrame(room, pickedItem.wall, pickedItem.pos);
+      o += `<g transform="translate(${f.x * S} ${f.y * S}) rotate(${f.a})">${stretchHandle(itemW(pickedItem) * S / 2 + 6, S * 1.2, pickedItem.id)}</g>`;
+    } else if (pickedPiece && Furniture.canStretch(pickedPiece)) {
+      const W = Furniture.footprint(pickedPiece).w * S;
+      const { x, y, rot } = pickedPiece.place;
+      o += `<g transform="translate(${x * S} ${y * S}) rotate(${(rot || 0) * 90})">${stretchHandle(W / 2 + 6, 0, pickedPiece.id)}</g>`;
+    }
     // Handles to stretch the room (step 1)
     if (state.step === 1) {
       const handle = (cx, cy, dim, arrow) =>
@@ -176,5 +215,5 @@ const RoomMap = (() => {
     return `<svg viewBox="0 0 60 60"><rect x="16" y="8" width="28" height="44" rx="6" fill="#fff" stroke="${INK}" stroke-width="3"/><rect x="26" y="18" width="8" height="24" rx="3" fill="${INK}"/></svg>`;
   }
 
-  return { S, defaults, render, settle, settleWallItem, resize, halfSize, itemIcon, ITEM_W, wallLength, MIN, MAX };
+  return { S, defaults, render, settle, settleWallItem, resize, halfSize, itemIcon, ITEM_W, itemW, wallLength, MIN, MAX, stretchItem, stretchPiece };
 })();

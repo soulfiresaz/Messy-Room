@@ -211,6 +211,7 @@
   }
 
   function renderFurnitureList() {
+    pieceReturn = '#/rooms/my-room/furniture';
     const pieces = room().pieces.filter(p => !p.insideId);
     $app.innerHTML = `
       ${topBar('', '#/rooms/my-room')}
@@ -245,6 +246,7 @@
   }
 
   function renderMap() {
+    pieceReturn = '#/rooms/my-room';
     const r = RoomMap.defaults(room());
     if (mapStep == null) mapStep = firstStep(r);
     const steps = [[1, '📐', 'Room size'], [2, '🚪', 'Door, closet, windows'], [3, '🛏️', 'Furniture']].map(([n, icon, label]) =>
@@ -270,9 +272,13 @@
     const sel = mapSelected && (r.wallItems.find(it => it.id === mapSelected) || mapPieces().find(p => p.id === mapSelected && p.place));
     if (sel) {
       const isItem = !!sel.type && !sel.kind;
-      const tools = isItem
+      const wide = isItem || Furniture.canStretch(sel)
+        ? `<div class="step-group"><span class="step-icon" aria-hidden="true">↔️</span>${stepBtn('map-stretch', '➖', 'Narrower', 'data-dir="-1"')}${stepBtn('map-stretch', '➕', 'Wider', 'data-dir="1"')}</div>` : '';
+      const deep = !isItem && Furniture.canDeepen(sel)
+        ? `<div class="step-group"><span class="step-icon" aria-hidden="true">⤵️</span>${stepBtn('map-depth', '➖', 'Less deep', 'data-dir="-1"')}${stepBtn('map-depth', '➕', 'Deeper', 'data-dir="1"')}</div>` : '';
+      const tools = (isItem
         ? (sel.type === 'door' ? stepBtn('map-flip', '🔄', 'Swing the door the other way') : '') + stepBtn('map-remove', '🗑️', 'Take it away')
-        : stepBtn('map-turn', '🔄', 'Turn it') + stepBtn('map-open', '👀', 'Open it') + stepBtn('map-unplace', '↩️', 'Take it off the map');
+        : stepBtn('map-turn', '🔄', 'Turn it') + stepBtn('map-open', '👀', 'Open it') + stepBtn('map-unplace', '↩️', 'Take it off the map')) + wide + deep;
       return `<div class="map-tools">${tools}${stepBtn('map-deselect', '✔️', 'Done')}</div>`;
     }
     if (mapStep === 1) {
@@ -289,6 +295,11 @@
       });
       mapPieces().filter(p => isWallPiece(p) && !p.place).forEach(p => {
         tray.push(`<div class="tray-item piece" data-tray="piece" data-id="${p.id}" role="button" aria-label="Closet">${Furniture.renderTop(p, 8)}</div>`);
+      });
+      // Ready-made closets: drag one onto a wall, then stretch it to fit.
+      ['closet', 'closetHalf', 'closetMiddle', 'closetDouble'].forEach(key => {
+        const sample = Furniture.make(key);
+        tray.push(`<div class="tray-item closet-pick" data-tray="catalog" data-key="${key}" role="button" aria-label="Closet">${Furniture.render(sample)}</div>`);
       });
     } else {
       mapPieces().filter(p => !isWallPiece(p) && !p.place).forEach(p => {
@@ -333,8 +344,13 @@
     if (!el || drag) return;
     const r = room();
     let d = null;
-    if (el.dataset.tray) {
+    if (el.dataset.tray === 'catalog') {
+      d = { kind: 'new-catalog', key: el.dataset.key, el };
+    } else if (el.dataset.tray) {
       d = { kind: el.dataset.tray === 'piece' ? 'new-piece' : 'new-wall', type: el.dataset.tray, id: el.dataset.id, el };
+    } else if (el.dataset.map === 'stretch') {
+      const item = r.wallItems.find(it => it.id === el.dataset.id);
+      d = { kind: 'stretch', id: el.dataset.id, item, piece: item ? null : pieceById(el.dataset.id) };
     } else if (el.dataset.map === 'handle') {
       d = { kind: 'handle', dim: el.dataset.dim };
     } else if (el.dataset.map === 'wall') {
@@ -344,7 +360,8 @@
       d = { kind: 'piece', id: el.dataset.id, piece: p };
     }
     if (!d) return;
-    d.allowed = canDrag(d.kind === 'new-piece' ? 'piece' : d.kind === 'new-wall' ? 'wall' : d.kind, d.piece || (d.id && pieceById(d.id)));
+    const dragKind = { 'new-piece': 'piece', 'new-wall': 'wall', 'new-catalog': 'wall', stretch: d.item ? 'wall' : 'piece' }[d.kind] || d.kind;
+    d.allowed = d.kind === 'new-catalog' ? mapStep !== 1 : canDrag(dragKind, d.piece || (d.id && pieceById(d.id)));
     d.x0 = e.clientX;
     d.y0 = e.clientY;
     d.moved = false;
@@ -364,6 +381,12 @@
     const pt = toRoom(e);
     if (!pt) return;
     const r = room();
+    if (drag.kind === 'new-catalog') {
+      const p = Furniture.make(drag.key);
+      r.pieces.push(p);
+      drag.id = p.id;
+      drag.kind = 'new-piece';
+    }
     if (drag.kind === 'new-piece') {
       drag.piece = pieceById(drag.id);
       if (!drag.piece) { drag = null; return; }
@@ -378,7 +401,10 @@
       drag.kind = 'wall';
       mapSelected = null;
     }
-    if (drag.kind === 'handle') {
+    if (drag.kind === 'stretch') {
+      if (drag.item) RoomMap.stretchItem(r, drag.item, pt.x, pt.y);
+      else if (drag.piece && drag.piece.place) RoomMap.stretchPiece(r, drag.piece, pt.x, pt.y);
+    } else if (drag.kind === 'handle') {
       RoomMap.resize(r, drag.dim, drag.dim === 'w' ? pt.x : pt.y, mapPieces());
     } else if (drag.kind === 'piece') {
       drag.piece.place.x = pt.x - drag.off.x;
@@ -402,7 +428,13 @@
     const r = room();
     if (!d.moved) {
       // A tap: pick it, or put a tray item straight into the room.
-      if (d.kind === 'new-piece' && d.allowed) {
+      if (d.kind === 'new-catalog' && d.allowed) {
+        const p = Furniture.make(d.key);
+        r.pieces.push(p);
+        p.place = { x: r.size.w / 2, y: 0, rot: 0 };
+        RoomMap.settle(r, p);
+        mapSelected = p.id;
+      } else if (d.kind === 'new-piece' && d.allowed) {
         const p = pieceById(d.id);
         if (p) {
           p.place = { x: r.size.w / 2, y: r.size.d / 2, rot: 0 };
@@ -462,6 +494,7 @@
   }
 
   let catalogCloset = null;
+  let pieceReturn = '#/rooms/my-room';
   let partsMode = false;     // "change the parts" is open
   let selectedPart = null;   // part picked while changing the parts
   let pagePieceId = null;
@@ -505,6 +538,9 @@
           <h2 class="opt-head"><span aria-hidden="true">🏷️</span> Label (optional)</h2>
           <input class="text-input" id="piece-label" type="text" maxlength="24" value="${esc(p.label)}" placeholder="Label">
         </section>
+        <div class="action-row">
+          <button type="button" class="save-btn" data-act="piece-save"><span aria-hidden="true">✔️</span> Save</button>
+        </div>
       </main>`;
   }
 
@@ -543,14 +579,22 @@
     if (!Furniture.hasParts(p)) return `<div class="parts-panel">${rows.join('')}</div>`;
 
     if (p.style === 'plastic') {
+      const wheels = [['on', 'With wheels'], ['off', 'No wheels']].map(([v, label]) => {
+        const on = (p.wheels !== false) === (v === 'on');
+        return `<button type="button" class="pick small square ${on ? 'picked' : ''}" data-act="wheels" data-value="${v}" aria-label="${label}" aria-pressed="${on}">${Furniture.render({ ...p, wheels: v === 'on', label: '' })}</button>`;
+      }).join('');
+      rows.push(`<section class="opt-row"><h2 class="opt-head">Wheels</h2><div class="opt-choices">${wheels}</div></section>`);
       const n = p.cols[0].cells.length;
       rows.push(`<section class="opt-row"><h2 class="opt-head">Drawers</h2><div class="opt-choices">
         <div class="step-group"><span class="step-num">${n}</span>${stepBtn('tower-drawers', '➖', 'Fewer drawers', 'data-dir="-1"')}${stepBtn('tower-drawers', '➕', 'More drawers', 'data-dir="1"')}</div></div></section>`);
       return `<div class="parts-panel">${rows.join('')}</div>`;
     }
 
-    rows.push(`<section class="opt-row"><h2 class="opt-head">Columns</h2><div class="opt-choices">
-      <div class="step-group"><span class="step-num">${p.cols.length}</span>${stepBtn('cols', '➖', 'Fewer columns', 'data-dir="-1"')}${stepBtn('cols', '➕', 'More columns', 'data-dir="1"')}</div></div></section>`);
+    const rowCount = Math.max(...p.cols.map(c => c.cells.length));
+    rows.push(`<section class="opt-row"><h2 class="opt-head">Columns${p.style === 'cube' ? ' and rows' : ''}</h2><div class="opt-choices">
+      <div class="step-group"><span class="step-icon" aria-hidden="true">⫴</span><span class="step-num">${p.cols.length}</span>${stepBtn('cols', '➖', 'Fewer columns', 'data-dir="-1"')}${stepBtn('cols', '➕', 'More columns', 'data-dir="1"')}</div>
+      ${p.style === 'cube' ? `<div class="step-group"><span class="step-icon" aria-hidden="true">☰</span><span class="step-num">${rowCount}</span>${stepBtn('rows', '➖', 'Fewer rows', 'data-dir="-1"')}${stepBtn('rows', '➕', 'More rows', 'data-dir="1"')}</div>` : ''}
+    </div></section>`);
 
     const k = selectedPart && Furniture.findCell(p, selectedPart);
     if (!k) {
@@ -1142,6 +1186,62 @@
       saveOrWarn();
       Effects.pop();
       drawMapAll();
+    },
+    'map-stretch'(el) {
+      const r = room();
+      const dir = Number(el.dataset.dir);
+      const it = r.wallItems.find(x => x.id === mapSelected);
+      if (it) {
+        const w = RoomMap.itemW(it) + dir * (it.type === 'switch' ? 0.2 : 0.5);
+        it.w = Math.round(Math.max(it.type === 'switch' ? 0.6 : 1.5, Math.min(RoomMap.wallLength(r, it.wall), w)) * 10) / 10;
+        RoomMap.settleWallItem(r, it);
+      } else {
+        const p = pieceById(mapSelected);
+        if (!p || !p.place) return;
+        Furniture.setWidth(p, Furniture.footprint(p).w + dir * 0.5);
+        RoomMap.settle(r, p);
+      }
+      saveOrWarn();
+      Effects.pop();
+      drawMapAll();
+    },
+    'map-depth'(el) {
+      const p = pieceById(mapSelected);
+      if (!p || !p.place) return;
+      Furniture.setDepth(p, Furniture.footprint(p).d + Number(el.dataset.dir) * 0.3);
+      RoomMap.settle(room(), p);
+      saveOrWarn();
+      Effects.pop();
+      drawMapAll();
+    },
+    'rows'(el) {
+      const p = pieceById(pagePieceId);
+      if (!p) return;
+      const rows = Math.max(...p.cols.map(c => c.cells.length));
+      if (Number(el.dataset.dir) > 0) {
+        if (rows >= 8) { wiggle(el); return; }
+        changePiece(q => {
+          q.cols.forEach(c => c.cells.push(Furniture.cell('open', c.cells[c.cells.length - 1].h)));
+          q.h = clampSize(q.h * (rows + 1) / rows);
+        });
+        return;
+      }
+      if (rows <= 1) { wiggle(el); return; }
+      const bottom = p.cols.map(c => c.cells[c.cells.length - 1]).filter(Boolean);
+      guardUsed(bottom.some(Furniture.cellUsed), () => changePiece(q => {
+        q.cols.forEach(c => { if (c.cells.length > 1) c.cells.pop(); });
+        q.h = clampSize(q.h * (rows - 1) / rows);
+        if (selectedPart && !Furniture.findCell(q, selectedPart)) selectedPart = null;
+      }));
+    },
+    'wheels'(el) {
+      changePiece(p => { p.wheels = el.dataset.value === 'on'; });
+    },
+    'piece-save'() {
+      const p = pieceById(pagePieceId);
+      if (!saveOrWarn()) return;
+      Effects.chime();
+      location.hash = p && p.insideId && pieceById(p.insideId) ? `#/rooms/my-room/piece/${p.insideId}` : pieceReturn;
     },
     'map-flip'() {
       const it = room().wallItems.find(x => x.id === mapSelected);
