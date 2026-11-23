@@ -6,8 +6,8 @@
   --line: #f0dcc8;
   --c-rooms: #8fd3ff;
   --c-stickers: #ffb3d1;
-  --c-rewards: #ffd36b;
-  --c-clean: #9be7c4;
+  --c-rewards: #b9a2ff;
+  --c-clean: #7fd8c0;
   --yes: #4cc38a;
   --no: #e8e0da;
   --danger: #ff8a80;
@@ -198,10 +198,15 @@ button { font: inherit; color: inherit; }
 
 /* Grayed-out "coming soon" circles */
 .circle-item.is-off .circle {
-  background: #e9e4df;
-  filter: grayscale(1);
-  opacity: .55;
+  background: #cfc8c2;
   box-shadow: none;
+  border-color: #e9e4df;
+}
+
+/* Keep the picture clear, just a little muted, so it never fades into the circle */
+.circle-item.is-off .circle-emoji,
+.circle-item.is-off .circle-art {
+  filter: saturate(.75);
 }
 
 .circle-item.is-off .circle-label { color: var(--ink-soft); }
