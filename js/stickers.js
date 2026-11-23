@@ -66,6 +66,7 @@ const Stickers = (() => {
       { key: 'head', icon: '🥚', label: 'Head', styles: ['round', 'tall', 'wide'] },
       { key: 'eyeCount', icon: '👁️', label: 'How many eyes', styles: [1, 2, 3] },
       { key: 'antennae', icon: '📡', label: 'Antennae', styles: [0, 1, 2] },
+      { key: 'antennaStyle', icon: '🌀', label: 'Antenna shape', styles: ['straight', 'spiral', 'zigzag', 'crooked'], when: s => s.antennae > 0 },
       HAT, GLASSES, NECK,
       { key: 'bg', icon: '🎨', label: 'Background', colors: COLORS.bg },
     ],
@@ -85,7 +86,7 @@ const Stickers = (() => {
   const FACE_DEFAULT = { ...PRESETS.happy };
   const DEFAULTS = {
     person: { type: 'person', bg: '#bfe3ff', skin: '#f6c9a0', hair: 'short', hairColor: '#5a3825', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
-    alien: { type: 'alien', bg: '#e2d4ff', color: '#7ee081', head: 'round', eyeCount: 3, antennae: 2, ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
+    alien: { type: 'alien', bg: '#e2d4ff', color: '#7ee081', head: 'round', eyeCount: 3, antennae: 2, antennaStyle: 'straight', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
     animal: { type: 'animal', bg: '#bfe3ff', kind: 'cat', face: 'round', ears: 'pointy', coat: 'calico', color: '#fbf8f3', patchColor: '#f5a54a', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
   };
 
@@ -273,6 +274,41 @@ const Stickers = (() => {
 
   // ---------- Aliens ----------
 
+  // One antenna from the head (bx, by) up to the tip (tx, ty).
+  // side flips curls and bends so a pair looks mirrored.
+  // w is the line width; the white sticker outline is the same antenna drawn wider in white.
+  function antenna(bx, by, tx, ty, style, color, side, w = 3) {
+    const extra = (w - 3) / 2;
+    const stroke = `stroke="${color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
+    const ball = `<circle cx="${tx}" cy="${ty - 2}" r="${4.5 + extra}" fill="${color}"/>`;
+    const dx = tx - bx, dy = ty - by;
+    const len = Math.hypot(dx, dy);
+    const px = -dy / len, py = dx / len; // sideways direction
+    const at = (t, off) => `${(bx + dx * t + px * off).toFixed(1)} ${(by + dy * t + py * off).toFixed(1)}`;
+    switch (style) {
+      case 'zigzag':
+        return `<path d="M${at(0, 0)} L${at(0.25, 3.2)} L${at(0.5, -3.2)} L${at(0.75, 3.2)} L${at(1, 0)}" ${stroke}/>` + ball;
+      case 'crooked':
+        // Bends sharply partway up, like a bent straw.
+        return `<path d="M${at(0, 0)} L${at(0.45, 0)} L${at(0.7, 9 * side)} L${at(1, 7 * side)}" ${stroke}/>` +
+          `<circle cx="${(bx + dx + px * 7 * side).toFixed(1)}" cy="${(by + dy + py * 7 * side - 2).toFixed(1)}" r="${4.5 + extra}" fill="${color}"/>`;
+      case 'spiral': {
+        // Stem, then a big curl that winds inward instead of a ball.
+        const cx = tx, cy = ty - 6, turns = 1.6, steps = 40;
+        let d = `M${at(0, 0)} L${cx} ${cy + 9}`;
+        for (let n = 0; n <= steps; n++) {
+          const t = n / steps;
+          const a = Math.PI / 2 + side * t * turns * Math.PI * 2;
+          const r = 9 - 7 * t;
+          d += ` L${(cx + Math.cos(a) * r).toFixed(1)} ${(cy + Math.sin(a) * r).toFixed(1)}`;
+        }
+        return `<path d="${d}" stroke="${color}" stroke-width="${w > 3 ? 5.4 : 2.4}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+      }
+      default:
+        return `<path d="M${at(0, 0)} L${at(1, 0)}" ${stroke}/>` + ball;
+    }
+  }
+
   function alien(s) {
     const c = s.color, dark = shade(c, -0.25);
     const heads = {
@@ -282,13 +318,14 @@ const Stickers = (() => {
     };
     const h = heads[s.head] || heads.round;
     const top = h.cy - h.ry;
-    let ant = '';
-    if (s.antennae === 1) {
-      ant = `<line x1="50" y1="${top + 2}" x2="50" y2="${top - 13}" stroke="${dark}" stroke-width="3" stroke-linecap="round"/><circle cx="50" cy="${top - 15}" r="4.5" fill="${dark}"/>`;
-    } else if (s.antennae === 2) {
-      ant = `<line x1="41" y1="${top + 4}" x2="31" y2="${top - 11}" stroke="${dark}" stroke-width="3" stroke-linecap="round"/><circle cx="30" cy="${top - 13}" r="4.5" fill="${dark}"/>` +
-        `<line x1="59" y1="${top + 4}" x2="69" y2="${top - 11}" stroke="${dark}" stroke-width="3" stroke-linecap="round"/><circle cx="70" cy="${top - 13}" r="4.5" fill="${dark}"/>`;
-    }
+    const ants = color => {
+      const w = color === '#fff' ? 7 : 3;
+      if (s.antennae === 1) return antenna(50, top + 2, 50, top - 14, s.antennaStyle, color, 1, w);
+      if (s.antennae === 2) return antenna(41, top + 4, 31, top - 12, s.antennaStyle, color, -1, w) + antenna(59, top + 4, 69, top - 12, s.antennaStyle, color, 1, w);
+      return '';
+    };
+    const ant = ants(dark);
+    const antOutline = ants('#fff');
     const headShape = `<ellipse cx="50" cy="${h.cy}" rx="${h.rx}" ry="${h.ry}" fill="${c}"/>`;
     const spots = `<circle cx="${50 - h.rx * 0.6}" cy="${h.cy + h.ry * 0.45}" r="2.4" fill="${dark}" opacity=".45"/>` +
       `<circle cx="${50 + h.rx * 0.62}" cy="${h.cy - h.ry * 0.45}" r="2" fill="${dark}" opacity=".45"/>`;
@@ -297,7 +334,7 @@ const Stickers = (() => {
     if (s.eyeCount === 1) { eyes = [[50, ey]]; size = 1.9; }
     else if (s.eyeCount === 2) { eyes = [[41, ey], [59, ey]]; size = 1.35; }
     else { eyes = [[37, ey + 2], [50, ey - 6], [63, ey + 2]]; size = 1.15; }
-    const art = outline(ant + headShape) + ant + headShape + spots +
+    const art = antOutline + outline(headShape) + ant + headShape + spots +
       face(s, { eyes, size, mouthAt: [50, h.cy + h.ry * 0.38], cheeks: [[50 - h.rx * 0.62, ey + 9], [50 + h.rx * 0.62, ey + 9]], top: [50 + h.rx * 0.7, top + 4], human: true });
     return { art, eyes, eyeSize: size * 0.8, hat: [50, top + 5, h.rx * 1.25], chin: [50, h.cy + h.ry - 1] };
   }
@@ -378,15 +415,23 @@ const Stickers = (() => {
           eyes: [[39, 59], [61, 59]], mouthAt: [50, 66], cheeks: [[30, 70], [70, 70]], top: [72, 38], hat: [50, 40, 24], chin: [50, 84],
         };
       case 'chihuahua':
-        // Apple-shaped head, huge ears from the sides, big wide-set eyes, short light muzzle.
+        // Tall upright ears with rounded tips, a domed head with a light stripe,
+        // huge glossy eyes with darker marks above them, and a short light muzzle.
         return {
-          head: 'M50 30 C69 30 81 41 80 55 C79 67 68 76 60 80 Q50 85 40 80 C32 76 21 67 20 55 C19 41 31 30 50 30Z',
-          earsBack: ['M23 51 L5 17 Q3 11 9 12 L42 33Z', 'M77 51 L95 17 Q97 11 91 12 L58 33Z'],
-          inner: 'M25 43 L11 19 L38 34Z M75 43 L89 19 L62 34Z',
+          head: 'M50 27 C68 27 80 38 80 52 C80 62 74 69 66 73 C61 77 56 81 50 81 C44 81 39 77 34 73 C26 69 20 62 20 52 C20 38 32 27 50 27Z',
+          earsBack: ['M23 45 C17 34 13 17 14 9 Q15 3 21 5 C30 10 38 19 43 30Z', 'M77 45 C83 34 87 17 86 9 Q85 3 79 5 C70 10 62 19 57 30Z'],
+          inner: 'M25 39 C21 30 18 19 19 12 C26 15 32 22 37 31Z M75 39 C79 30 82 19 81 12 C74 15 68 22 63 31Z',
+          innerColor: 'peach',
+          extraArt: c => {
+            const light = '#fbf8f3', dark = shade(c, -0.25);
+            return `<ellipse cx="36" cy="44" rx="6" ry="3.2" fill="${dark}" opacity=".55"/><ellipse cx="64" cy="44" rx="6" ry="3.2" fill="${dark}" opacity=".55"/>` +
+              `<path d="M50 30 C54 36 55 45 54 54 L46 54 C45 45 46 36 50 30Z" fill="${light}"/>`;
+          },
+          muzzle: [50, 66, 10.5, 9],
+          muzzleColor: '#fbf8f3',
           nose: 'black',
-          muzzle: [50, 70, 10.5, 8.5],
-          eyeSize: 1.4,
-          eyes: [[35.5, 54], [64.5, 54]], mouthAt: [50, 67], cheeks: [[28, 64], [72, 64]], top: [72, 31], hat: [50, 31, 26], chin: [50, 82],
+          eyeSize: 1.9,
+          eyes: [[36, 53], [64, 53]], mouthAt: [50, 62.5], cheeks: [[27, 63], [73, 63]], top: [74, 30], hat: [50, 28, 26], chin: [50, 80],
         };
       case 'mouse':
         // Big round ears and a pointed snout with a round pink nose at the tip.
@@ -498,7 +543,7 @@ const Stickers = (() => {
         outlineEars += `<path d="${k.earsFront.join(' ')}"/>`;
       }
       if (k.inner) {
-        const ic = k.innerColor === 'dark' ? '#4a4545' : k.innerColor ? shade(c, 0.45) : PINK;
+        const ic = k.innerColor === 'dark' ? '#4a4545' : k.innerColor === 'peach' ? '#f4bfa6' : k.innerColor ? shade(c, 0.45) : PINK;
         inner = `<path d="${k.inner}" fill="${ic}"/>`;
       }
     }
@@ -506,6 +551,7 @@ const Stickers = (() => {
     let head = `<path d="${k.head}" fill="${c}"/>`;
     // Fox: white fur on the lower face.
     if (k.cheeksFur) head += `<path d="${k.cheeksFur}" fill="#fbf8f3"/>`;
+    if (k.extraArt) head += k.extraArt(c);
     // Sheep: a smooth face in the middle of the wool, with a little tuft on top.
     let sheepFaceColor = null;
     if (k.sheep) {
@@ -514,7 +560,7 @@ const Stickers = (() => {
       head += `<ellipse cx="50" cy="62" rx="16" ry="18" fill="${sheepFaceColor}"/>` +
         `<circle cx="41" cy="46" r="7" fill="${c}"/><circle cx="50" cy="43" r="7.5" fill="${c}"/><circle cx="59" cy="46" r="7" fill="${c}"/>`;
     }
-    const muzzle = k.muzzle ? `<ellipse cx="${k.muzzle[0]}" cy="${k.muzzle[1]}" rx="${k.muzzle[2]}" ry="${k.muzzle[3]}" fill="${shade(c, 0.5)}"/>` : '';
+    const muzzle = k.muzzle ? `<ellipse cx="${k.muzzle[0]}" cy="${k.muzzle[1]}" rx="${k.muzzle[2]}" ry="${k.muzzle[3]}" fill="${k.muzzleColor || shade(c, 0.5)}"/>` : '';
     const [nx, ny] = k.mouthAt;
     const whiskers = k.whiskers === 'short'
       ? `<g ${line(1)}><path d="M${nx - 5} ${ny - 1} L${nx - 22} ${ny - 5}"/><path d="M${nx - 5} ${ny + 1.5} L${nx - 22} ${ny + 3}"/><path d="M${nx + 5} ${ny - 1} L${nx + 22} ${ny - 5}"/><path d="M${nx + 5} ${ny + 1.5} L${nx + 22} ${ny + 3}"/></g>`
@@ -639,7 +685,7 @@ const Stickers = (() => {
     if (s.type === 'alien') {
       f = { round: [44, 1.08], tall: [42, 1.0], wide: [47, 1.1] }[s.head] || [44, 1.08];
     } else if (s.type === 'animal') {
-      f = { cat: [52, 0.98], dog: [55, 1.0], chihuahua: [47, 0.8], bunny: [46, 0.94], bear: [58, 1.0], mouse: [58, 0.95], fox: [55, 0.98], sheep: [54, 0.98] }[s.kind] || [52, 0.98];
+      f = { cat: [52, 0.98], dog: [55, 1.0], chihuahua: [45, 0.88], bunny: [46, 0.94], bear: [58, 1.0], mouse: [58, 0.95], fox: [55, 0.98], sheep: [54, 0.98] }[s.kind] || [52, 0.98];
       if (s.kind === 'cat' && s.ears === 'big') f = [f[0] - 7, f[1] * 0.91];
     } else {
       f = [50, 1.13];
