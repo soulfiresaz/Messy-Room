@@ -25,6 +25,15 @@ All buttons that lead to more choices are also round circles with pictures, so e
 - **When the goal is reached**, the reward is ready to collect on the Rewards page
 - **Parent "Earned" button:** a parent can also mark a reward as earned whenever they choose. This button is **behind a PIN**, so kids can't tap it themselves.
 
+### Parent PIN
+
+One PIN guards everything parent-only:
+
+- Marking a reward as earned
+- Setting up rewards and their goals
+- Changing how often cleaning jobs come up
+- Deleting a room
+
 ---
 
 ## 1. Who it's for and where it runs
