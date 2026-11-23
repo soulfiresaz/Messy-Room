@@ -4,14 +4,23 @@ A web app that helps kids organize and clean their rooms. It works entirely with
 
 ---
 
-## 0. First screen (home)
+## 0. Who are you? (the very first screen)
+
+When the app opens, it always asks **"Who are you?"** and shows everyone's sticker as a big circle, plus a **➕ New** circle.
+
+- **Each person has a profile:** their sticker (person, alien or animal) and an optional name
+- **Any number of people:** 1 kid, 8 kids, or a parent doing their own room
+- **Tap your sticker** to go to the home screen. Your sticker shows in the corner, and tapping it switches person.
+- **Rooms and rewards are shared** by everyone. Profiles are how jobs get assigned to a person later (like "vacuum the living room").
+
+## 0b. Home screen
 
 A row of **big, round circles**, each with a picture sticker so it's easy to see and tap. No reading needed.
 
 | Circle | What happens when you tap it | When |
 |---|---|---|
 | **Rooms** | Opens a list of circles, one for each room: **My Room** first. Later: Bathroom, Living Room, Kitchen and more. | My Room now, other rooms later |
-| **Stickers** | Opens the sticker builder, where a child (with a parent's help) picks or builds their own sticker. See section 2. | Now |
+| **Stickers** | Opens your own sticker so you can change how it looks. See section 2. | Now |
 | **Rewards** | Opens a page where kids collect the rewards their parents promised them, like money, a game, or a special date or outing. | Now |
 | **Clean** | A parent or child lists jobs the parent asked for, like "pick up my stuff from the living room," "vacuum the living room" or "wipe the kitchen counters." Each job shows a picture of the room plus a picture of the tool (rag, spray bottle, sponge, vacuum). Choosing a job highlights that part of the room, like the kitchen counter. | Later |
 
@@ -179,7 +188,7 @@ A picture checklist of cleaning jobs. The app suggests them based on what's in t
 
 Each stage gives something usable before moving on.
 
-0. **Home screen** ✅ built: Rooms, Stickers, Rewards, Clean (grayed out), sticker builder, rewards with parent PIN
+0. **Home screen** ✅ built: "Who are you?" profiles, Rooms, Stickers, Rewards, Clean (grayed out), sticker builder, shared rewards with parent PIN
 1. **Room builder:** door, rotate, beds, furniture from parts, windows, light switch, colors, labels, stretching the room
 2. **People stickers and ownership:** sticker builder (person and alien), badges on spaces, shared spaces
 3. **Item stickers:** cartoon drawings, color chooser, patterns, photos

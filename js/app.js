@@ -6,6 +6,9 @@
   // Parent mode stays unlocked only while on the Rewards page.
   let parentUnlocked = false;
 
+  // The person using the app right now (picked on "Who are you?").
+  let currentId = null;
+
   // ---------- Small helpers ----------
 
   function esc(str) {
@@ -86,16 +89,42 @@
 
   // ---------- Home ----------
 
-  function renderHome() {
-    const latest = S.data.stickers[S.data.stickers.length - 1];
-    const stickerIcon = latest ? Stickers.render(latest) : '😀';
+  function currentProfile() {
+    return S.data.stickers.find(s => s.id === currentId) || null;
+  }
+
+  // ---------- Who are you? (first screen) ----------
+
+  function renderWho() {
+    const people = S.data.stickers.map(s =>
+      circle({ act: 'pick-profile', id: s.id, icon: Stickers.render(s), label: s.name || '', extraClass: 'sticker-circle' })
+    ).join('');
     $app.innerHTML = `
       <header class="home-head">
+        <h1 class="logo">Messy Room</h1>
+        <p class="who-title"><span aria-hidden="true">👋</span> Who are you?</p>
+      </header>
+      <main class="circle-grid">
+        ${people}
+        ${circle({ href: '#/stickers/new', icon: '➕', label: 'New', color: 'var(--c-stickers)', extraClass: 'add-circle' })}
+      </main>`;
+  }
+
+  // ---------- Home ----------
+
+  function renderHome() {
+    const me = currentProfile();
+    $app.innerHTML = `
+      <header class="home-head">
+        <a class="me-chip" href="#/who" aria-label="Switch person">
+          <span class="me-sticker">${Stickers.render(me)}</span>
+          <span class="me-switch" aria-hidden="true">🔄</span>
+        </a>
         <h1 class="logo">Messy Room</h1>
       </header>
       <main class="circle-grid home-grid">
         ${circle({ href: '#/rooms', icon: '🏠', label: 'Rooms', color: 'var(--c-rooms)' })}
-        ${circle({ href: '#/stickers', icon: stickerIcon, label: 'Stickers', color: 'var(--c-stickers)' })}
+        ${circle({ href: `#/stickers/edit/${me.id}`, icon: Stickers.render(me), label: 'Stickers', color: 'var(--c-stickers)', extraClass: 'sticker-circle' })}
         ${circle({ href: '#/rewards', icon: '🎁', label: 'Rewards', color: 'var(--c-rewards)' })}
         ${circle({ icon: '🧽', label: 'Clean', color: 'var(--c-clean)', disabled: true })}
       </main>`;
@@ -125,24 +154,12 @@
 
   // ---------- Stickers ----------
 
-  function renderStickers() {
-    const items = S.data.stickers.map(s =>
-      circle({ href: `#/stickers/edit/${s.id}`, icon: Stickers.render(s), label: s.name || '', extraClass: 'sticker-circle' })
-    ).join('');
-    $app.innerHTML = `
-      ${topBar('Stickers', '#/')}
-      <main class="circle-grid">
-        ${items}
-        ${circle({ href: '#/stickers/new', icon: '➕', label: 'New', color: 'var(--c-stickers)', extraClass: 'add-circle' })}
-      </main>`;
-  }
-
   let draft = null;      // sticker being built
   let draftIsNew = true;
 
   function renderStickerBuilder(id) {
     const existing = id ? S.data.stickers.find(s => s.id === id) : null;
-    if (id && !existing) { location.hash = '#/stickers'; return; }
+    if (id && !existing) { location.hash = '#/who'; return; }
     draftIsNew = !existing;
     draft = existing ? clone(existing) : { ...clone(Stickers.DEFAULTS.person), id: S.uid(), name: '' };
     drawBuilder();
@@ -179,7 +196,7 @@
     }).join('');
 
     $app.innerHTML = `
-      ${topBar(draftIsNew ? 'New sticker' : 'My sticker', '#/stickers')}
+      ${topBar(draftIsNew ? 'New person' : 'My sticker', draftIsNew ? '#/who' : '#/')}
       <main class="builder">
         <div class="builder-preview">${Stickers.render(draft)}</div>
         <div class="type-row">${typeRow}</div>
@@ -438,14 +455,21 @@
       if (i >= 0) list[i] = clone(draft); else list.push(clone(draft));
       if (!saveOrWarn()) return;
       Effects.celebrate();
-      location.hash = '#/stickers';
+      currentId = draft.id;
+      location.hash = '#/';
     },
     'sticker-delete'() {
-      confirmBox(Stickers.render(draft), 'Delete this sticker?', () => {
+      confirmBox(Stickers.render(draft), 'Delete this person?', () => {
         S.data.stickers = S.data.stickers.filter(s => s.id !== draft.id);
         saveOrWarn();
-        location.hash = '#/stickers';
+        if (currentId === draft.id) currentId = null;
+        location.hash = '#/who';
       });
+    },
+    'pick-profile'(el) {
+      currentId = el.dataset.id;
+      Effects.pop();
+      location.hash = '#/';
     },
 
     // Rewards
@@ -581,7 +605,7 @@
     [/^#\/?$/, renderHome],
     [/^#\/rooms$/, renderRooms],
     [/^#\/rooms\/my-room$/, renderMyRoom],
-    [/^#\/stickers$/, renderStickers],
+    [/^#\/who$/, renderWho],
     [/^#\/stickers\/new$/, () => renderStickerBuilder(null)],
     [/^#\/stickers\/edit\/([\w-]+)$/, m => renderStickerBuilder(m[1])],
     [/^#\/rewards$/, renderRewards],
@@ -591,6 +615,11 @@
     const hash = location.hash || '#/';
     if (hash !== '#/rewards') parentUnlocked = false;
     closeModal();
+    // Everyone starts at "Who are you?" until they pick or make a profile.
+    if (!currentProfile() && hash !== '#/who' && hash !== '#/stickers/new') {
+      location.replace('#/who');
+      return;
+    }
     for (const [re, fn] of routes) {
       const m = hash.match(re);
       if (m) {
@@ -603,5 +632,7 @@
   }
 
   window.addEventListener('hashchange', router);
+  // The app always opens on "Who are you?"
+  if (location.hash !== '#/who') location.replace('#/who');
   router();
 })();
