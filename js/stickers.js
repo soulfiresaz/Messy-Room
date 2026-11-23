@@ -7,7 +7,7 @@ const Stickers = (() => {
     skin: ['#ffe0c7', '#f6c9a0', '#e0a878', '#c68642', '#a0662f', '#6e4423', '#4a2c17'],
     hair: ['#2b1b12', '#5a3825', '#a0522d', '#e0b050', '#f3d98b', '#d94f2b', '#9b9b9b', '#ff69b4', '#6a5acd', '#2fa8a0'],
     alien: ['#7ee081', '#8fd3ff', '#c79bff', '#ff9ecf', '#ffd36b', '#ff8a65', '#5ee0c8'],
-    animal: ['#fbf8f3', '#f6e3c3', '#f5b04a', '#e8925a', '#a47551', '#b9a89a', '#9e9e9e', '#4a4545', '#ffc2d1'],
+    animal: ['#fbf8f3', '#f6e3c3', '#f5b04a', '#e8925a', '#a47551', '#b9a89a', '#9e9e9e', '#4a4545', '#ffc2d1', '#7ccf7c', '#6fa8dc', '#e8655a', '#b48ee0'],
     patch: ['#f5a54a', '#e8925a', '#4a4545', '#6b4a3a', '#a47551', '#fbf8f3', '#9e9e9e', '#f6e3c3'],
   };
 
@@ -71,7 +71,7 @@ const Stickers = (() => {
       { key: 'bg', icon: '🎨', label: 'Background', colors: COLORS.bg },
     ],
     animal: [
-      { key: 'kind', icon: '🐾', label: 'Animal', styles: ['cat', 'dog', 'chihuahua', 'bunny', 'bear', 'mouse', 'fox', 'sheep'] },
+      { key: 'kind', icon: '🐾', label: 'Animal', styles: ['cat', 'dog', 'chihuahua', 'bunny', 'bear', 'mouse', 'fox', 'sheep', 'dragon'] },
       ...FACE_PARTS,
       { key: 'face', icon: '🐱', label: 'Face shape', styles: ['round', 'wide', 'fluffy'], when: s => s.kind === 'cat' },
       { key: 'ears', icon: '👂', label: 'Ears', styles: s => (s.face === 'wide' ? ['pointy', 'big'] : ['pointy', 'big', 'folded']), when: s => s.kind === 'cat' },
@@ -160,6 +160,7 @@ const Stickers = (() => {
   function mouth(kind, nose, human) {
     let n = '';
     if (nose === 'pink') n = `<path d="M-2.4 -1.3 L2.4 -1.3 L0 1.4Z" fill="${PINK}" stroke="${shade(PINK, -0.15)}" stroke-width=".5" stroke-linejoin="round"/>`;
+    if (nose === 'nostrils') n = `<path d="M-5.6 -3.6 q1.2 -.6 1.6 .9" ${line(1.2)} opacity=".7"/><path d="M5.6 -3.6 q-1.2 -.6 -1.6 .9" ${line(1.2)} opacity=".7"/>`;
     if (nose === 'ball') n = `<circle r="2.8" fill="#ff8fa3" stroke="${shade('#ff8fa3', -0.15)}" stroke-width=".5"/><circle cx="-.9" cy="-.9" r=".8" fill="#fff" opacity=".7"/>`;
     if (nose === 'black') n = `<ellipse rx="3.6" ry="2.5" fill="${INK}"/><ellipse cx="-1" cy="-.8" rx="1.1" ry=".6" fill="#fff" opacity=".7"/>`;
     const y = human ? 0 : 1.2; // animal mouths sit just under the nose
@@ -464,6 +465,28 @@ const Stickers = (() => {
           eyeSize: 0.95,
           eyes: [[43, 60], [57, 60]], mouthAt: [50, 69], cheeks: [[38, 68], [62, 68]], top: [72, 30], hat: [50, 28, 30], chin: [50, 80],
         };
+      case 'dragon':
+        // Baby dragon: round head with a snout and nostrils, little horns and a crest,
+        // bat-wing ears, freckles on the forehead, and tiny fangs.
+        return {
+          head: 'M50 27 C68 27 79 39 79 52 C79 58 76 62 72 65 C70 75 61 81 50 81 C39 81 30 75 28 65 C24 62 21 58 21 52 C21 39 32 27 50 27Z',
+          earsBack: ['M25 45 L3 31 L8 41 L1 46 L9 51 L4 58 L25 57Z', 'M75 45 L97 31 L92 41 L99 46 L91 51 L96 58 L75 57Z'],
+          inner: 'M24 48 L9 38 L12 44 L7 47 L13 51 L10 55 L24 54Z M76 48 L91 38 L88 44 L93 47 L87 51 L90 55 L76 54Z',
+          innerColor: 'wing',
+          outlineExtra: 'M34 32 C28 27 25 20 27 13 C31 18 37 23 43 28Z M66 32 C72 27 75 20 73 13 C69 18 63 23 57 28Z M44 29 L47 19 L50 27 L53 19 L56 29Z',
+          extraArt: c => {
+            const horn = '#f3e2b3', crest = shade(c, -0.22), dots = shade(c, 0.45), snout = shade(c, 0.12);
+            return `<path d="M34 32 C28 27 25 20 27 13 C31 18 37 23 43 28Z" fill="${horn}"/><path d="M66 32 C72 27 75 20 73 13 C69 18 63 23 57 28Z" fill="${horn}"/>` +
+              `<path d="M44.5 29 L47 20 L50 27.5 L53 20 L55.5 29Z" fill="${crest}"/>` +
+              `<ellipse cx="50" cy="69" rx="16" ry="10" fill="${snout}" opacity=".45"/>` +
+              [[43, 36, 1.6], [50, 34, 2], [57, 36, 1.6], [46, 40, 1.2], [54, 40, 1.2], [50, 43, 1.4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${dots}"/>`).join('');
+          },
+          nose: 'nostrils',
+          humanMouth: true,
+          fangs: true,
+          eyeSize: 1.5,
+          eyes: [[38, 52], [62, 52]], mouthAt: [50, 69], cheeks: [[28, 62], [72, 62]], top: [74, 30], hat: [50, 29, 28], chin: [50, 81],
+        };
       default: // bear
         // Small round ears high on the head, a wide face, a big light muzzle.
         return {
@@ -514,7 +537,7 @@ const Stickers = (() => {
 
   function animal(s, uid) {
     const c = s.color, p = s.patchColor;
-    const isCat = !['dog', 'chihuahua', 'bunny', 'bear', 'mouse', 'fox', 'sheep'].includes(s.kind);
+    const isCat = !['dog', 'chihuahua', 'bunny', 'bear', 'mouse', 'fox', 'sheep', 'dragon'].includes(s.kind);
     const clipId = uid + 'h';
     let k, earsBack = '', earsFront = '', inner = '', outlineEars = '';
 
@@ -543,7 +566,7 @@ const Stickers = (() => {
         outlineEars += `<path d="${k.earsFront.join(' ')}"/>`;
       }
       if (k.inner) {
-        const ic = k.innerColor === 'dark' ? '#4a4545' : k.innerColor === 'peach' ? '#f4bfa6' : k.innerColor ? shade(c, 0.45) : PINK;
+        const ic = k.innerColor === 'dark' ? '#4a4545' : k.innerColor === 'peach' ? '#f4bfa6' : k.innerColor === 'wing' ? '#f6d58a' : k.innerColor ? shade(c, 0.45) : PINK;
         inner = `<path d="${k.inner}" fill="${ic}"/>`;
       }
     }
@@ -568,7 +591,12 @@ const Stickers = (() => {
       ? `<g ${line(1)}><path d="M30 ${k.mouthAt[1] - 3} L2 ${k.mouthAt[1] - 8}"/><path d="M30 ${k.mouthAt[1]} L1 ${k.mouthAt[1] + 1}"/><path d="M30 ${k.mouthAt[1] + 3} L4 ${k.mouthAt[1] + 10}"/>` +
         `<path d="M70 ${k.mouthAt[1] - 3} L98 ${k.mouthAt[1] - 8}"/><path d="M70 ${k.mouthAt[1]} L99 ${k.mouthAt[1] + 1}"/><path d="M70 ${k.mouthAt[1] + 3} L96 ${k.mouthAt[1] + 10}"/></g>`
       : '';
-    let features = face(s, { eyes: k.eyes, size: k.eyeSize || 1.05, nose: k.nose, mouthAt: k.mouthAt, cheeks: k.cheeks, top: k.top });
+    let features = face(s, { eyes: k.eyes, size: k.eyeSize || 1.05, nose: k.nose, mouthAt: k.mouthAt, cheeks: k.cheeks, top: k.top, human: !!k.humanMouth });
+    // Dragon: two tiny fangs under a closed mouth.
+    if (k.fangs && ['smile', 'small', 'flat', 'wobble'].includes(s.mouth)) {
+      const fy = k.mouthAt[1] + (s.mouth === 'smile' ? 4.6 : 4);
+      features += `<g fill="#fff" stroke="${INK}" stroke-width=".7" stroke-linejoin="round"><path d="M44.5 ${fy} L46.5 ${fy} L45.5 ${fy + 3}Z"/><path d="M53.5 ${fy} L55.5 ${fy} L54.5 ${fy + 3}Z"/></g>`;
+    }
     // On dark fur (or a dark colorpoint mask), draw the face in a light color so it can be seen.
     // Bunny buck teeth show under a closed mouth.
     if (k.teeth && ['smile', 'small', 'flat', 'wobble'].includes(s.mouth)) {
@@ -577,7 +605,7 @@ const Stickers = (() => {
     const faceColor = sheepFaceColor || (s.coat === 'mask' ? p : c);
     if (lightness(faceColor) < 0.4 && !muzzle) features = features.split(INK).join(LIGHT_INK);
     const art = `<defs><clipPath id="${clipId}"><path d="${k.head}"/></clipPath></defs>` +
-      outline(outlineEars + `<path d="${k.head}"/>`) +
+      outline(outlineEars + `<path d="${k.head}"/>` + (k.outlineExtra ? `<path d="${k.outlineExtra}"/>` : '')) +
       earsBack + inner + head + coat(s, clipId, k) + earsFront + muzzle + features + whiskers;
     return { art, eyes: k.eyes, eyeSize: k.eyeSize || 1.05, hat: k.hat, chin: k.chin || [50, k.mouthAt[1] + 18] };
   }
@@ -685,7 +713,7 @@ const Stickers = (() => {
     if (s.type === 'alien') {
       f = { round: [44, 1.08], tall: [42, 1.0], wide: [47, 1.1] }[s.head] || [44, 1.08];
     } else if (s.type === 'animal') {
-      f = { cat: [52, 0.98], dog: [55, 1.0], chihuahua: [45, 0.88], bunny: [46, 0.94], bear: [58, 1.0], mouse: [58, 0.95], fox: [55, 0.98], sheep: [54, 0.98] }[s.kind] || [52, 0.98];
+      f = { cat: [52, 0.98], dog: [55, 1.0], chihuahua: [45, 0.88], bunny: [46, 0.94], bear: [58, 1.0], mouse: [58, 0.95], fox: [55, 0.98], sheep: [54, 0.98], dragon: [46, 0.9] }[s.kind] || [52, 0.98];
       if (s.kind === 'cat' && s.ears === 'big') f = [f[0] - 7, f[1] * 0.91];
     } else {
       f = [50, 1.13];
