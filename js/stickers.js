@@ -13,7 +13,8 @@ const Stickers = (() => {
 
   const FEELINGS = ['happy', 'cute', 'silly', 'love', 'shy', 'sleepy', 'surprised', 'nervous', 'confused', 'grumpy'];
 
-  const HAT = { key: 'hat', icon: '🎩', label: 'Hat', styles: ['none', 'party', 'crown', 'bowler', 'beanie', 'cap', 'bow', 'flower', 'tophat'] };
+  const HAT = { key: 'hat', icon: '🎩', label: 'Hat', styles: ['none', 'party', 'crown', 'bowler', 'beanie', 'cap', 'bow', 'flower', 'tophat', 'nightcap'] };
+  const NECK = { key: 'neck', icon: '🎀', label: 'Bow tie', styles: ['none', 'bowtie', 'bowtie-blue'] };
   const GLASSES = { key: 'glasses', icon: '👓', label: 'Glasses', styles: ['none', 'round', 'sun', 'heart', 'star'] };
 
   // What each kind of sticker lets you choose. Icons keep it picture-first.
@@ -24,7 +25,7 @@ const Stickers = (() => {
       { key: 'skin', icon: '🖐️', label: 'Skin', colors: COLORS.skin },
       { key: 'hair', icon: '💇', label: 'Hair', styles: ['short', 'long', 'curly', 'bun', 'pigtails', 'spiky', 'bald'] },
       { key: 'hairColor', icon: '🖍️', label: 'Hair color', colors: COLORS.hair },
-      HAT, GLASSES,
+      HAT, GLASSES, NECK,
       { key: 'bg', icon: '🎨', label: 'Background', colors: COLORS.bg },
     ],
     alien: [
@@ -33,7 +34,7 @@ const Stickers = (() => {
       { key: 'head', icon: '🥚', label: 'Head', styles: ['round', 'tall', 'wide'] },
       { key: 'eyeCount', icon: '👀', label: 'Eyes', styles: [1, 2, 3] },
       { key: 'antennae', icon: '📡', label: 'Antennae', styles: [0, 1, 2] },
-      HAT, GLASSES,
+      HAT, GLASSES, NECK,
       { key: 'bg', icon: '🎨', label: 'Background', colors: COLORS.bg },
     ],
     animal: [
@@ -44,15 +45,15 @@ const Stickers = (() => {
       { key: 'coat', icon: '🎀', label: 'Coat', styles: ['plain', 'tabby', 'patch', 'twotone', 'calico', 'mask'] },
       { key: 'color', icon: '🖍️', label: 'Fur color', colors: COLORS.animal },
       { key: 'patchColor', icon: '🟠', label: 'Patch color', colors: COLORS.patch, when: s => s.coat !== 'plain' && s.coat !== 'tabby' },
-      HAT, GLASSES,
+      HAT, GLASSES, NECK,
       { key: 'bg', icon: '🎨', label: 'Background', colors: COLORS.bg },
     ],
   };
 
   const DEFAULTS = {
-    person: { type: 'person', bg: '#bfe3ff', skin: '#f6c9a0', hair: 'short', hairColor: '#5a3825', feeling: 'happy', hat: 'none', glasses: 'none' },
-    alien: { type: 'alien', bg: '#e2d4ff', color: '#7ee081', head: 'round', eyeCount: 3, antennae: 2, feeling: 'happy', hat: 'none', glasses: 'none' },
-    animal: { type: 'animal', bg: '#bfe3ff', kind: 'cat', face: 'round', ears: 'pointy', coat: 'calico', color: '#fbf8f3', patchColor: '#f5a54a', feeling: 'happy', hat: 'none', glasses: 'none' },
+    person: { type: 'person', bg: '#bfe3ff', skin: '#f6c9a0', hair: 'short', hairColor: '#5a3825', feeling: 'happy', hat: 'none', glasses: 'none', neck: 'none' },
+    alien: { type: 'alien', bg: '#e2d4ff', color: '#7ee081', head: 'round', eyeCount: 3, antennae: 2, feeling: 'happy', hat: 'none', glasses: 'none', neck: 'none' },
+    animal: { type: 'animal', bg: '#bfe3ff', kind: 'cat', face: 'round', ears: 'pointy', coat: 'calico', color: '#fbf8f3', patchColor: '#f5a54a', feeling: 'happy', hat: 'none', glasses: 'none', neck: 'none' },
   };
 
   // Mix a hex color toward white (amt > 0) or black (amt < 0).
@@ -197,7 +198,7 @@ const Stickers = (() => {
     const art = outline(back + head + front) + back + head + front +
       face(s.feeling, { eyes, size: 1.05, mouthAt: [50, 62], cheeks: [[35, 62], [65, 62]], top: [70, 28], human: true });
     const hatY = s.hair === 'spiky' ? 25 : s.hair === 'curly' ? 24 : 27;
-    return { art, eyes, eyeSize: 1.05, hat: [50, hatY, 44] };
+    return { art, eyes, eyeSize: 1.05, hat: [50, hatY, 44], chin: [50, 78] };
   }
 
   // ---------- Aliens ----------
@@ -228,7 +229,7 @@ const Stickers = (() => {
     else { eyes = [[37, ey + 2], [50, ey - 6], [63, ey + 2]]; size = 1.15; }
     const art = outline(ant + headShape) + ant + headShape + spots +
       face(s.feeling, { eyes, size, mouthAt: [50, h.cy + h.ry * 0.38], cheeks: [[50 - h.rx * 0.62, ey + 9], [50 + h.rx * 0.62, ey + 9]], top: [50 + h.rx * 0.7, top + 4], human: true });
-    return { art, eyes, eyeSize: size * 0.8, hat: [50, top + 5, h.rx * 1.25] };
+    return { art, eyes, eyeSize: size * 0.8, hat: [50, top + 5, h.rx * 1.25], chin: [50, h.cy + h.ry - 1] };
   }
 
   // ---------- Animals ----------
@@ -303,13 +304,15 @@ const Stickers = (() => {
           eyes: [[39, 60], [61, 60]], mouthAt: [50, 67], cheeks: [[32, 69], [68, 69]], top: [72, 40], hat: [50, 41, 26],
         };
       case 'chihuahua':
+        // Apple-shaped head, huge ears from the sides, big wide-set eyes, short light muzzle.
         return {
-          head: 'M50 37 C66 37 76 47 76 61 C76 74 65 82 50 82 C35 82 24 74 24 61 C24 47 34 37 50 37Z',
-          earsBack: ['M31 46 L7 17 Q5 12 10 13 L45 37Z', 'M69 46 L93 17 Q95 12 90 13 L55 37Z'],
-          inner: 'M30 40 L14 21 L40 37Z M70 40 L86 21 L60 37Z',
+          head: 'M50 30 C69 30 81 41 80 55 C79 67 68 76 60 80 Q50 85 40 80 C32 76 21 67 20 55 C19 41 31 30 50 30Z',
+          earsBack: ['M23 51 L5 17 Q3 11 9 12 L42 33Z', 'M77 51 L95 17 Q97 11 91 12 L58 33Z'],
+          inner: 'M25 43 L11 19 L38 34Z M75 43 L89 19 L62 34Z',
           nose: 'black',
-          eyeSize: 1.3,
-          eyes: [[40, 59], [60, 59]], mouthAt: [50, 68], cheeks: [[32, 69], [68, 69]], top: [70, 38], hat: [50, 38, 26],
+          muzzle: [50, 70, 10.5, 8.5],
+          eyeSize: 1.4,
+          eyes: [[35.5, 54], [64.5, 54]], mouthAt: [50, 67], cheeks: [[28, 64], [72, 64]], top: [72, 31], hat: [50, 31, 26], chin: [50, 82],
         };
       case 'mouse':
         return {
@@ -337,7 +340,7 @@ const Stickers = (() => {
           earsBack: ['M24 60 C16 57 7 60 6 64 C8 68 18 67 26 64Z', 'M76 60 C84 57 93 60 94 64 C92 68 82 67 74 64Z'],
           nose: 'none',
           eyeSize: 0.85,
-          eyes: [[44, 61], [56, 61]], mouthAt: [50, 68], cheeks: [[39, 67], [61, 67]], top: [72, 30], hat: [50, 27, 30],
+          eyes: [[44, 61], [56, 61]], mouthAt: [50, 68], cheeks: [[39, 67], [61, 67]], top: [72, 30], hat: [50, 27, 30], chin: [50, 78],
         };
       default: // bear
         return {
@@ -346,7 +349,7 @@ const Stickers = (() => {
           inner: 'M22 34 A5 5 0 1 1 32 34 A5 5 0 1 1 22 34Z M68 34 A5 5 0 1 1 78 34 A5 5 0 1 1 68 34Z',
           innerColor: 'light',
           nose: 'black',
-          muzzle: true,
+          muzzle: [50, 66, 11, 8],
           eyes: [[37, 55], [63, 55]], mouthAt: [50, 65], cheeks: [[29, 66], [71, 66]], top: [74, 34], hat: [50, 35, 34],
         };
     }
@@ -432,7 +435,7 @@ const Stickers = (() => {
       head += `<ellipse cx="50" cy="62" rx="14" ry="15.5" fill="${sheepFaceColor}"/>` +
         `<circle cx="42.5" cy="47.5" r="6" fill="${c}"/><circle cx="50" cy="45.5" r="6.5" fill="${c}"/><circle cx="57.5" cy="47.5" r="6" fill="${c}"/>`;
     }
-    const muzzle = k.muzzle ? `<ellipse cx="50" cy="66" rx="11" ry="8" fill="${shade(c, 0.5)}"/>` : '';
+    const muzzle = k.muzzle ? `<ellipse cx="${k.muzzle[0]}" cy="${k.muzzle[1]}" rx="${k.muzzle[2]}" ry="${k.muzzle[3]}" fill="${shade(c, 0.5)}"/>` : '';
     const whiskers = k.whiskers === 'short'
       ? `<g ${line(1)}><path d="M36 ${k.mouthAt[1] - 2} L20 ${k.mouthAt[1] - 5}"/><path d="M36 ${k.mouthAt[1] + 1} L20 ${k.mouthAt[1] + 2}"/><path d="M64 ${k.mouthAt[1] - 2} L80 ${k.mouthAt[1] - 5}"/><path d="M64 ${k.mouthAt[1] + 1} L80 ${k.mouthAt[1] + 2}"/></g>`
       : k.whiskers
@@ -446,7 +449,7 @@ const Stickers = (() => {
     const art = `<defs><clipPath id="${clipId}"><path d="${k.head}"/></clipPath></defs>` +
       outline(outlineEars + `<path d="${k.head}"/>`) +
       earsBack + inner + head + coat(s, clipId, k) + earsFront + muzzle + features + whiskers;
-    return { art, eyes: k.eyes, eyeSize: k.eyeSize || 1.05, hat: k.hat };
+    return { art, eyes: k.eyes, eyeSize: k.eyeSize || 1.05, hat: k.hat, chin: k.chin || [50, k.mouthAt[1] + 18] };
   }
 
   // ---------- Hats and glasses ----------
@@ -471,11 +474,15 @@ const Stickers = (() => {
       case 'cap':
         return `<path d="M-15 0 C-15 -19 15 -19 15 0Z" fill="#ff6b6b"/>` +
           `<path d="M9 -2 Q25 -4 28 1.5 Q17 3 8 2Z" fill="#d94f4f"/><circle cy="-15.5" r="2" fill="#d94f4f"/>`;
+      case 'nightcap':
+        return `<path d="M-16 0 Q-14 -24 12 -20 Q22 -17 25 -3 L20.5 -3.5 Q18 -12 11 -12.5 Q12 -5 15 0Z" fill="#9fd3ec"/>` +
+          `<g fill="#fff" opacity=".85"><circle cx="-6" cy="-9" r="1.4"/><circle cx="3" cy="-14" r="1.4"/><circle cx="6" cy="-6" r="1.4"/></g>` +
+          `<rect x="-18" y="-4" width="35" height="6.5" rx="3.2" fill="#fff"/><circle cx="24" cy="-2" r="4.4" fill="#fff"/>`;
       case 'tophat':
         return `<ellipse cy="-1.5" rx="17" ry="3.4" fill="#333"/><rect x="-10.5" y="-25" width="21" height="24" rx="2" fill="#333"/>` +
           `<rect x="-10.5" y="-8" width="21" height="4.5" fill="#ff5d8f"/>`;
       case 'bow':
-        return `<g transform="translate(13 -2) rotate(18)"><path d="M0 0 L-11 -7 L-11 7Z" fill="#ff5d8f"/><path d="M0 0 L11 -7 L11 7Z" fill="#ff5d8f"/>` +
+        return `<g transform="translate(17 -6) rotate(20)"><path d="M0 0 L-11 -7 L-11 7Z" fill="#ff5d8f"/><path d="M0 0 L11 -7 L11 7Z" fill="#ff5d8f"/>` +
           `<circle r="3.4" fill="#ff86ab"/></g>`;
       case 'flower':
         return `<g transform="translate(-13 -1)">` +
@@ -487,13 +494,23 @@ const Stickers = (() => {
   }
 
   // Some hats are tiny on purpose (they're cuter that way).
-  const HAT_SIZE = { crown: 0.55, bowler: 0.6 };
+  const HAT_SIZE = { crown: 0.55, bowler: 0.6, nightcap: 0.8 };
 
   function hatLayer(s, [x, y, w]) {
     const art = hatArt(s.hat);
     if (!art) return '';
     const k = HAT_SIZE[s.hat] || 1;
     return `<g transform="translate(${x} ${y + (k < 1 ? 1 : 0)}) scale(${(w / 30) * k})" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" paint-order="stroke">${art}</g>`;
+  }
+
+  // A bow tie sitting just under the chin.
+  function neckLayer(s, [x, y]) {
+    if (!s.neck || s.neck === 'none') return '';
+    const col = s.neck === 'bowtie-blue' ? '#5aa9e6' : '#ff86ab';
+    const knot = shade(col, -0.15);
+    return `<g transform="translate(${x} ${y})" stroke="#fff" stroke-width="2" stroke-linejoin="round" paint-order="stroke">` +
+      `<path d="M0 0 L-9 -5 Q-10.5 0 -9 5Z" fill="${col}"/><path d="M0 0 L9 -5 Q10.5 0 9 5Z" fill="${col}"/>` +
+      `<rect x="-2.6" y="-2.8" width="5.2" height="5.6" rx="1.6" fill="${knot}"/></g>`;
   }
 
   function glassesLayer(s, eyes, eyeSize) {
@@ -530,7 +547,7 @@ const Stickers = (() => {
     if (s.type === 'alien') {
       f = { round: [44, 1.08], tall: [42, 1.0], wide: [47, 1.1] }[s.head] || [44, 1.08];
     } else if (s.type === 'animal') {
-      f = { cat: [52, 0.98], dog: [57, 1.02], chihuahua: [46, 0.8], bunny: [47, 0.95], bear: [57, 1.0], mouse: [55, 1.0], fox: [52, 0.98], sheep: [54, 1.0] }[s.kind] || [52, 0.98];
+      f = { cat: [52, 0.98], dog: [57, 1.02], chihuahua: [47, 0.8], bunny: [47, 0.95], bear: [57, 1.0], mouse: [55, 1.0], fox: [52, 0.98], sheep: [54, 1.0] }[s.kind] || [52, 0.98];
       if (s.kind === 'cat' && s.ears === 'big') f = [f[0] - 7, f[1] * 0.91];
     } else {
       f = [50, 1.13];
@@ -556,7 +573,7 @@ const Stickers = (() => {
       `<defs><clipPath id="${id}"><circle cx="50" cy="50" r="50"/></clipPath></defs>` +
       `<g clip-path="url(#${id})"><rect width="100" height="100" fill="${s.bg}"/>` +
       `<g transform="translate(50 50) scale(${scale}) translate(-50 ${-cy})">` +
-      part.art + glassesLayer(s, part.eyes, part.eyeSize) + hatLayer(s, part.hat) +
+      part.art + neckLayer(s, part.chin) + glassesLayer(s, part.eyes, part.eyeSize) + hatLayer(s, part.hat) +
       `</g></g></svg>`;
   }
 

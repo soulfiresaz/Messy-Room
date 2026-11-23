@@ -82,7 +82,8 @@ One PIN guards everything parent-only:
 - **Alien:** feeling, color, head shape, 1 to 3 eyes, antennae, hat, glasses, background
 - **Animal:** cat, dog, chihuahua, bunny, bear, mouse, fox or sheep, then feeling, coat (plain, tabby, patch, two-tone, calico, colorpoint), fur color, patch color, hat, glasses and background. Calico cat is the starting animal.
 - **Cats also get:** face shape (round, wide, fluffy), ears (pointy, big, folded; folded isn't offered on the wide face) and long whiskers
-- **Hats:** party hat, tiny crown, tiny bowler hat, beanie, cap, bow, flower, top hat
+- **Hats:** party hat, tiny crown, tiny bowler hat, beanie, cap, bow (on the ear), flower, top hat, nightcap
+- **Bow tie** under the chin (pink or blue)
 - **Glasses:** round, sunglasses, hearts, stars
 - **Keep it really simple:** a few big choices per step, each shown as a small picture
 - **"This is me" on the map:** the child can drag their sticker to where they're sitting (like on the bed) and play with it
