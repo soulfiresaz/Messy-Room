@@ -243,6 +243,8 @@ Each stage gives something usable before moving on.
 
 0. **Home screen** ✅ built: "Who are you?" profiles, Rooms, Stickers, Rewards, Clean (grayed out), sticker builder, shared rewards with parent PIN
 1. **Room builder:** door, rotate, beds, furniture from parts, windows, light switch, colors, labels, stretching the room
+   - ✅ Step A built: pick ready-made pieces, shape them with 🔧 "change the parts," colors, optional labels, tap any part to open it, closet with rods, shelves and furniture on its floor
+   - Next: Step B, the map from above (door, closet and windows on the walls, rotate, drag each piece's top into place, stretch the room)
 2. **People stickers and ownership:** sticker builder (person and alien), badges on spaces, shared spaces
 3. **Item stickers:** cartoon drawings, color chooser, patterns, photos
 4. **Tidying:** floor checklist, Pictures / Words tabs, dragging items into drawers and cubbies, sound and confetti

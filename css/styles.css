@@ -785,3 +785,125 @@ button { font: inherit; color: inherit; }
 
 .tool-btn.danger { background: var(--danger); }
 .tool-btn.big.danger { border-color: transparent; }
+
+/* ---------- My Room: furniture ---------- */
+
+.furn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 40vw), 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.furn-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 180px;
+  padding: 14px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.furn-card:active { transform: scale(.96); }
+
+.furn-pic {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 150px;
+}
+
+.furn-pic svg { max-width: 100%; max-height: 100%; display: block; }
+
+.furn-label { font-weight: 700; font-size: 18px; }
+
+.add-card { background: var(--c-rooms); }
+.add-plus { font-size: 64px; line-height: 1; }
+
+.catalog-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(150px, 38vw), 1fr));
+  gap: 12px;
+}
+
+.furn-card.small {
+  min-height: 140px;
+  box-shadow: 0 0 0 3px var(--line), 0 4px 0 rgba(58, 42, 42, .1);
+}
+
+.furn-card.small .furn-pic { height: 116px; }
+
+.piece-page { max-width: 760px; margin: 0 auto; }
+
+.piece-stage {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  background: var(--card);
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin-top: 8px;
+}
+
+.piece-stage svg {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: min(56vh, 460px);
+  display: block;
+  overflow: visible;
+}
+
+.fpart { cursor: pointer; }
+.fpart:active { opacity: .75; }
+
+.piece-tools {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.round-btn.on { background: var(--c-rewards); }
+
+.parts-panel {
+  border: 4px dashed var(--c-rewards);
+  border-radius: 28px;
+  padding: 4px 12px;
+  margin-top: 16px;
+}
+
+.parts-hint {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 18px 0;
+}
+
+.step-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
+.step-icon, .step-num { font-size: 24px; font-weight: 800; min-width: 30px; text-align: center; }
+
+.tool-btn.step { min-width: 56px; min-height: 56px; font-size: 22px; }
+
+.pick.square, .pick.square svg { border-radius: 18px; }
+
+.inside-view svg { width: 100%; height: auto; max-height: 60vh; display: block; }
+
+.confirm-icon .furn-svg { width: 100%; height: 100%; }

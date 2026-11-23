@@ -183,13 +183,207 @@
       </main>`;
   }
 
+  // ---------- My Room: furniture ----------
+  // Step A: pick furniture and shape it to match the real piece (front view).
+  // The map from above (Step B) comes next.
+
+  function room() {
+    if (!S.data.rooms) S.data.rooms = {};
+    if (!S.data.rooms['my-room']) S.data.rooms['my-room'] = { pieces: [] };
+    return S.data.rooms['my-room'];
+  }
+
+  function pieceById(id) {
+    return room().pieces.find(p => p.id === id) || null;
+  }
+
+  // Pieces standing on a closet's floor.
+  function piecesIn(closetId) {
+    return room().pieces.filter(p => p.insideId === closetId);
+  }
+
+  function pieceCard(p, act = 'open-piece') {
+    const inside = p.kind === 'closet' ? piecesIn(p.id) : [];
+    return `<button type="button" class="furn-card" data-act="${act}" data-id="${p.id}" aria-label="${esc(p.label || 'Open')}">
+      <span class="furn-pic">${Furniture.render(p, { inside })}</span>
+      ${p.label ? `<span class="furn-label">${esc(p.label)}</span>` : ''}
+    </button>`;
+  }
+
   function renderMyRoom() {
+    const pieces = room().pieces.filter(p => !p.insideId);
     $app.innerHTML = `
       ${topBar('My Room', '#/rooms')}
-      <main class="placeholder">
-        <div class="placeholder-art" aria-hidden="true">🛏️🚧</div>
-        <p>The room builder is coming next.</p>
+      <main>
+        <div class="furn-grid">
+          <a class="furn-card add-card" href="#/rooms/my-room/add" aria-label="Add furniture">
+            <span class="add-plus" aria-hidden="true">➕</span>
+          </a>
+          ${pieces.map(p => pieceCard(p)).join('')}
+        </div>
       </main>`;
+  }
+
+  // Ready-made pieces, shown as pictures. Inside a closet, only pieces that stand on its floor.
+  function renderCatalog(closetId) {
+    const closet = closetId ? pieceById(closetId) : null;
+    if (closetId && !closet) { location.replace('#/rooms/my-room'); return; }
+    const back = closet ? `#/rooms/my-room/piece/${closet.id}` : '#/rooms/my-room';
+    const groups = Furniture.GROUPS.map(g => {
+      const items = Furniture.CATALOG.filter(c => c.group === g.key)
+        .map(c => ({ c, p: c.make() }))
+        .filter(x => !closet || Furniture.fitsInCloset(x.p));
+      if (!items.length) return '';
+      return `<section class="opt-row">
+        <h2 class="opt-head"><span aria-hidden="true">${g.icon}</span> ${g.label}</h2>
+        <div class="catalog-row">
+          ${items.map(({ c, p }) => `<button type="button" class="furn-card small" data-act="add-piece" data-key="${c.key}" aria-label="${g.label}">
+            <span class="furn-pic">${Furniture.render(p)}</span></button>`).join('')}
+        </div>
+      </section>`;
+    }).join('');
+    catalogCloset = closet ? closet.id : null;
+    $app.innerHTML = `${topBar('', back)}<main>${groups}</main>`;
+  }
+
+  let catalogCloset = null;
+  let partsMode = false;     // "change the parts" is open
+  let selectedPart = null;   // part picked while changing the parts
+  let pagePieceId = null;
+
+  // Removing or changing a space that already has things assigned needs the parent PIN.
+  function guardUsed(used, fn) {
+    if (used) askPin(fn); else fn();
+  }
+
+  function renderPiece(id) {
+    const p = pieceById(id);
+    if (!p) { location.replace('#/rooms/my-room'); return; }
+    if (pagePieceId !== id) { partsMode = false; selectedPart = null; }
+    pagePieceId = id;
+    const back = p.insideId && pieceById(p.insideId) ? `#/rooms/my-room/piece/${p.insideId}` : '#/rooms/my-room';
+    const inside = p.kind === 'closet' ? piecesIn(p.id) : [];
+    const canChange = Furniture.hasParts(p) || p.kind === 'closet' || p.kind === 'wallshelf';
+    const pic = Furniture.render(p, {
+      interactive: true,
+      selected: partsMode ? selectedPart : null,
+      inside,
+      addInside: p.kind === 'closet',
+    });
+    const colors = Furniture.COLORS.map(c =>
+      `<button type="button" class="swatch ${p.color === c ? 'picked' : ''}" style="--swatch:${c}" data-act="piece-color" data-value="${c}" aria-label="Color" aria-pressed="${p.color === c}"></button>`).join('');
+    $app.innerHTML = `
+      ${topBar(p.label || '', back)}
+      <main class="piece-page">
+        <div class="piece-stage ${p.kind === 'closet' ? 'wide' : ''}">${pic}</div>
+        <div class="piece-tools">
+          ${canChange ? `<button type="button" class="round-btn ${partsMode ? 'on' : ''}" data-act="parts-mode" aria-label="Change the parts" aria-pressed="${partsMode}">🔧</button>` : ''}
+          <button type="button" class="round-btn" data-act="piece-delete" aria-label="Delete">🗑️</button>
+        </div>
+        ${partsMode ? partsPanel(p) : ''}
+        <section class="opt-row">
+          <h2 class="opt-head"><span aria-hidden="true">🎨</span></h2>
+          <div class="opt-choices">${colors}</div>
+        </section>
+        <section class="opt-row">
+          <h2 class="opt-head"><span aria-hidden="true">🏷️</span> Label (optional)</h2>
+          <input class="text-input" id="piece-label" type="text" maxlength="24" value="${esc(p.label)}" placeholder="Label">
+        </section>
+      </main>`;
+  }
+
+  const stepBtn = (act, icon, label, extra = '') =>
+    `<button type="button" class="tool-btn step" data-act="${act}" ${extra} aria-label="${label}">${icon}</button>`;
+
+  function partsPanel(p) {
+    const rows = [];
+    const size = `<div class="step-group"><span class="step-icon" aria-hidden="true">↔️</span>${stepBtn('size', '➖', 'Narrower', 'data-dim="w" data-dir="-1"')}${stepBtn('size', '➕', 'Wider', 'data-dim="w" data-dir="1"')}</div>` +
+      (p.kind === 'wallshelf' ? '' : `<div class="step-group"><span class="step-icon" aria-hidden="true">↕️</span>${stepBtn('size', '➖', 'Shorter', 'data-dim="h" data-dir="-1"')}${stepBtn('size', '➕', 'Taller', 'data-dim="h" data-dir="1"')}</div>`);
+    rows.push(`<section class="opt-row"><h2 class="opt-head">Size</h2><div class="opt-choices">${size}</div></section>`);
+
+    if (p.kind === 'closet') {
+      rows.push(`<section class="opt-row"><h2 class="opt-head">Shelves</h2><div class="opt-choices">
+        <div class="step-group"><span class="step-num">${p.shelves.length}</span>${stepBtn('closet-shelves', '➖', 'Fewer shelves', 'data-dir="-1"')}${stepBtn('closet-shelves', '➕', 'More shelves', 'data-dir="1"')}</div></div></section>`);
+      const rods = ['high', 'low', 'two'].map(r =>
+        `<button type="button" class="pick small square ${p.rods === r ? 'picked' : ''}" data-act="closet-rods" data-value="${r}" aria-label="Rods ${r}" aria-pressed="${p.rods === r}">${Furniture.rodIcon(r)}</button>`).join('');
+      rows.push(`<section class="opt-row"><h2 class="opt-head">Rods</h2><div class="opt-choices">${rods}</div></section>`);
+      return `<div class="parts-panel">${rows.join('')}</div>`;
+    }
+    if (!Furniture.hasParts(p)) return `<div class="parts-panel">${rows.join('')}</div>`;
+
+    if (p.style === 'plastic') {
+      const n = p.cols[0].cells.length;
+      rows.push(`<section class="opt-row"><h2 class="opt-head">Drawers</h2><div class="opt-choices">
+        <div class="step-group"><span class="step-num">${n}</span>${stepBtn('tower-drawers', '➖', 'Fewer drawers', 'data-dir="-1"')}${stepBtn('tower-drawers', '➕', 'More drawers', 'data-dir="1"')}</div></div></section>`);
+      return `<div class="parts-panel">${rows.join('')}</div>`;
+    }
+
+    rows.push(`<section class="opt-row"><h2 class="opt-head">Columns</h2><div class="opt-choices">
+      <div class="step-group"><span class="step-num">${p.cols.length}</span>${stepBtn('cols', '➖', 'Fewer columns', 'data-dir="-1"')}${stepBtn('cols', '➕', 'More columns', 'data-dir="1"')}</div></div></section>`);
+
+    const k = selectedPart && Furniture.findCell(p, selectedPart);
+    if (!k) {
+      rows.push(`<p class="parts-hint"><span aria-hidden="true">👆</span> Tap a part to change it</p>`);
+    } else {
+      const types = [['drawer', 'Drawer'], ['open', 'Cubby'], ['cupboard', 'Cupboard']].map(([t, label]) =>
+        `<button type="button" class="pick small square ${k.type === t ? 'picked' : ''}" data-act="part-type" data-value="${t}" aria-label="${label}" aria-pressed="${k.type === t}">${Furniture.partIcon(t)}</button>`).join('');
+      rows.push(`<section class="opt-row"><h2 class="opt-head">This part</h2><div class="opt-choices">${types}</div></section>`);
+      if (k.type === 'open') {
+        const ins = [['empty', 'Empty'], ['bin', 'Bin'], ['sorter', 'Paper sorter']].map(([v, label]) =>
+          `<button type="button" class="pick small square ${k.insert === v ? 'picked' : ''}" data-act="part-insert" data-value="${v}" aria-label="${label}" aria-pressed="${k.insert === v}">${Furniture.partIcon('open', v)}</button>`).join('');
+        rows.push(`<section class="opt-row"><h2 class="opt-head">Inside</h2><div class="opt-choices">${ins}</div></section>`);
+        if (k.insert === 'bin') {
+          const bins = Furniture.BIN_COLORS.map(c =>
+            `<button type="button" class="swatch ${k.binColor === c ? 'picked' : ''}" style="--swatch:${c}" data-act="bin-color" data-value="${c}" aria-label="Bin color" aria-pressed="${k.binColor === c}"></button>`).join('');
+          rows.push(`<section class="opt-row"><h2 class="opt-head">Bin color</h2><div class="opt-choices">${bins}</div></section>`);
+        }
+      }
+      if (k.type === 'cupboard') {
+        rows.push(`<section class="opt-row"><h2 class="opt-head">Shelves inside</h2><div class="opt-choices">
+          <div class="step-group"><span class="step-num">${k.shelves}</span>${stepBtn('cup-shelves', '➖', 'Fewer shelves', 'data-dir="-1"')}${stepBtn('cup-shelves', '➕', 'More shelves', 'data-dir="1"')}</div></div></section>`);
+      }
+      rows.push(`<section class="opt-row"><h2 class="opt-head">More or fewer</h2><div class="opt-choices">
+        <div class="step-group"><span class="step-icon" aria-hidden="true">↕️</span>${stepBtn('part-size', '➖', 'Smaller part', 'data-dir="-1"')}${stepBtn('part-size', '➕', 'Bigger part', 'data-dir="1"')}</div>
+        ${stepBtn('part-add', '➕ Add one', 'Add a part like this one')}
+        ${stepBtn('part-remove', '🗑️', 'Remove this part')}
+      </div></section>`);
+    }
+    return `<div class="parts-panel">${rows.join('')}</div>`;
+  }
+
+  function openPartInside(p, partId) {
+    openModal(`
+      <div class="inside-view">${Furniture.renderInside(p, partId)}</div>
+      <div class="confirm-row">
+        <button type="button" class="big-btn yes" data-act="modal-close" aria-label="Close">👍</button>
+      </div>`);
+  }
+
+  // Redraw the piece page and keep the scroll where it was.
+  function redrawPiece() {
+    const y = window.scrollY;
+    renderPiece(pagePieceId);
+    window.scrollTo(0, y);
+  }
+
+  function changePiece(fn) {
+    const p = pieceById(pagePieceId);
+    if (!p) return;
+    fn(p);
+    saveOrWarn();
+    Effects.pop();
+    redrawPiece();
+  }
+
+  const clampSize = v => Math.round(Math.max(1, Math.min(14, v)) * 10) / 10;
+
+  // Where the selected part is: its column and its place in the column.
+  function partPlace(p, id) {
+    for (const c of p.cols) {
+      const i = c.cells.findIndex(k => k.id === id);
+      if (i >= 0) return { col: c, i };
+    }
+    return null;
   }
 
   // ---------- Sticker page for one person ----------
@@ -654,6 +848,204 @@
       });
     },
 
+    // My Room furniture
+    'add-piece'(el) {
+      const p = Furniture.make(el.dataset.key);
+      if (!p) return;
+      if (catalogCloset) p.insideId = catalogCloset;
+      room().pieces.push(p);
+      if (!saveOrWarn()) return;
+      Effects.chime();
+      location.hash = `#/rooms/my-room/piece/${p.id}`;
+    },
+    'open-piece'(el) {
+      Effects.pop();
+      location.hash = `#/rooms/my-room/piece/${el.dataset.id}`;
+    },
+    'closet-add'() {
+      location.hash = `#/rooms/my-room/add/${pagePieceId}`;
+    },
+    'part'(el) {
+      const p = pieceById(pagePieceId);
+      if (!p) return;
+      const id = el.dataset.id;
+      if (partsMode && Furniture.hasParts(p) && p.style !== 'plastic') {
+        selectedPart = selectedPart === id ? null : id;
+        Effects.pop();
+        redrawPiece();
+        return;
+      }
+      Effects.pop();
+      openPartInside(p, id);
+    },
+    'parts-mode'() {
+      partsMode = !partsMode;
+      selectedPart = null;
+      Effects.pop();
+      redrawPiece();
+    },
+    'piece-color'(el) {
+      changePiece(p => { p.color = el.dataset.value; });
+    },
+    'piece-delete'() {
+      const p = pieceById(pagePieceId);
+      if (!p) return;
+      const used = Furniture.spacesOf(p).some(Furniture.spaceUsed);
+      confirmBox(Furniture.render(p), 'Delete this?', () => guardUsed(used, () => {
+        const r = room();
+        // Things standing in a deleted closet move out into the room.
+        r.pieces.forEach(q => { if (q.insideId === p.id) delete q.insideId; });
+        r.pieces = r.pieces.filter(q => q.id !== p.id);
+        saveOrWarn();
+        location.hash = p.insideId ? `#/rooms/my-room/piece/${p.insideId}` : '#/rooms/my-room';
+      }));
+    },
+    'size'(el) {
+      const dim = el.dataset.dim, dir = Number(el.dataset.dir);
+      changePiece(p => { p[dim] = clampSize(p[dim] + dir * 0.5); });
+    },
+    'cols'(el) {
+      const p = pieceById(pagePieceId);
+      if (!p) return;
+      const dir = Number(el.dataset.dir);
+      if (dir > 0) {
+        changePiece(q => {
+          const last = q.cols[q.cols.length - 1];
+          const cells = last.cells.map(k => Furniture.cell(k.type, k.h, { insert: k.insert, binColor: k.binColor, shelves: k.shelves, hinge: k.hinge }));
+          q.w = clampSize(q.w + q.w / q.cols.length);
+          q.cols.push(Furniture.col(cells, last.w));
+        });
+        return;
+      }
+      if (p.cols.length <= 1) { wiggle(el); return; }
+      const last = p.cols[p.cols.length - 1];
+      guardUsed(last.cells.some(Furniture.cellUsed), () => changePiece(q => {
+        q.w = clampSize(q.w - q.w / q.cols.length);
+        q.cols.pop();
+        if (selectedPart && !Furniture.findCell(q, selectedPart)) selectedPart = null;
+      }));
+    },
+    'part-type'(el) {
+      const p = pieceById(pagePieceId);
+      const k = p && Furniture.findCell(p, selectedPart);
+      if (!k || k.type === el.dataset.value) return;
+      const type = el.dataset.value;
+      guardUsed(Furniture.cellUsed(k), () => changePiece(q => {
+        const place = partPlace(q, k.id);
+        if (!place) return;
+        const hinge = k.hinge || (q.cols.indexOf(place.col) < q.cols.length / 2 ? 'l' : 'r');
+        const fresh = Furniture.cell(type, k.h, { hinge, binColor: k.binColor || Furniture.BIN_COLORS[1] });
+        fresh.id = k.id;
+        place.col.cells[place.i] = fresh;
+      }));
+    },
+    'part-insert'(el) {
+      changePiece(p => {
+        const k = Furniture.findCell(p, selectedPart);
+        if (k && k.type === 'open') k.insert = el.dataset.value;
+      });
+    },
+    'bin-color'(el) {
+      changePiece(p => {
+        const k = Furniture.findCell(p, selectedPart);
+        if (k) k.binColor = el.dataset.value;
+      });
+    },
+    'cup-shelves'(el) {
+      const p = pieceById(pagePieceId);
+      const k = p && Furniture.findCell(p, selectedPart);
+      if (!k || k.type !== 'cupboard') return;
+      const dir = Number(el.dataset.dir);
+      if (dir > 0) {
+        if (k.shelves >= 4) { wiggle(el); return; }
+        changePiece(() => { k.shelves += 1; k.spots.push({ id: Furniture.uid() }); });
+        return;
+      }
+      if (k.shelves <= 0) { wiggle(el); return; }
+      guardUsed(Furniture.spaceUsed(k.spots[k.spots.length - 1]), () => changePiece(q => {
+        const kk = Furniture.findCell(q, k.id);
+        kk.shelves -= 1;
+        kk.spots.pop();
+      }));
+    },
+    'part-size'(el) {
+      changePiece(p => {
+        const k = Furniture.findCell(p, selectedPart);
+        if (k) k.h = Math.max(0.4, Math.min(4, Math.round((k.h + Number(el.dataset.dir) * 0.2) * 10) / 10));
+      });
+    },
+    'part-add'() {
+      changePiece(p => {
+        const place = partPlace(p, selectedPart);
+        if (!place) return;
+        const k = place.col.cells[place.i];
+        const n = place.col.cells.length;
+        const fresh = Furniture.cell(k.type, k.h, { insert: k.insert, binColor: k.binColor, shelves: k.shelves, hinge: k.hinge });
+        place.col.cells.splice(place.i + 1, 0, fresh);
+        p.h = clampSize(p.h * (n + 1) / n);
+        selectedPart = fresh.id;
+      });
+    },
+    'part-remove'(el) {
+      const p = pieceById(pagePieceId);
+      const place = p && partPlace(p, selectedPart);
+      if (!place) return;
+      const k = place.col.cells[place.i];
+      const lastInCol = place.col.cells.length === 1;
+      if (lastInCol && p.cols.length === 1) { wiggle(el); return; }
+      guardUsed(Furniture.cellUsed(k), () => changePiece(q => {
+        const pl = partPlace(q, k.id);
+        if (!pl) return;
+        if (pl.col.cells.length === 1) {
+          q.w = clampSize(q.w - q.w / q.cols.length);
+          q.cols = q.cols.filter(c => c !== pl.col);
+        } else {
+          const n = pl.col.cells.length;
+          pl.col.cells.splice(pl.i, 1);
+          q.h = clampSize(q.h * (n - 1) / n);
+        }
+        selectedPart = null;
+      }));
+    },
+    'tower-drawers'(el) {
+      const p = pieceById(pagePieceId);
+      if (!p) return;
+      const cells = p.cols[0].cells;
+      const dir = Number(el.dataset.dir);
+      if (dir > 0) {
+        if (cells.length >= 8) { wiggle(el); return; }
+        changePiece(q => { q.cols[0].cells.push(Furniture.cell('drawer')); q.h = clampSize(q.h + 1.1); });
+        return;
+      }
+      if (cells.length <= 1) { wiggle(el); return; }
+      guardUsed(Furniture.cellUsed(cells[cells.length - 1]), () => changePiece(q => {
+        q.cols[0].cells.pop();
+        q.h = clampSize(q.h - 1.1);
+      }));
+    },
+    'closet-shelves'(el) {
+      const p = pieceById(pagePieceId);
+      if (!p) return;
+      const dir = Number(el.dataset.dir);
+      if (dir > 0) {
+        if (p.shelves.length >= 3) { wiggle(el); return; }
+        changePiece(q => { q.shelves.push({ id: Furniture.uid() }); q.h = clampSize(q.h + 1.3); });
+        return;
+      }
+      if (!p.shelves.length) { wiggle(el); return; }
+      guardUsed(Furniture.spaceUsed(p.shelves[p.shelves.length - 1]), () => changePiece(q => {
+        q.shelves.pop();
+        q.h = clampSize(q.h - 1.3);
+      }));
+    },
+    'closet-rods'(el) {
+      const p = pieceById(pagePieceId);
+      if (!p || p.rods === el.dataset.value) return;
+      // Going from two rods to one drops the lower rod's space.
+      const losing = p.rods === 'two' && el.dataset.value !== 'two' && Furniture.spaceUsed(p.rodSpots[1]);
+      guardUsed(losing, () => changePiece(q => { q.rods = el.dataset.value; }));
+    },
+
     // Parent mode (Rewards and sticker pages)
     'unlock'() {
       askPin(() => { parentUnlocked = true; rerender(); });
@@ -764,6 +1156,11 @@
   });
 
   document.addEventListener('input', e => {
+    if (e.target.id === 'piece-label') {
+      const p = pieceById(pagePieceId);
+      if (p) { p.label = e.target.value.trim(); S.save(); }
+      return;
+    }
     if (e.target.id !== 'person-name') return;
     const name = e.target.value.trim();
     if (pagePersonId === 'new') {
@@ -810,6 +1207,9 @@
     [/^#\/?$/, renderHome],
     [/^#\/rooms$/, renderRooms],
     [/^#\/rooms\/my-room$/, renderMyRoom],
+    [/^#\/rooms\/my-room\/add$/, () => renderCatalog(null)],
+    [/^#\/rooms\/my-room\/add\/([\w-]+)$/, m => renderCatalog(m[1])],
+    [/^#\/rooms\/my-room\/piece\/([\w-]+)$/, m => renderPiece(m[1])],
     [/^#\/who$/, renderWho],
     [/^#\/people\/(new|[\w-]+)$/, m => renderPersonPage(m[1])],
     [/^#\/sticker\/new$/, () => renderStickerBuilder(null)],
