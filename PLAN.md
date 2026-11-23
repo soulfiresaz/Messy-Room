@@ -120,6 +120,8 @@ Everything is drag and drop. No measuring.
     - **Sections:** a closet is split into sections side by side, with a divider between them. Each section has its own width and is one high rod, one low rod a child can reach, two rods (top and bottom), or a stack of shelves. A narrower section gives a shorter rod.
     - **Top shelf** goes all the way across, over every section (0 to 3 of them)
     - **Ready-made closets:** single (one rod), single split in half (one rod, and two rods on the other half), a rod on each side with shelves in the middle, and double wide with a divider (one rod on the left; two rods on the right, one for shirts and one for pants)
+    - **Closet doors:** folding (bifold), a fabric curtain, sliding, one regular door, or no door. Each looks different on the map from above, so a closet reads as a closet.
+    - **Inside and outside (decided):** the closet opens showing its inside. A big 🚪 button switches to the outside of the doors, where things hang (like a pocket organizer), and back. Kids never have to aim between "open the door" and "open the organizer."
     - **Furniture can go inside the closet:** the closet has a floor where you place pieces you've already built (like a small dresser or a cubby unit), and they open the same way they do in the room
 - **Step B, the map from above** (like looking down from the ceiling): place the door, the closet and the windows where they really are, rotate the room to match, and drag each piece's top to its spot. Each top matches the piece's shape, so a skinny dresser has a narrow top.
 - **Tapping a piece on the map opens its front view.** Each drawer, cubby, cupboard spot, shelf or rod can be opened to see what's kept there.
@@ -143,9 +145,15 @@ Ready-made pieces to start from (not every possible option, just good ones). Any
   - **a paper sorter** with little trays (5 to start, 2 to 8), each tray its own space
   - **a paper drawer box** (3 drawers to start, 1 to 5, dark or white or any color), each drawer its own space
 - **Bookshelves**
-- **Seats:** chair, beanbag, floor chair
+- **Seats:** chair, beanbag, floor chair, lounge chair with a footrest that kicks up
+- **Wire shelves:** medium height, 5 shelves
+- **Over-the-door pocket organizer:** choose how many pockets across and down (like 4 × 6). Each pocket is its own space and can hold anything: shoes, medicine, creams, beauty products. Hangs on any door (room door, bathroom door, closet door).
+- **Hooks:** single, double, a set of three over a door, a belt rack, and wall hooks for things like aprons and backpacks. Each hook is its own space.
+- **Wall file sorter** with key hooks
+- **Laundry hampers** (round plastic and rectangular), **baskets, bags and boxes**
+- **The top of a piece is a space too**, like a TV and a dish sitting on top of the cubbies
 - **Closet** (inside view, see above)
-- **On the walls:** windows, shelves, light switch
+- **On the walls:** windows, shelves, light switch (drawn as a switch plate with a light bulb, so it isn't mistaken for an outlet), hooks, wall file sorter
 - **Furniture is 3-D on the map:** each piece's top shows its real width and depth. A tall skinny dresser has a narrow top, but it's still a full drawer deep. Beds are their real size next to everything else (twin, bunk and loft are long and narrow; queen and king are wider).
 - **Stretch on the map:** tap a door, window, closet or piece of furniture and drag its yellow handle (or use ➖ ➕) to make it wider. Furniture can also be made deeper or shallower. A double-wide closet can reach halfway across a wall; a cubby unit can fill a third of one.
 - **Closets in the walls step:** the ready-made closets are right in the 🚪 tray
