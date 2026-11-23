@@ -70,7 +70,7 @@ const RoomMap = (() => {
   function settle(room, p) {
     const { w, d } = room.size;
     const pl = p.place;
-    const mustWall = p.kind === 'closet' || p.kind === 'wallshelf';
+    const mustWall = ['closet', 'wallshelf', 'hooks', 'wallsorter'].includes(p.kind);
     let { hx, hy } = halfSize(p);
     const gaps = [pl.y - hy, w - (pl.x + hx), d - (pl.y + hy), pl.x - hx];   // top, right, bottom, left
     let wall = gaps.indexOf(Math.min(...gaps));

@@ -197,6 +197,80 @@
     return room().pieces.find(p => p.id === id) || null;
   }
 
+  // Where a piece goes back to: its closet, the door or closet it hangs on, or the map or list.
+  function pieceBack(p) {
+    if (!p) return pieceReturn;
+    if (p.hangOn) return hangBack(p.hangOn);
+    if (p.insideId && pieceById(p.insideId)) return `#/rooms/my-room/piece/${p.insideId}`;
+    return pieceReturn;
+  }
+
+  function hangBack(targetId) {
+    if (room().wallItems && room().wallItems.some(it => it.id === targetId)) return `#/rooms/my-room/door/${targetId}`;
+    if (pieceById(targetId)) return `#/rooms/my-room/piece/${targetId}/outside`;
+    return '#/rooms/my-room';
+  }
+
+  // A room door from the front: things hang on it (a pocket organizer, hooks).
+  let pageDoorId = null;
+  function renderDoorPage(id) {
+    const r = RoomMap.defaults(room());
+    const door = r.wallItems.find(it => it.id === id && it.type === 'door');
+    if (!door) { location.replace('#/rooms/my-room'); return; }
+    pageDoorId = id;
+    const current = door.color || '#ffffff';
+    $app.innerHTML = `
+      ${topBar(door.label || '', '#/rooms/my-room')}
+      <main class="piece-page">
+        <div class="piece-stage">${Furniture.renderDoor(door, piecesHungOn(id), { interactive: true, addHang: true })}</div>
+        <section class="opt-row">
+          <h2 class="opt-head"><span aria-hidden="true">🎨</span></h2>
+          <div class="opt-choices">${swatches(current, 'door-color')}</div>
+        </section>
+        <section class="opt-row">
+          <h2 class="opt-head"><span aria-hidden="true">🏷️</span> Label (optional)</h2>
+          <input class="text-input" id="door-label" type="text" maxlength="24" value="${esc(door.label || '')}" placeholder="Like: Bathroom">
+        </section>
+        <div class="action-row">
+          <button type="button" class="save-btn" data-act="door-save"><span aria-hidden="true">✔️</span> Save</button>
+        </div>
+      </main>`;
+  }
+
+  // A row of color circles, plus ➕ for the big color picker. A color picked there shows in the row too.
+  function swatches(current, act) {
+    const list = Furniture.COLORS.includes(current) || !current ? Furniture.COLORS : [...Furniture.COLORS, current];
+    return list.map(c =>
+      `<button type="button" class="swatch ${current === c ? 'picked' : ''}" style="--swatch:${c}" data-act="${act}" data-value="${c}" aria-label="Color" aria-pressed="${current === c}"></button>`).join('') +
+      `<button type="button" class="swatch more-colors" data-act="color-picker" data-for="${act}" aria-label="More colors"><span aria-hidden="true">➕</span></button>`;
+  }
+
+  // The big color picker: a grid of color squares, no sliders.
+  const PICKER = (() => {
+    const hsl = (h, s, l) => {
+      s /= 100; l /= 100;
+      const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+      const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+      return '#' + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+    };
+    const hues = [0, 15, 30, 45, 60, 90, 130, 165, 190, 210, 235, 265, 290, 320, 340];
+    // One row per color family, light to dark
+    const rows = hues.map(h => [[90, 88], [85, 76], [80, 64], [70, 52], [60, 40], [55, 28]].map(([s, l]) => hsl(h, s, l)));
+    const browns = ['#f6ead8', '#ead2b0', '#d9b98a', '#c9a57a', '#b08050', '#8a6a5a', '#6b4a3a', '#4a3226'];
+    const grays = ['#ffffff', '#eef1f5', '#d5dbe3', '#b8c0cc', '#9aa7b8', '#6b7686', '#4a4a5a', '#2a2a32'];
+    return [...rows, browns, grays];
+  })();
+  let pickerFor = null;
+
+  function openColorPicker(act) {
+    pickerFor = act;
+    openModal(`
+      <div class="color-grid">
+        ${PICKER.map(row => `<div class="color-row ${row.length > 6 ? 'wide' : ''}">${row.map(c => `<button type="button" class="color-box" style="--swatch:${c}" data-act="pick-color" data-value="${c}" aria-label="Color"></button>`).join('')}</div>`).join('')}
+      </div>
+      <div class="confirm-row"><button type="button" class="big-btn no" data-act="modal-close" aria-label="Close">✖️</button></div>`);
+  }
+
   // Things hanging on a door or on a closet's doors.
   function piecesHungOn(id) {
     return room().pieces.filter(p => p.hangOn === id);
@@ -237,7 +311,7 @@
   let mapSelected = null;
   let drag = null;
 
-  const mapPieces = () => room().pieces.filter(p => !p.insideId);
+  const mapPieces = () => room().pieces.filter(p => !p.insideId && !p.hangOn && p.kind !== 'pockets' && !(p.kind === 'hooks' && p.sub === 'overdoor'));
   const isWallPiece = p => p.kind === 'closet';
 
   function firstStep(r) {
@@ -282,7 +356,7 @@
       const deep = !isItem && Furniture.canDeepen(sel)
         ? `<div class="step-group"><span class="step-icon" aria-hidden="true">⤵️</span>${stepBtn('map-depth', '➖', 'Less deep', 'data-dir="-1"')}${stepBtn('map-depth', '➕', 'Deeper', 'data-dir="1"')}</div>` : '';
       const tools = (isItem
-        ? (sel.type === 'door' ? stepBtn('map-flip', '🔄', 'Swing the door the other way') : '') + stepBtn('map-remove', '🗑️', 'Take it away')
+        ? (sel.type === 'door' ? stepBtn('map-flip', '🔄', 'Swing the door the other way') + stepBtn('map-open-door', '👀', 'Open the door to hang things on it') : '') + stepBtn('map-remove', '🗑️', 'Take it away')
         : stepBtn('map-turn', '🔄', 'Turn it') + stepBtn('map-open', '👀', 'Open it') + stepBtn('map-unplace', '↩️', 'Take it off the map')) + wide + deep;
       return `<div class="map-tools">${tools}${stepBtn('map-deselect', '✔️', 'Done')}</div>`;
     }
@@ -478,10 +552,12 @@
   function renderCatalog(mode, targetId) {
     const closet = mode === 'floor' ? pieceById(targetId) : null;
     if (mode === 'floor' && !closet) { location.replace('#/rooms/my-room'); return; }
-    const back = closet ? `#/rooms/my-room/piece/${closet.id}` : pieceReturn;
+    const back = closet ? `#/rooms/my-room/piece/${closet.id}` : mode === 'hang' ? hangBack(targetId) : pieceReturn;
+    catalogHang = mode === 'hang' ? targetId : null;
     const groups = Furniture.GROUPS.map(g => {
       if (mode === 'closets' ? g.key !== 'closet' : g.key === 'closet') return '';
       const items = Furniture.CATALOG.filter(c => c.group === g.key)
+        .filter(c => mode === 'hang' ? (c.where === 'door' || c.where === 'both') : c.where !== 'door')
         .map(c => ({ c, p: c.make() }))
         .filter(x => mode !== 'floor' || Furniture.fitsInCloset(x.p));
       if (!items.length) return '';
@@ -498,6 +574,7 @@
   }
 
   let catalogCloset = null;
+  let catalogHang = null;      // door or closet that new pieces hang on
   let closetOutside = false;   // the closet page is showing the outside of its doors
   let pieceReturn = '#/rooms/my-room';
   let partsMode = false;     // "change the parts" is open
@@ -509,14 +586,14 @@
     if (used) askPin(fn); else fn();
   }
 
-  function renderPiece(id) {
+  function renderPiece(id, outside = false) {
     const p = pieceById(id);
     if (!p) { location.replace('#/rooms/my-room'); return; }
-    if (pagePieceId !== id) { partsMode = false; selectedPart = null; closetOutside = false; }
+    if (pagePieceId !== id || outside) { partsMode = false; selectedPart = null; closetOutside = outside; }
     pagePieceId = id;
-    const back = p.insideId && pieceById(p.insideId) ? `#/rooms/my-room/piece/${p.insideId}` : '#/rooms/my-room';
+    const back = pieceBack(p);
     const inside = p.kind === 'closet' ? piecesIn(p.id) : [];
-    const canChange = Furniture.hasParts(p) || p.kind === 'closet' || p.kind === 'wallshelf';
+    const canChange = Furniture.hasParts(p) || ['closet', 'wallshelf', 'pockets'].includes(p.kind) || (p.kind === 'hooks' && p.count > 1);
     const pic = Furniture.render(p, {
       interactive: true,
       selected: partsMode ? selectedPart : null,
@@ -529,8 +606,7 @@
     });
     // On the outside of a closet, the colors are for its doors.
     const current = p.kind === 'closet' && closetOutside ? p.doorColor : p.color;
-    const colors = Furniture.COLORS.map(c =>
-      `<button type="button" class="swatch ${current === c ? 'picked' : ''}" style="--swatch:${c}" data-act="piece-color" data-value="${c}" aria-label="Color" aria-pressed="${current === c}"></button>`).join('');
+    const colors = swatches(current, 'piece-color');
     $app.innerHTML = `
       ${topBar(p.label || '', back)}
       <main class="piece-page">
@@ -590,7 +666,23 @@
       }
       return `<div class="parts-panel">${rows.join('')}</div>`;
     }
+    if (p.kind === 'pockets') {
+      return `<div class="parts-panel"><section class="opt-row"><h2 class="opt-head">Pockets</h2><div class="opt-choices">
+        <div class="step-group"><span class="step-icon" aria-hidden="true">↔️</span><span class="step-num">${p.cols}</span>${stepBtn('pockets-size', '➖', 'Fewer across', 'data-dim="cols" data-dir="-1"')}${stepBtn('pockets-size', '➕', 'More across', 'data-dim="cols" data-dir="1"')}</div>
+        <div class="step-group"><span class="step-icon" aria-hidden="true">↕️</span><span class="step-num">${p.rows}</span>${stepBtn('pockets-size', '➖', 'Fewer down', 'data-dim="rows" data-dir="-1"')}${stepBtn('pockets-size', '➕', 'More down', 'data-dim="rows" data-dir="1"')}</div>
+      </div></section></div>`;
+    }
+    if (p.kind === 'hooks') {
+      return `<div class="parts-panel"><section class="opt-row"><h2 class="opt-head">Hooks</h2><div class="opt-choices">
+        <div class="step-group"><span class="step-num">${p.count}</span>${stepBtn('hooks-count', '➖', 'Fewer hooks', 'data-dir="-1"')}${stepBtn('hooks-count', '➕', 'More hooks', 'data-dir="1"')}</div>
+      </div></section></div>`;
+    }
     if (!Furniture.hasParts(p)) return `<div class="parts-panel">${rows.join('')}</div>`;
+    if (p.style === 'wire') {
+      rows.push(`<section class="opt-row"><h2 class="opt-head">Shelves</h2><div class="opt-choices">
+        <div class="step-group"><span class="step-num">${p.cols[0].cells.length}</span>${stepBtn('rows', '➖', 'Fewer shelves', 'data-dir="-1"')}${stepBtn('rows', '➕', 'More shelves', 'data-dir="1"')}</div></div></section>`);
+      return `<div class="parts-panel">${rows.join('')}</div>`;
+    }
 
     if (p.style === 'plastic') {
       const wheels = [['on', 'With wheels'], ['off', 'No wheels']].map(([v, label]) => {
@@ -626,8 +718,10 @@
             <div class="step-group"><span class="step-num">${k.count}</span>${stepBtn('insert-count', '➖', 'Fewer', 'data-dir="-1"')}${stepBtn('insert-count', '➕', 'More', 'data-dir="1"')}</div></div></section>`);
         }
         if (k.insert === 'bin' || k.insert === 'drawers') {
-          const bins = Furniture.BIN_COLORS.map(c =>
-            `<button type="button" class="swatch ${k.binColor === c ? 'picked' : ''}" style="--swatch:${c}" data-act="bin-color" data-value="${c}" aria-label="Bin color" aria-pressed="${k.binColor === c}"></button>`).join('');
+          const binList = Furniture.BIN_COLORS.includes(k.binColor) ? Furniture.BIN_COLORS : [...Furniture.BIN_COLORS, k.binColor];
+          const bins = binList.map(c =>
+            `<button type="button" class="swatch ${k.binColor === c ? 'picked' : ''}" style="--swatch:${c}" data-act="bin-color" data-value="${c}" aria-label="Bin color" aria-pressed="${k.binColor === c}"></button>`).join('') +
+            `<button type="button" class="swatch more-colors" data-act="color-picker" data-for="bin-color" aria-label="More colors"><span aria-hidden="true">➕</span></button>`;
           rows.push(`<section class="opt-row"><h2 class="opt-head">Color</h2><div class="opt-choices">${bins}</div></section>`);
         }
       }
@@ -1201,6 +1295,55 @@
       Effects.pop();
       drawMapAll();
     },
+    'color-picker'(el) {
+      openColorPicker(el.dataset.for);
+    },
+    'pick-color'(el) {
+      const act = pickerFor;
+      closeModal();
+      if (act && actions[act]) actions[act]({ dataset: { value: el.dataset.value } });
+    },
+    'door-color'(el) {
+      const door = room().wallItems.find(it => it.id === pageDoorId);
+      if (!door) return;
+      door.color = el.dataset.value;
+      saveOrWarn();
+      Effects.pop();
+      const y = window.scrollY;
+      renderDoorPage(pageDoorId);
+      window.scrollTo(0, y);
+    },
+    'door-save'() {
+      saveOrWarn();
+      Effects.chime();
+      location.hash = '#/rooms/my-room';
+    },
+    'hang-add'() {
+      const target = location.hash.startsWith('#/rooms/my-room/door/') ? pageDoorId : pagePieceId;
+      location.hash = `#/rooms/my-room/hang/${target}`;
+    },
+    'map-open-door'() {
+      if (mapSelected) location.hash = `#/rooms/my-room/door/${mapSelected}`;
+    },
+    'pockets-size'(el) {
+      const p = pieceById(pagePieceId);
+      if (!p) return;
+      const dim = el.dataset.dim, next = p[dim] + Number(el.dataset.dir);
+      if (next < 1 || next > (dim === 'cols' ? 8 : 10)) { wiggle(el); return; }
+      // Pockets that would go away, row by row from the end
+      const after = Furniture.sizePockets({ ...p, [dim]: next, pockets: p.pockets.slice() });
+      const kept = new Set(after.pockets.map(x => x.id));
+      const losing = p.pockets.some(x => !kept.has(x.id) && Furniture.spaceUsed(x));
+      guardUsed(losing, () => changePiece(q => { q[dim] = next; Furniture.sizePockets(q); }));
+    },
+    'hooks-count'(el) {
+      const p = pieceById(pagePieceId);
+      if (!p) return;
+      const next = p.count + Number(el.dataset.dir);
+      if (next < 2 || next > 10) { wiggle(el); return; }
+      const losing = next < p.count && Furniture.spaceUsed(p.hooks[p.hooks.length - 1]);
+      guardUsed(losing, () => changePiece(q => { q.count = next; Furniture.sizeHooks(q); }));
+    },
     'closet-side'() {
       closetOutside = !closetOutside;
       selectedPart = null;
@@ -1270,7 +1413,7 @@
       const p = pieceById(pagePieceId);
       if (!saveOrWarn()) return;
       Effects.chime();
-      location.hash = p && p.insideId && pieceById(p.insideId) ? `#/rooms/my-room/piece/${p.insideId}` : pieceReturn;
+      location.hash = pieceBack(p);
     },
     'map-flip'() {
       const it = room().wallItems.find(x => x.id === mapSelected);
@@ -1281,6 +1424,7 @@
     },
     'map-remove'() {
       const r = room();
+      r.pieces.forEach(p => { if (p.hangOn === mapSelected) delete p.hangOn; });
       r.wallItems = r.wallItems.filter(x => x.id !== mapSelected);
       mapSelected = null;
       saveOrWarn();
@@ -1293,6 +1437,7 @@
       const p = Furniture.make(el.dataset.key);
       if (!p) return;
       if (catalogCloset) p.insideId = catalogCloset;
+      if (catalogHang) p.hangOn = catalogHang;
       room().pieces.push(p);
       if (!saveOrWarn()) return;
       Effects.chime();
@@ -1309,7 +1454,7 @@
       const p = pieceById(pagePieceId);
       if (!p) return;
       const id = el.dataset.id;
-      if (partsMode && ((Furniture.hasParts(p) && p.style !== 'plastic') || p.kind === 'closet')) {
+      if (partsMode && ((Furniture.hasParts(p) && p.style !== 'plastic' && p.style !== 'wire') || p.kind === 'closet')) {
         selectedPart = selectedPart === id ? null : id;
         Effects.pop();
         redrawPiece();
@@ -1678,6 +1823,11 @@
   });
 
   document.addEventListener('input', e => {
+    if (e.target.id === 'door-label') {
+      const door = room().wallItems.find(it => it.id === pageDoorId);
+      if (door) { door.label = e.target.value.trim(); S.save(); }
+      return;
+    }
     if (e.target.id === 'piece-label') {
       const p = pieceById(pagePieceId);
       if (p) { p.label = e.target.value.trim(); S.save(); }
@@ -1732,8 +1882,11 @@
     [/^#\/rooms\/my-room\/furniture$/, renderFurnitureList],
     [/^#\/rooms\/my-room\/add$/, () => renderCatalog('room')],
     [/^#\/rooms\/my-room\/add-closet$/, () => renderCatalog('closets')],
+    [/^#\/rooms\/my-room\/hang\/([\w-]+)$/, m => renderCatalog('hang', m[1])],
+    [/^#\/rooms\/my-room\/door\/([\w-]+)$/, m => renderDoorPage(m[1])],
     [/^#\/rooms\/my-room\/add\/([\w-]+)$/, m => renderCatalog('floor', m[1])],
     [/^#\/rooms\/my-room\/piece\/([\w-]+)$/, m => renderPiece(m[1])],
+    [/^#\/rooms\/my-room\/piece\/([\w-]+)\/outside$/, m => renderPiece(m[1], true)],
     [/^#\/who$/, renderWho],
     [/^#\/people\/(new|[\w-]+)$/, m => renderPersonPage(m[1])],
     [/^#\/sticker\/new$/, () => renderStickerBuilder(null)],

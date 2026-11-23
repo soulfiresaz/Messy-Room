@@ -162,10 +162,33 @@ const Furniture = (() => {
       }),
     },
     // Seats
+    { key: 'wire', group: 'shelves', make: () => base('wire', 'wire', '#c9cfd8', 5, 9, 2, { cols: [col(opens(5))] }) },
+    { key: 'recliner', group: 'seats', make: () => base('seat', 'seat', '#8fd3ff', 4.8, 3.4, 5.4, { seat: 'recliner' }) },
+    { key: 'hamperRound', group: 'baskets', make: () => container('hamperRound', '#ffffff') },
+    { key: 'hamperRect', group: 'baskets', make: () => container('hamperRect', '#b9a2ff') },
+    { key: 'basket', group: 'baskets', make: () => container('basket', '#d9b98a') },
+    { key: 'bag', group: 'baskets', make: () => container('bag', '#7fd8c0') },
+    { key: 'box', group: 'baskets', make: () => container('box', '#c9a57a') },
+    { key: 'hookSingle', group: 'hooks', where: 'both', make: () => hooks('single', 1, '#c9cfd8') },
+    { key: 'hookDouble', group: 'hooks', where: 'both', make: () => hooks('double', 1, '#c9cfd8') },
+    { key: 'hookWall', group: 'hooks', make: () => hooks('wall', 2, '#c98b5a') },
+    { key: 'beltRack', group: 'hooks', make: () => hooks('rack', 6, '#c98b5a') },
+    { key: 'wallSorter', group: 'hooks', make: () => base('wallsorter', 'wallsorter', '#7fd8c0', 4.2, 4.2, 0.6, { slots: ids(3), keys: ids(4) }) },
+    { key: 'pockets', group: 'door', where: 'door', make: () => sizePockets(base('pockets', 'pockets', '#f4ead8', 0, 0, 0.4, { cols: 4, rows: 6 })) },
+    { key: 'hookOverdoor', group: 'door', where: 'door', make: () => hooks('overdoor', 3, '#c9cfd8') },
     { key: 'chair', group: 'seats', make: () => base('seat', 'seat', '#8fd3ff', 2.2, 3.6, 1.4, { seat: 'chair' }) },
     { key: 'beanbag', group: 'seats', make: () => base('seat', 'seat', '#b9a2ff', 3, 2.4, 2.4, { seat: 'beanbag' }) },
     { key: 'floorchair', group: 'seats', make: () => base('seat', 'seat', '#ff9fb8', 2.8, 2.4, 2, { seat: 'floorchair' }) },
   ];
+
+  function container(sub, color) {
+    const [w, h] = CONTAINER_SIZE[sub];
+    return base('container', 'container', color, w, h, 2, { sub, spot: { id: uid() } });
+  }
+
+  function hooks(sub, count, color) {
+    return sizeHooks(base('hooks', 'hooks', color, 1, 1.6, 0.6, { sub, count }));
+  }
 
   const GROUPS = [
     { key: 'beds', icon: '🛏️', label: 'Beds' },
@@ -176,6 +199,9 @@ const Furniture = (() => {
     { key: 'shelves', icon: '📚', label: 'Shelves' },
     { key: 'closet', icon: '👕', label: 'Closets' },
     { key: 'seats', icon: '💺', label: 'Seats' },
+    { key: 'baskets', icon: '🧺', label: 'Hampers, baskets and boxes' },
+    { key: 'hooks', icon: '🪝', label: 'Hooks and wall pieces' },
+    { key: 'door', icon: '🚪', label: 'On a door' },
   ];
 
   function make(key) {
@@ -186,16 +212,19 @@ const Furniture = (() => {
   // Pieces made from columns of parts can have their parts changed.
   const hasParts = p => Array.isArray(p.cols);
   // Pieces that can stand on a closet floor.
-  const fitsInCloset = p => hasParts(p);
+  const fitsInCloset = p => hasParts(p) || p.kind === 'container';
 
   // ---------- Spaces (where things are kept) ----------
 
   // Every space in a piece, so later stages can assign what it holds and who owns it.
   function spacesOf(p) {
     if (hasParts(p)) {
-      return p.cols.flatMap(c => c.cells.flatMap(x => (x.spots && x.spots.length) ? x.spots : [x]));
+      return [...p.cols.flatMap(c => c.cells.flatMap(x => (x.spots && x.spots.length) ? x.spots : [x])), ...(p.top ? [p.top] : [])];
     }
-    if (p.kind === 'wallshelf') return [p.spot];
+    if (p.kind === 'wallshelf' || p.kind === 'container') return [p.spot];
+    if (p.kind === 'pockets') return p.pockets;
+    if (p.kind === 'hooks') return p.hooks;
+    if (p.kind === 'wallsorter') return [...p.slots, ...p.keys];
     if (p.kind === 'closet') { fixCloset(p); return [...p.shelves, ...p.sections.flatMap(sectionSpaces), p.floor]; }
     return [];
   }
@@ -211,7 +240,12 @@ const Furniture = (() => {
     if (p.kind === 'closet') return closetBox(p);
     const w = p.w * U, h = p.h * U;
     if (p.style === 'wood') return { W: w + 24, H: h + 40, ox: 12, oy: 18 };
-    if (p.style === 'plastic') return { W: w + 8, H: h + (p.wheels === false ? 8 : 24), ox: 4, oy: 4 };
+    if (p.style === 'plastic') return { W: w + 8, H: h + (p.wheels === false ? 20 : 36), ox: 4, oy: 16 };
+    if (p.style === 'cube') return { W: w + 8, H: h + 20, ox: 4, oy: 16 };
+    if (p.style === 'wire') return { W: w + 16, H: h + 24, ox: 8, oy: 12 };
+    if (p.kind === 'pockets') return { W: w + 8, H: h + 32, ox: 4, oy: 28 };
+    if (p.kind === 'hooks') return { W: w + 8, H: h + (p.sub === 'overdoor' ? 30 : 8), ox: 4, oy: p.sub === 'overdoor' ? 24 : 4 };
+    if (p.kind === 'container') return { W: w + 16, H: h + (p.sub === 'basket' ? 30 : 12), ox: 8, oy: p.sub === 'basket' ? 24 : 6 };
     if (p.style === 'wallshelf') return { W: w + 8, H: h + 8, ox: 4, oy: 4 };
     return { W: w + 8, H: h + 8, ox: 4, oy: 4 };
   }
@@ -320,6 +354,9 @@ const Furniture = (() => {
       o += rect(ox, oy, w, h, c, 8);
     }
     layout(p, ox, oy, w, h).forEach(colBox => colBox.cells.forEach(b => { o += partArt(p, b, state); }));
+    if (state.interactive && p.top) {
+      o = `<g class="fpart" data-act="part" data-id="${p.top.id}" role="button" aria-label="The top"><rect x="${ox - 6}" y="${oy - 16}" width="${w + 12}" height="20" fill="transparent"/></g>` + o;
+    }
     return o;
   }
 
@@ -379,6 +416,15 @@ const Furniture = (() => {
     if (p.seat === 'chair') {
       return rect(ox + w * 0.1, oy, w * 0.8, h * 0.5, c, 10) + rect(ox, oy + h * 0.48, w, h * 0.12, shade(c, 0.22), 5) +
         rect(ox + w * 0.06, oy + h * 0.6, 9, h * 0.4, shade(c, -0.3), 3) + rect(ox + w * 0.94 - 9, oy + h * 0.6, 9, h * 0.4, shade(c, -0.3), 3);
+    }
+    if (p.seat === 'recliner') {
+      const s = w / 175;
+      const X = v => ox + v * s, Y = v => oy + h - (122 - v) * s;
+      return `<path d="M${X(20)} ${Y(0)} Q${X(10)} ${Y(0)} ${X(10)} ${Y(12)} L${X(18)} ${Y(92)} L${X(70)} ${Y(92)} L${X(62)} ${Y(10)} Q${X(60)} ${Y(0)} ${X(48)} ${Y(0)} Z" fill="${c}" ${line()}/>` +
+        rect(X(12), Y(80), 110 * s, 26 * s, shade(c, 0.2), 12) +
+        `<path d="M${X(118)} ${Y(82)} L${X(170)} ${Y(70)} L${X(174)} ${Y(92)} L${X(122)} ${Y(104)} Z" fill="${shade(c, 0.1)}" ${line()}/>` +
+        rect(X(0), Y(50), 24 * s, 50 * s, shade(c, -0.08), 10) + rect(X(100), Y(50), 24 * s, 50 * s, shade(c, -0.08), 10) +
+        rect(X(18), Y(106), 12 * s, 16 * s, '#8a6a5a', 3, 2) + rect(X(96), Y(106), 12 * s, 16 * s, '#8a6a5a', 3, 2);
     }
     if (p.seat === 'beanbag') {
       const x = ox, y = oy;
@@ -522,6 +568,159 @@ const Furniture = (() => {
     return o;
   }
 
+  // ---------- Pocket organizers, hooks, wall sorters, hampers and baskets ----------
+
+  const ids = n => Array.from({ length: n }, () => ({ id: uid() }));
+
+  // Pocket organizer: sized by its pockets (about 0.8 units across and 1.3 down each).
+  function sizePockets(p) {
+    p.w = Math.round((p.cols * 0.8 + 0.3) * 10) / 10;
+    p.h = Math.round((p.rows * 1.3 + 0.3) * 10) / 10;
+    const n = p.cols * p.rows;
+    const keep = (p.pockets || []).slice(0, n);
+    while (keep.length < n) keep.push({ id: uid() });
+    p.pockets = keep;
+    return p;
+  }
+
+  // Hooks: single, double, a set over a door, a belt rack, or wall hooks for bags and aprons.
+  const HOOK_SPACING = { single: 1, double: 1.3, overdoor: 0.95, rack: 0.8, wall: 1.7 };
+  function sizeHooks(p) {
+    const n = p.sub === 'single' || p.sub === 'double' ? 1 : p.count;
+    p.count = n;
+    p.w = Math.round((n * HOOK_SPACING[p.sub] + (n > 1 ? 0.4 : 0.2)) * 10) / 10;
+    p.h = p.sub === 'rack' ? 2.8 : p.sub === 'wall' ? 2 : 1.6;
+    const keep = (p.hooks || []).slice(0, n);
+    while (keep.length < n) keep.push({ id: uid() });
+    p.hooks = keep;
+    return p;
+  }
+
+  const CONTAINER_SIZE = { hamperRound: [2.8, 3.6, 2.8, 2.8], hamperRect: [3.2, 3.6, 3.2, 2.2], basket: [3, 2, 2.6, 1.8], bag: [2.4, 2.8, 2.2, 1.2], box: [3, 2, 2.6, 2] };
+
+  function pocketArt(x, y, pw, ph) {
+    return `<path d="M${x} ${y + ph * 0.22} L${x + pw} ${y + ph * 0.22} L${x + pw - 2} ${y + ph} L${x + 2} ${y + ph} Z" fill="#eaf6ff" fill-opacity=".9" ${line(1.6)}/>` +
+      `<path d="M${x + 3} ${y + ph * 0.22 + 3} L${x + pw - 3} ${y + ph * 0.22 + 3}" stroke="#fff" stroke-width="2" opacity=".8"/>`;
+  }
+
+  function overHooks(x, y, w, c = '#9aa7b8') {
+    return [0.25, 0.75].map(f => `<path d="M${x + w * f - 6} ${y + 6} L${x + w * f - 6} ${y - 12} Q${x + w * f - 6} ${y - 20} ${x + w * f} ${y - 20} Q${x + w * f + 6} ${y - 20} ${x + w * f + 6} ${y - 12} L${x + w * f + 6} ${y - 6}" fill="none" stroke="${c}" stroke-width="4" stroke-linecap="round"/>`).join('');
+  }
+
+  const tap = (state, id, hit, art) => state.interactive
+    ? `<g class="fpart" data-act="part" data-id="${id}" role="button" aria-label="Open">${hit}${art}</g>` : art;
+
+  function pocketsArt(p, state) {
+    const { ox, oy } = frontBox(p);
+    const w = p.w * U, h = p.h * U, gap = 5;
+    const pw = (w - gap * (p.cols + 1)) / p.cols, ph = (h - gap * (p.rows + 1)) / p.rows;
+    let o = overHooks(ox, oy, w) + rect(ox, oy, w, h, p.color, 6, 2.5);
+    p.pockets.forEach((s, i) => {
+      const r = Math.floor(i / p.cols), k = i % p.cols;
+      const px = ox + gap + k * (pw + gap), py = oy + gap + r * (ph + gap);
+      o += tap(state, s.id, `<rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="transparent"/>`, pocketArt(px, py, pw, ph));
+    });
+    return o;
+  }
+
+  function hookShape(x, y, s, c, double) {
+    const path = `M${x} ${y + 4 * s} L${x} ${y + 16 * s} Q${x} ${y + 26 * s} ${x + 9 * s} ${y + 24 * s} L${x + 11 * s} ${y + 18 * s}`;
+    let o = `<circle cx="${x}" cy="${y}" r="${5 * s}" fill="${c}" ${line(1.6)}/>` +
+      `<path d="${path}" fill="none" stroke="${INK}" stroke-width="${4 * s}" stroke-linecap="round"/><path d="${path}" fill="none" stroke="${c}" stroke-width="${2 * s}" stroke-linecap="round"/>`;
+    if (double) {
+      const p2 = `M${x} ${y + 8 * s} Q${x - 12 * s} ${y + 10 * s} ${x - 11 * s} ${y + 20 * s}`;
+      o += `<path d="${p2}" fill="none" stroke="${INK}" stroke-width="${4 * s}" stroke-linecap="round"/><path d="${p2}" fill="none" stroke="${c}" stroke-width="${2 * s}" stroke-linecap="round"/>`;
+    }
+    return o;
+  }
+
+  function hooksArt(p, state) {
+    const { ox, oy } = frontBox(p);
+    const w = p.w * U, h = p.h * U, metal = '#9aa7b8', brass = '#d9b14a';
+    const step = HOOK_SPACING[p.sub] * U;
+    let o = '';
+    const s = p.sub === 'rack' ? 0.9 : 1.2;
+    if (p.sub === 'overdoor') {
+      o += `<path d="M${ox + 6} ${oy - 16} L${ox + w - 6} ${oy - 16} M${ox + 6} ${oy - 16} L${ox + 6} ${oy - 2} M${ox + w - 6} ${oy - 16} L${ox + w - 6} ${oy - 2}" fill="none" stroke="${metal}" stroke-width="5" stroke-linecap="round"/>`;
+      o += rect(ox, oy - 4, w, 14, p.color, 5, 2);
+    } else if (p.sub === 'rack' || p.sub === 'wall') {
+      o += rect(ox, oy, w, 18, p.color, 6, 2.5);
+    } else {
+      o += `<circle cx="${ox + w / 2}" cy="${oy + 12}" r="11" fill="${p.color}" ${line(2)}/>`;
+    }
+    p.hooks.forEach((hk, i) => {
+      const hx = p.sub === 'single' || p.sub === 'double' ? ox + w / 2 : ox + 0.2 * U + step * (i + 0.5);
+      const hy = p.sub === 'single' || p.sub === 'double' ? oy + 12 : oy + 10;
+      o += tap(state, hk.id, `<rect x="${hx - step / 2}" y="${oy}" width="${step}" height="${h}" fill="transparent"/>`,
+        hookShape(hx, hy, s, p.sub === 'wall' ? brass : metal, p.sub === 'double' || p.sub === 'wall'));
+    });
+    return o;
+  }
+
+  function wallsorterArt(p, state) {
+    const { ox, oy } = frontBox(p);
+    const w = p.w * U, h = p.h * U;
+    let o = rect(ox, oy, w, h, p.color, 8, 2.5);
+    const sh = (h * 0.72) / p.slots.length;
+    p.slots.forEach((sl, i) => {
+      const sy = oy + 10 + i * sh;
+      o += tap(state, sl.id, `<rect x="${ox}" y="${sy}" width="${w}" height="${sh}" fill="transparent"/>`,
+        `<rect x="${ox + 16}" y="${sy + sh * 0.25}" width="${w - 32}" height="${sh * 0.45}" rx="2" fill="#fff" stroke="${INK}" stroke-width="1.2"/>` +
+        rect(ox + 10, sy + sh * 0.45, w - 20, sh * 0.5, shade(p.color, -0.12), 4, 2));
+    });
+    const by = oy + h * 0.8;
+    o += rect(ox + 10, by, w - 20, 10, shade(p.color, -0.2), 4, 2);
+    const kstep = (w - 20) / p.keys.length;
+    p.keys.forEach((k, i) => {
+      const kx = ox + 10 + kstep * (i + 0.5);
+      o += tap(state, k.id, `<rect x="${kx - kstep / 2}" y="${by - 4}" width="${kstep}" height="${h * 0.22}" fill="transparent"/>`, hookShape(kx, by + 4, 0.7, '#d9b14a'));
+    });
+    return o;
+  }
+
+  function containerArt(p, x, y, w, h) {
+    const c = p.color;
+    let o = '';
+    if (p.sub === 'hamperRound') {
+      o += `<path d="M${x} ${y + h * 0.1} L${x + w * 0.1} ${y + h * 0.95} Q${x + w / 2} ${y + h * 1.04} ${x + w * 0.9} ${y + h * 0.95} L${x + w} ${y + h * 0.1} Z" fill="${c}" ${line()}/>`;
+      o += `<ellipse cx="${x + w / 2}" cy="${y + h * 0.1}" rx="${w / 2}" ry="${h * 0.09}" fill="${shade(c, -0.25)}" ${line()}/>`;
+      for (let r = 0; r < 4; r++) for (let k = 0; k < 5; k++) o += `<ellipse cx="${x + w * (0.2 + k * 0.15)}" cy="${y + h * (0.32 + r * 0.15)}" rx="${w * 0.035}" ry="${h * 0.04}" fill="${shade(c, -0.2)}"/>`;
+    } else if (p.sub === 'hamperRect') {
+      o += rect(x, y + h * 0.08, w, h * 0.92, c, 10) + rect(x - 4, y, w + 8, h * 0.15, shade(c, -0.12), 8);
+      for (let r = 0; r < 5; r++) o += `<path d="M${x + 8} ${y + h * (0.3 + r * 0.13)} L${x + w - 8} ${y + h * (0.3 + r * 0.13)}" stroke="${shade(c, -0.18)}" stroke-width="3"/>`;
+    } else if (p.sub === 'basket') {
+      o += `<path d="M${x} ${y + h * 0.25} L${x + w * 0.08} ${y + h} L${x + w * 0.92} ${y + h} L${x + w} ${y + h * 0.25} Z" fill="${c}" ${line()}/>`;
+      for (let r = 0; r < 3; r++) o += `<path d="M${x + 6} ${y + h * (0.45 + r * 0.18)} L${x + w - 6} ${y + h * (0.45 + r * 0.18)}" stroke="${shade(c, -0.2)}" stroke-width="4"/>`;
+      o += rect(x - 3, y + h * 0.18, w + 6, h * 0.13, shade(c, 0.15), 6, 2.5);
+      o += `<path d="M${x + w * 0.25} ${y + h * 0.2} Q${x + w / 2} ${y - h * 0.35} ${x + w * 0.75} ${y + h * 0.2}" fill="none" stroke="${INK}" stroke-width="7"/><path d="M${x + w * 0.25} ${y + h * 0.2} Q${x + w / 2} ${y - h * 0.35} ${x + w * 0.75} ${y + h * 0.2}" fill="none" stroke="${shade(c, 0.1)}" stroke-width="3"/>`;
+    } else if (p.sub === 'bag') {
+      o += `<path d="M${x + w * 0.25} ${y + h * 0.28} Q${x + w * 0.25} ${y} ${x + w / 2} ${y} Q${x + w * 0.75} ${y} ${x + w * 0.75} ${y + h * 0.28}" fill="none" ${line(4)}/>`;
+      o += `<path d="M${x + 4} ${y + h * 0.26} L${x + w - 4} ${y + h * 0.26} L${x + w} ${y + h} L${x} ${y + h} Z" fill="${c}" ${line()}/>`;
+    } else {
+      o += rect(x, y + h * 0.2, w, h * 0.8, c, 4) + rect(x - 4, y, w + 8, h * 0.28, shade(c, -0.08), 4) + rect(x + w * 0.36, y + h * 0.5, w * 0.28, h * 0.18, '#fff', 3, 1.6);
+    }
+    return o;
+  }
+
+  function wireArt(p, state) {
+    const { ox, oy } = frontBox(p);
+    const w = p.w * U, h = p.h * U, post = '#b8c0cc';
+    let o = rect(ox, oy, 10, h, post, 4, 2) + rect(ox + w - 10, oy, 10, h, post, 4, 2);
+    o += `<circle cx="${ox + 5}" cy="${oy + h + 5}" r="5" fill="#9aa7b8" ${line(1.6)}/><circle cx="${ox + w - 5}" cy="${oy + h + 5}" r="5" fill="#9aa7b8" ${line(1.6)}/>`;
+    const cells = p.cols[0].cells;
+    const ch = h / cells.length;
+    cells.forEach((k, i) => {
+      const sy = oy + (i + 1) * ch - 10;
+      let art = rect(ox - 4, sy, w + 8, 10, '#d5dbe3', 3, 2);
+      for (let g = 1; g < 12; g++) art += `<path d="M${ox - 4 + g * (w + 8) / 12} ${sy} L${ox - 4 + g * (w + 8) / 12} ${sy + 10}" stroke="${INK}" stroke-width="1" opacity=".5"/>`;
+      if (k.insert === 'bin') art += binArt(ox + 18, sy - ch * 0.75, Math.min(ch, w * 0.4), ch * 0.75, k.binColor || BIN_COLORS[0]);
+      const hit = `<rect x="${ox}" y="${sy - ch + 10}" width="${w}" height="${ch}" fill="transparent"/>`;
+      o += state.interactive ? `<g class="fpart" data-act="part" data-id="${k.id}" role="button" aria-label="Open">${hit}${art}</g>` : art;
+      if (state.selected === k.id) o += `<rect x="${ox - 6}" y="${sy - ch + 8}" width="${w + 12}" height="${ch + 6}" rx="8" fill="none" stroke="#3a86ff" stroke-width="5" stroke-dasharray="10 6"/>`;
+    });
+    return o;
+  }
+
   // ---------- Closet doors (the outside of a closet) ----------
   // folding (bifold), curtain, sliding, one regular door, or none.
 
@@ -642,6 +841,7 @@ const Furniture = (() => {
   // Pieces saved by older versions get the newer layout (closet sections, sorter trays).
   function fixPiece(p) {
     fixCloset(p);
+    if (hasParts(p) && !p.top) p.top = { id: uid() };
     if (hasParts(p)) p.cols.forEach(c => c.cells.forEach(k => {
       if (k.type === 'open' && INSERT_COUNTS[k.insert] && !k.spots) setInsert(k, k.insert);
     }));
@@ -657,6 +857,13 @@ const Furniture = (() => {
     else if (p.kind === 'bed') art = bedArt(p);
     else if (p.kind === 'seat') art = seatArt(p);
     else if (p.kind === 'wallshelf') art = wallshelfArt(p, state);
+    else if (p.kind === 'pockets') art = pocketsArt(p, state);
+    else if (p.kind === 'hooks') art = hooksArt(p, state);
+    else if (p.kind === 'wallsorter') art = wallsorterArt(p, state);
+    else if (p.kind === 'container') {
+      const { ox, oy } = frontBox(p);
+      art = tap(state, p.spot.id, `<rect x="${ox}" y="${oy}" width="${p.w * U}" height="${p.h * U}" fill="transparent"/>`, containerArt(p, ox, oy, p.w * U, p.h * U));
+    } else if (p.style === 'wire') art = wireArt(p, state);
     else art = storageArt(p, state);
     if (state.bare) return art;
     return svg(box.W, box.H, art, 'furn-svg');
@@ -677,6 +884,22 @@ const Furniture = (() => {
   function renderInside(p, partId) {
     const c = p.color;
     const empty = '#fffaf0';
+    const dashed = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="14" fill="${empty}" stroke="#d8c8b4" stroke-width="3" stroke-dasharray="10 8"/>`;
+    if (p.top && partId === p.top.id) {
+      return svg(360, 200, dashed(30, 20, 300, 110) + rect(10, 136, 340, 22, shade(c, 0.28), 8) + rect(24, 158, 312, 30, c, 6), 'inside-svg');
+    }
+    if (p.kind === 'pockets') {
+      return svg(360, 260, overHooks(60, 30, 240) + rect(60, 30, 240, 220, p.color, 10) + pocketArt(90, 50, 180, 190) + dashed(110, 110, 140, 110), 'inside-svg');
+    }
+    if (p.kind === 'hooks' || (p.kind === 'wallsorter' && p.keys.some(k => k.id === partId))) {
+      return svg(360, 260, hookShape(180, 40, 3, p.kind === 'wallsorter' || p.sub === 'wall' ? '#d9b14a' : '#9aa7b8', p.sub === 'double' || p.sub === 'wall') + dashed(90, 130, 180, 110), 'inside-svg');
+    }
+    if (p.kind === 'wallsorter') {
+      return svg(360, 220, rect(20, 20, 320, 180, p.color, 12) + `<rect x="50" y="40" width="260" height="90" rx="4" fill="#fff" stroke="${INK}" stroke-width="1.6"/>` + rect(36, 110, 288, 70, shade(p.color, -0.12), 8) + dashed(70, 50, 220, 60), 'inside-svg');
+    }
+    if (p.kind === 'container') {
+      return svg(360, 280, containerArt(p, 60, p.sub === 'basket' ? 90 : 40, 240, p.sub === 'basket' ? 170 : 230) + dashed(110, p.sub === 'basket' ? 150 : 110, 140, 90), 'inside-svg');
+    }
     if (p.kind === 'wallshelf') {
       return svg(360, 200, rect(20, 140, 320, 18, c, 6) +
         `<path d="M44 158 l0 34 l26 -34" fill="${shade(c, -0.25)}" ${line()}/><path d="M316 158 l0 34 l-26 -34" fill="${shade(c, -0.25)}" ${line()}/>` +
@@ -760,15 +983,16 @@ const Furniture = (() => {
   // Furniture is 3-D: a tall skinny dresser has a narrow top, but it's still a full drawer deep.
   // Sizes are in the same units as the front view (about 7 inches each), so pieces match each other.
 
-  const DEPTH = { dresser: 2.6, table: 2.3, tower: 2.1, cubby: 2.3, bookshelf: 1.7, wallshelf: 1.2, closet: 3.6 };
+  const DEPTH = { dresser: 2.6, table: 2.3, tower: 2.1, cubby: 2.3, bookshelf: 1.7, wallshelf: 1.2, closet: 3.6, wire: 2, hooks: 0.6, wallsorter: 0.6, pockets: 0.4 };
   const BED_SIZE = { twin: [5.6, 10.8], bunk: [5.8, 11.2], loft: [5.8, 11.2], queen: [8.6, 11.6], king: [11, 11.6] };
-  const SEAT_SIZE = { chair: [2.6, 2.8], beanbag: [4.2, 4.2], floorchair: [3, 3.6] };
+  const SEAT_SIZE = { chair: [2.6, 2.8], beanbag: [4.2, 4.2], floorchair: [3, 3.6], recliner: [3.8, 5.6] };
 
   // Width and depth of a piece seen from above, in units.
   function footprint(p) {
     if (p.kind === 'bed') { const [w, d] = BED_SIZE[p.bed] || BED_SIZE.twin; return { w, d }; }
     if (p.kind === 'seat') { const [w, d] = SEAT_SIZE[p.seat] || SEAT_SIZE.chair; return { w, d }; }
     if (p.kind === 'closet') return { w: fixCloset(p).sections.reduce((a, x) => a + x.w, 0), d: DEPTH.closet };
+    if (p.kind === 'container') { const z = CONTAINER_SIZE[p.sub]; return { w: z[2], d: z[3] }; }
     return { w: p.w, d: p.depth || DEPTH[p.kind] || 2.2 };
   }
 
@@ -821,11 +1045,25 @@ const Furniture = (() => {
         return `<ellipse cx="${x + W / 2}" cy="${y + D / 2}" rx="${W / 2 - 2}" ry="${D / 2 - 2}" fill="${c}" ${line()}/>` +
           `<ellipse cx="${x + W / 2}" cy="${y + D * 0.56}" rx="${W * 0.28}" ry="${D * 0.22}" fill="${shade(c, -0.12)}" opacity=".7"/>`;
       }
+      if (p.seat === 'recliner') {
+        o += rect(x, y + D * 0.15, W, D * 0.55, shade(c, 0.22), 10) + rect(x + 2, y, W - 4, D * 0.22, c, 8);
+        o += rect(x + W * 0.15, y + D * 0.68, W * 0.7, D * 0.32, shade(c, 0.1), 8);
+        return o;
+      }
       o += rect(x, y + D * 0.2, W, D * 0.8, shade(c, 0.22), 10);
       o += rect(x + 2, y, W - 4, D * 0.26, c, 8);
       return o;
     }
-    if (p.kind === 'wallshelf') return rect(x, y, W, D, c, 4);
+    if (p.kind === 'wallshelf' || p.kind === 'hooks' || p.kind === 'wallsorter' || p.kind === 'pockets') return rect(x, y, W, D, c, 4);
+    if (p.kind === 'container') {
+      if (p.sub === 'hamperRound') return `<ellipse cx="${x + W / 2}" cy="${y + D / 2}" rx="${W / 2 - 2}" ry="${D / 2 - 2}" fill="${c}" ${line()}/><ellipse cx="${x + W / 2}" cy="${y + D / 2}" rx="${W / 2 - 9}" ry="${D / 2 - 9}" fill="${shade(c, -0.15)}"/>`;
+      return rect(x, y, W, D, c, p.sub === 'bag' ? 12 : 6) + rect(x + 6, y + 6, W - 12, D - 12, shade(c, -0.15), 4, 1.5);
+    }
+    if (p.style === 'wire') {
+      o += rect(x, y, W, D, '#d5dbe3', 4);
+      for (let g = 1; g < 10; g++) o += `<path d="M${x + g * W / 10} ${y} L${x + g * W / 10} ${y + D}" stroke="${INK}" stroke-width="1" opacity=".45"/>`;
+      return o;
+    }
     if (p.kind === 'closet') {
       fixCloset(p);
       o += rect(x, y, W, D, '#fffaf0', 4, 2);
@@ -863,6 +1101,6 @@ const Furniture = (() => {
     section, fixCloset, sectionSpaces, findSection,
     cell, col, uid, shade, setInsert, INSERT_COUNTS, fixPiece,
     footprint, topArt, renderTop, canStretch, canDeepen, setWidth, setDepth,
-    DOOR_KINDS, doorIcon, renderDoor,
+    DOOR_KINDS, doorIcon, renderDoor, sizePockets, sizeHooks,
   };
 })();

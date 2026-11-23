@@ -181,6 +181,7 @@ Real furniture comes in all shapes and sizes, so each piece is made of parts you
 
 ### Colors and labels
 - **Change any piece's color** (the blue dresser, the pink shelf), so kids can tell things apart without reading
+- **More colors:** a ➕ circle after the color choices opens a big pop-up grid of color squares (each color family from light to dark, plus browns and grays). No sliders. A color picked there shows up in the row.
 - **Optional labels** for readers or helpers
 
 ### Step 4: Decide what goes where
@@ -263,6 +264,7 @@ Each stage gives something usable before moving on.
 0. **Home screen** ✅ built: "Who are you?" profiles, Rooms, Stickers, Rewards, Clean (grayed out), sticker builder, shared rewards with parent PIN
 1. **Room builder:** door, rotate, beds, furniture from parts, windows, light switch, colors, labels, stretching the room
    - ✅ Step A built: pick ready-made pieces, shape them with 🔧 "change the parts," colors, optional labels, tap any part to open it, closet with rods, shelves and furniture on its floor
+   - ✅ Closets built first (➕ in the walls tray), closet doors and the 🚪 inside/outside button, outlets, a door page for hanging things on a door, pocket organizers, hooks, wall file sorter, wire shelves, lounge chair, hampers, baskets, bags and boxes, the top of each piece as a space, and a pop-up color picker
    - ✅ Step B built: the map from above in three steps (📐 room size, 🚪 door, closet, windows and light switch, 🛏️ furniture), big rotate button, dragging from the tray, pieces turning their backs to the wall, tap a piece to turn it, open it or take it off the map
 2. **People stickers and ownership:** sticker builder (person and alien), badges on spaces, shared spaces
 3. **Item stickers:** cartoon drawings, color chooser, patterns, photos
