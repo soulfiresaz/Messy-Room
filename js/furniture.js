@@ -639,11 +639,87 @@ const Furniture = (() => {
     return p.kind === 'closet' ? (fixCloset(p).sections.find(x => x.id === id) || null) : null;
   }
 
+  // ---------- From above (the map) ----------
+  // Furniture is 3-D: a tall skinny dresser has a narrow top, but it's still a full drawer deep.
+  // Sizes are in the same units as the front view (about 7 inches each), so pieces match each other.
+
+  const DEPTH = { dresser: 2.6, table: 2.3, tower: 2.1, cubby: 2.3, bookshelf: 1.7, wallshelf: 1.2, closet: 3.6 };
+  const BED_SIZE = { twin: [5.6, 10.8], bunk: [5.8, 11.2], loft: [5.8, 11.2], queen: [8.6, 11.6], king: [11, 11.6] };
+  const SEAT_SIZE = { chair: [2.6, 2.8], beanbag: [4.2, 4.2], floorchair: [3, 3.6] };
+
+  // Width and depth of a piece seen from above, in units.
+  function footprint(p) {
+    if (p.kind === 'bed') { const [w, d] = BED_SIZE[p.bed] || BED_SIZE.twin; return { w, d }; }
+    if (p.kind === 'seat') { const [w, d] = SEAT_SIZE[p.seat] || SEAT_SIZE.chair; return { w, d }; }
+    if (p.kind === 'closet') return { w: fixCloset(p).sections.reduce((a, x) => a + x.w, 0), d: DEPTH.closet };
+    return { w: p.w, d: DEPTH[p.kind] || 2.2 };
+  }
+
+  // The top of a piece, front edge at the bottom. S is pixels per unit.
+  function topArt(p, S, x = 0, y = 0) {
+    const { w: fw, d: fd } = footprint(p);
+    const W = fw * S, D = fd * S, c = p.color;
+    let o = '';
+    if (p.kind === 'bed') {
+      const frame = '#d9c4a2';
+      o += rect(x, y, W, D, p.bed === 'bunk' || p.bed === 'loft' ? '#c9cfd8' : frame, 10);
+      o += rect(x + 6, y + 6, W - 12, D - 12, '#fff', 8, 2);
+      const pillows = p.bed === 'queen' || p.bed === 'king' ? 2 : 1;
+      const pw = (W - 24 - (pillows - 1) * 8) / pillows;
+      for (let i = 0; i < pillows; i++) o += rect(x + 12 + i * (pw + 8), y + 12, pw, D * 0.13, '#fffaf0', 12, 2);
+      const by = y + D * 0.3;
+      o += `<path d="M${x + 6} ${by} L${x + W - 6} ${by} L${x + W - 6} ${y + D - 14} Q${x + W - 6} ${y + D - 6} ${x + W - 14} ${y + D - 6} L${x + 14} ${y + D - 6} Q${x + 6} ${y + D - 6} ${x + 6} ${y + D - 14} Z" fill="${c}" ${line(2)}/>`;
+      o += `<path d="M${x + 6} ${by + 10} L${x + W - 6} ${by + 10}" stroke="${shade(c, 0.4)}" stroke-width="5"/>`;
+      if (p.bed === 'bunk' || p.bed === 'loft') {
+        // The ladder down one side
+        o += rect(x + W - 16, y + D * 0.45, 10, D * 0.3, '#c9cfd8', 3, 2);
+      }
+      return o;
+    }
+    if (p.kind === 'seat') {
+      if (p.seat === 'beanbag') {
+        return `<ellipse cx="${x + W / 2}" cy="${y + D / 2}" rx="${W / 2 - 2}" ry="${D / 2 - 2}" fill="${c}" ${line()}/>` +
+          `<ellipse cx="${x + W / 2}" cy="${y + D * 0.56}" rx="${W * 0.28}" ry="${D * 0.22}" fill="${shade(c, -0.12)}" opacity=".7"/>`;
+      }
+      o += rect(x, y + D * 0.2, W, D * 0.8, shade(c, 0.22), 10);
+      o += rect(x + 2, y, W - 4, D * 0.26, c, 8);
+      return o;
+    }
+    if (p.kind === 'wallshelf') return rect(x, y, W, D, c, 4);
+    if (p.kind === 'closet') {
+      o += rect(x, y, W, D, '#fffaf0', 4, 2);
+      o += `<path d="M${x + 10} ${y + D * 0.5} L${x + W - 10} ${y + D * 0.5}" stroke="#a8a8b8" stroke-width="6" stroke-linecap="round"/>`;
+      return o;
+    }
+    // Storage: the top, then the front edge with a knob for each column of drawers.
+    const topC = p.style === 'plastic' ? '#eef1f5' : shade(c, 0.25);
+    o += rect(x, y, W, D, topC, 6);
+    const strip = Math.max(8, D * 0.12);
+    o += rect(x, y + D - strip, W, strip, p.style === 'plastic' ? c : shade(c, -0.12), 3, 2);
+    if (hasParts(p)) {
+      const total = p.cols.reduce((a, k) => a + k.w, 0);
+      let cx = x;
+      p.cols.forEach((k, i) => {
+        const cw = W * k.w / total;
+        if (i) o += `<path d="M${cx} ${y + D - strip} L${cx} ${y + D}" stroke="${INK}" stroke-width="2"/>`;
+        if (k.cells.some(z => z.type !== 'open')) o += `<circle cx="${cx + cw / 2}" cy="${y + D + 3}" r="4" fill="${shade(c, -0.35)}" ${line(1.6)}/>`;
+        cx += cw;
+      });
+    }
+    return o;
+  }
+
+  function renderTop(p, S = 14) {
+    const { w, d } = footprint(p);
+    return svg(w * S + 8, d * S + 12, topArt(p, S, 4, 4), 'top-svg');
+  }
+
   return {
     COLORS, BIN_COLORS, CATALOG, GROUPS,
     make, render, renderInside, partIcon, sectionIcon,
     hasParts, fitsInCloset, spacesOf, spaceUsed, cellUsed, findCell,
     section, fixCloset, sectionSpaces, findSection,
     cell, col, uid, shade, setInsert, INSERT_COUNTS, fixPiece,
+    footprint, topArt, renderTop,
   };
 })();
