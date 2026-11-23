@@ -153,7 +153,7 @@ Ready-made pieces to start from (not every possible option, just good ones). Any
 - **Laundry hampers** (round plastic and rectangular), **baskets, bags and boxes**
 - **The top of a piece is a space too**, like a TV and a dish sitting on top of the cubbies
 - **Closet** (inside view, see above)
-- **On the walls:** windows, shelves, light switch (drawn as a switch plate with a light bulb, so it isn't mistaken for an outlet), hooks, wall file sorter
+- **On the walls:** windows, shelves, light switch (drawn as a switch plate with a light bulb, so it isn't mistaken for an outlet), outlets (useful later for jobs like plugging in the vacuum), hooks, wall file sorter
 - **Furniture is 3-D on the map:** each piece's top shows its real width and depth. A tall skinny dresser has a narrow top, but it's still a full drawer deep. Beds are their real size next to everything else (twin, bunk and loft are long and narrow; queen and king are wider).
 - **Stretch on the map:** tap a door, window, closet or piece of furniture and drag its yellow handle (or use ➖ ➕) to make it wider. Furniture can also be made deeper or shallower. A double-wide closet can reach halfway across a wall; a cubby unit can fill a third of one.
 - **Closets in the walls step:** the ready-made closets are right in the 🚪 tray
@@ -192,6 +192,8 @@ Real furniture comes in all shapes and sizes, so each piece is made of parts you
 ## 4. Item stickers (the things that get put away)
 
 Every item is a sticker the child can drag.
+
+- **Some items take more than one space:** a pair of shoes takes two pockets side by side in a pocket organizer
 
 - **Two ways to make an item:**
   - **Take a photo** of the real thing, like a favorite stuffed animal
