@@ -129,8 +129,16 @@ The child (with a parent's help if needed) places the door on a wall first.
 - The child spins it until the map matches what they see from where they're sitting
 
 ### Step 3: Add furniture and wall pieces
-- **Beds:** twin, bunk bed, queen, king. Bed frames count as something to clean later.
-- **Dressers, side tables, cubby units, cupboards, closets, shelves**
+Ready-made pieces to start from (not every possible option, just good ones). Any of them can be changed with "change the parts."
+
+- **Beds:** twin, bunk bed, queen, king, and a loft bed with a couch underneath that folds down into a bed. Bed frames count as something to clean later.
+- **Dressers:** 4 drawers; wide with 4 or 5 wide drawers; tall and skinny with 6; short and wide with 2 × 3; a short one with 2 drawers over 2 cupboard doors; and a long one with 3 drawers on each side and a cubby over a cupboard door in the middle
+- **Side tables:** 1 drawer (with an open space under it) or 2 drawers
+- **Drawer containers:** the small plastic kind with 3, 4 or 5 drawers
+- **Cubby units:** 2 × 4 tall, 3 × 4 (12) and 4 × 4. Each cubby is empty, has a bin, or has a paper sorter.
+- **Bookshelves**
+- **Seats:** chair, beanbag, floor chair
+- **Closet** (inside view, see above)
 - **On the walls:** windows, shelves, light switch
 - **Room size by eye:** the room grows on its own to make space, and you can drag an edge to make it wider or longer
 - **Room shape:** rectangle for now (odd shapes like L-shaped rooms could come later)
