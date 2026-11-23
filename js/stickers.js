@@ -6,7 +6,7 @@ const Stickers = (() => {
     bg: ['#bfe3ff', '#c8f0c0', '#ffd6e0', '#ffe9a8', '#e2d4ff', '#ffd2b0', '#9be7c4', '#7fd1ff', '#ff8fb1', '#ffffff'],
     skin: ['#ffe0c7', '#f6c9a0', '#e0a878', '#c68642', '#a0662f', '#6e4423', '#4a2c17'],
     hair: ['#2b1b12', '#5a3825', '#a0522d', '#e0b050', '#f3d98b', '#d94f2b', '#9b9b9b', '#ff69b4', '#6a5acd', '#2fa8a0'],
-    alien: ['#7ee081', '#8fd3ff', '#c79bff', '#ff9ecf', '#ffd36b', '#ff8a65', '#5ee0c8'],
+    alien: ['#7ee081', '#9be35a', '#8fd3ff', '#5aa9c9', '#c79bff', '#ff9ecf', '#ffd36b', '#ff8a65', '#5ee0c8', '#b9c4c9', '#2f3b2f'],
     animal: ['#fbf8f3', '#f6e3c3', '#f5b04a', '#e8925a', '#a47551', '#b9a89a', '#9e9e9e', '#4a4545', '#ffc2d1', '#7ccf7c', '#6fa8dc', '#e8655a', '#b48ee0'],
     patch: ['#f5a54a', '#e8925a', '#4a4545', '#6b4a3a', '#a47551', '#fbf8f3', '#9e9e9e', '#f6e3c3'],
   };
@@ -14,7 +14,7 @@ const Stickers = (() => {
   // ---------- Expression parts ----------
   // Kids build an expression from these pieces. Quick feelings just fill them in.
 
-  const EYES = ['dot', 'shiny', 'big', 'wide', 'happy', 'sleepy', 'wink', 'up', 'down', 'side', 'cross', 'cry', 'heart', 'angry', 'sad'];
+  const EYES = ['dot', 'shiny', 'big', 'almond', 'slit', 'wide', 'happy', 'sleepy', 'wink', 'up', 'down', 'side', 'cross', 'cry', 'heart', 'angry', 'sad'];
   const MOUTHS = ['smile', 'open', 'teeth', 'small', 'tongue', 'o', 'frown', 'wobble', 'flat'];
   const CHEEKS = ['none', 'blush', 'shy'];
   const EXTRAS = ['none', 'sweat', 'zzz', 'question', 'heart', 'sparkle', 'anger'];
@@ -64,7 +64,9 @@ const Stickers = (() => {
     alien: [
       ...FACE_PARTS,
       { key: 'color', icon: '👽', label: 'Alien color', colors: COLORS.alien },
-      { key: 'head', icon: '🥚', label: 'Head', styles: ['round', 'tall', 'wide', 'bulb'] },
+      { key: 'head', icon: '🥚', label: 'Head', styles: ['round', 'tall', 'wide', 'bulb', 'classic'] },
+      { key: 'alienEars', icon: '👂', label: 'Ears', styles: ['none', 'pointy', 'round'] },
+      { key: 'skinPattern', icon: '✨', label: 'Skin', styles: ['plain', 'spots', 'stars'] },
       { key: 'eyeCount', icon: '👁️', label: 'How many eyes', styles: [1, 2, 3] },
       { key: 'antennae', icon: '📡', label: 'Antennae', styles: [0, 1, 2] },
       { key: 'antennaStyle', icon: '🌀', label: 'Antenna shape', styles: ['straight', 'spiral', 'zigzag', 'crooked'], when: s => s.antennae > 0 },
@@ -74,7 +76,7 @@ const Stickers = (() => {
     animal: [
       { key: 'kind', icon: '🐾', label: 'Animal', styles: ['cat', 'dog', 'chihuahua', 'bunny', 'bear', 'mouse', 'fox', 'sheep', 'dragon'] },
       ...FACE_PARTS,
-      { key: 'face', icon: '🐱', label: 'Face shape', styles: ['round', 'wide', 'fluffy'], when: s => s.kind === 'cat' },
+      { key: 'face', icon: '🙂', label: 'Face shape', styles: s => (s.kind === 'dragon' ? ['round', 'chubby'] : ['round', 'wide', 'fluffy']), when: s => s.kind === 'cat' || s.kind === 'dragon' },
       { key: 'ears', icon: '👂', label: 'Ears', styles: s => (s.face === 'wide' ? ['pointy', 'big'] : ['pointy', 'big', 'folded']), when: s => s.kind === 'cat' },
       { key: 'tuft', icon: '🌱', label: 'Tuft', styles: ['none', 'sprout', 'single', 'curl', 'spikes', 'puff'], when: s => s.kind === 'dragon' },
       { key: 'horns', icon: '🐲', label: 'Horns', styles: ['none', 'tiny'], when: s => s.kind === 'dragon' },
@@ -89,7 +91,7 @@ const Stickers = (() => {
   const FACE_DEFAULT = { ...PRESETS.happy };
   const DEFAULTS = {
     person: { type: 'person', bg: '#bfe3ff', faceShape: 'oval', skin: '#f6c9a0', hair: 'short', hairColor: '#5a3825', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
-    alien: { type: 'alien', bg: '#e2d4ff', color: '#7ee081', head: 'round', eyeCount: 3, antennae: 2, antennaStyle: 'straight', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
+    alien: { type: 'alien', bg: '#e2d4ff', color: '#7ee081', head: 'round', eyeCount: 3, antennae: 2, antennaStyle: 'straight', alienEars: 'none', skinPattern: 'spots', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
     animal: { type: 'animal', bg: '#bfe3ff', kind: 'cat', face: 'round', ears: 'pointy', coat: 'calico', color: '#fbf8f3', patchColor: '#f5a54a', horns: 'none', tuft: 'sprout', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
   };
 
@@ -143,6 +145,14 @@ const Stickers = (() => {
       case 'shiny': return `<ellipse rx="3.4" ry="4.2" fill="${INK}"/><circle cx="-1.1" cy="-1.5" r="1.4" fill="#fff"/><circle cx="1.2" cy="1.6" r=".6" fill="#fff"/>`;
       case 'big': return `<circle r="5" fill="#fff" stroke="${INK}" stroke-width=".9"/><circle cx=".3" cy="-.3" r="3.4" fill="#1f1f1f"/>` +
         `<circle cx="-1" cy="-1.8" r="1.3" fill="#fff"/><circle cx="1.6" cy="1.3" r=".65" fill="#fff"/>`;
+      case 'almond': case 'slit': {
+        // Big slanted eye: outer corner higher, inner corner lower. Mirrored for the right eye.
+        const shape = `<path d="M-6.5 -2.6 C-3 -5.8 4 -2.4 5.6 2 C1 4.8 -5 3.2 -6.5 -2.6Z" fill="#1f1f1f"/>`;
+        const shine = kind === 'slit'
+          ? `<ellipse cx="-.4" cy="-.2" rx=".75" ry="2.8" transform="rotate(-20)" fill="#fff"/>`
+          : `<ellipse cx="-2.8" cy="-1.6" rx="1.8" ry=".9" transform="rotate(-25 -2.8 -1.6)" fill="#fff" opacity=".9"/>`;
+        return `<g transform="scale(${side > 0 ? -1.15 : 1.15} 1.15)">${shape}${shine}</g>`;
+      }
       case 'wide': return lookEye(0, 0);
       case 'happy': return `<path d="M-4 1.6 Q0 -4 4 1.6" ${line(2)}/>`;
       case 'sleepy': return `<path d="M-4 -1 Q0 3.6 4 -1" ${line(2)}/><path d="M${side * 4} -1 l${side * 1.8} -1.8" ${line(1.4)}/>`;
@@ -327,14 +337,16 @@ const Stickers = (() => {
     }
   }
 
-  function alien(s) {
+  function alien(s, uid) {
     const c = s.color, dark = shade(c, -0.25);
     const heads = {
-      round: { cy: 54, rx: 25, ry: 24 },
+      round: { cy: 54, rx: 26, ry: 26 },
       tall: { cy: 52, rx: 21, ry: 30 },
       wide: { cy: 56, rx: 31, ry: 21 },
-      // Classic alien: big forehead tapering to a small chin.
+      // Big forehead tapering to a small chin.
       bulb: { cy: 52, rx: 28, ry: 27, d: 'M50 25 C68 25 78 36 78 49 C78 61 67 71 59 77 C56 79 53 81 50 81 C47 81 44 79 41 77 C33 71 22 61 22 49 C22 36 32 25 50 25Z' },
+      // Classic alien: tall rounded forehead and a narrow pointed chin.
+      classic: { cy: 52, rx: 28, ry: 30, eyeY: 54, d: 'M50 22 C68 22 79 34 78 48 C77 60 66 72 56 80 C53 82.5 51.5 83 50 83 C48.5 83 47 82.5 44 80 C34 72 23 60 22 48 C21 34 32 22 50 22Z' },
     };
     const h = heads[s.head] || heads.round;
     const top = h.cy - h.ry;
@@ -346,18 +358,45 @@ const Stickers = (() => {
     };
     const ant = ants(dark);
     const antOutline = ants('#fff');
-    const headShape = h.d ? `<path d="${h.d}" fill="${c}"/>` : `<ellipse cx="50" cy="${h.cy}" rx="${h.rx}" ry="${h.ry}" fill="${c}"/>`;
-    const spots = `<circle cx="${50 - h.rx * 0.6}" cy="${h.cy + h.ry * 0.45}" r="2.4" fill="${dark}" opacity=".45"/>` +
-      `<circle cx="${50 + h.rx * 0.62}" cy="${h.cy - h.ry * 0.45}" r="2" fill="${dark}" opacity=".45"/>`;
-    const ey = h.cy - 3;
+    const headD = h.d || `M50 ${h.cy - h.ry} A${h.rx} ${h.ry} 0 1 1 49.99 ${h.cy - h.ry}Z`;
+    const headShape = `<path d="${headD}" fill="${c}"/>`;
+
+    // Ears on the sides of the head.
+    const ex = 50 - h.rx + 2, ey0 = h.cy - 3;
+    let earL = '';
+    if (s.alienEars === 'pointy') earL = `<path d="M${ex} ${ey0 - 6} L${ex - 14} ${ey0 - 15} Q${ex - 15} ${ey0 - 4} ${ex - 9} ${ey0 + 3} L${ex} ${ey0 + 5}Z"/>`;
+    if (s.alienEars === 'round') earL = `<circle cx="${ex - 4}" cy="${ey0}" r="7"/>`;
+    const mirror = d => `<g transform="translate(100 0) scale(-1 1)">${d}</g>`;
+    const ears = earL ? `<g fill="${c}">${earL}${mirror(earL)}</g>` : '';
+    const earsOutline = earL ? earL + mirror(earL) : '';
+
+    // Skin: a few spots, lots of freckles, or twinkling stars.
+    const clipId = uid + 'a';
+    let skin = '';
+    if (s.skinPattern === 'spots') {
+      skin = [[-0.6, 0.45, 2.4], [0.62, -0.45, 2], [-0.25, -0.62, 1.5], [0.15, -0.7, 1.1], [0.38, -0.58, 1.4]]
+        .map(([fx, fy, r]) => `<circle cx="${50 + h.rx * fx}" cy="${h.cy + h.ry * fy}" r="${r}" fill="${dark}" opacity=".45"/>`).join('');
+    } else if (s.skinPattern === 'stars') {
+      const star = (x, y, r, col) => `<path transform="translate(${x} ${y}) scale(${r / 6})" d="M0 -6 Q.8 -.8 6 0 Q.8 .8 0 6 Q-.8 .8 -6 0 Q-.8 -.8 0 -6Z" fill="${col}"/>`;
+      skin = [[-0.55, -0.55, 3.2], [0.5, -0.65, 2], [0.7, 0.05, 1.6], [-0.75, 0.2, 1.8], [-0.2, -0.82, 1.3], [0.25, 0.7, 1.6], [-0.45, 0.62, 1.2]]
+        .map(([fx, fy, r], n) => star(50 + h.rx * fx, h.cy + h.ry * fy, r, n % 2 ? '#fff' : shade(c, 0.6))).join('') +
+        [[-0.3, -0.3], [0.32, -0.38], [0.6, 0.4], [-0.62, -0.1], [0.05, -0.55], [-0.1, 0.8]]
+          .map(([fx, fy]) => `<circle cx="${50 + h.rx * fx}" cy="${h.cy + h.ry * fy}" r=".8" fill="#fff" opacity=".85"/>`).join('');
+    }
+    const skinLayer = skin ? `<defs><clipPath id="${clipId}"><path d="${headD}"/></clipPath></defs><g clip-path="url(#${clipId})">${skin}</g>` : '';
+
+    const ey = h.eyeY || h.cy - 3;
     let eyes, size;
     if (s.eyeCount === 1) { eyes = [[50, ey]]; size = 1.9; }
-    else if (s.eyeCount === 2) { eyes = [[41, ey], [59, ey]]; size = 1.35; }
-    else { eyes = [[37, ey + 2], [50, ey - 6], [63, ey + 2]]; size = 1.15; }
-    const art = antOutline + outline(headShape) + ant + headShape + spots +
-      face(s, { eyes, size, mouthAt: [50, h.cy + h.ry * 0.38], cheeks: [[50 - h.rx * 0.62, ey + 9], [50 + h.rx * 0.62, ey + 9]], top: [50 + h.rx * 0.7, top + 4], human: true });
+    else if (s.eyeCount === 2) { eyes = [[40.5, ey], [59.5, ey]]; size = 1.4; }
+    else { eyes = [[37, ey + 2], [50, ey - 7], [63, ey + 2]]; size = 1.15; }
+    let features = face(s, { eyes, size, mouthAt: [50, h.cy + h.ry * 0.42], cheeks: [[50 - h.rx * 0.62, ey + 9], [50 + h.rx * 0.62, ey + 9]], top: [50 + h.rx * 0.7, top + 4], human: true });
+    // On a dark alien, draw the face lines light so they can be seen.
+    if (lightness(c) < 0.4) features = features.split(INK).join(LIGHT_INK);
+    const art = antOutline + outline(earsOutline + headShape) + ant + ears + headShape + skinLayer + features;
     return { art, eyes, eyeSize: size * 0.8, hat: [50, top + 5, h.rx * 1.25], chin: [50, h.cy + h.ry - 1] };
   }
+
 
   // ---------- Animals ----------
 
@@ -451,7 +490,7 @@ const Stickers = (() => {
   }
 
   // Shapes for dogs, bunnies and bears.
-  function otherAnimal(kind) {
+  function otherAnimal(kind, s = {}) {
     switch (kind) {
       case 'dog':
         // Puppy: long floppy ears, a big light muzzle, nose on top of the muzzle.
@@ -527,7 +566,9 @@ const Stickers = (() => {
         // upper sides of the head that hang down like an open fan, cream freckles, little brows,
         // a soft double-bump nose, and (optional) tiny horns.
         return {
-          head: 'M50 28 C65 28 76 37 78.5 49 C80.5 59 81.5 69 77 77 C71.5 85 61 88 50 88 C39 88 28.5 85 23 77 C18.5 69 19.5 59 21.5 49 C24 37 35 28 50 28Z',
+          head: (s.face === 'chubby')
+            ? 'M50 28 C65 28 76 37 78.5 49 C80.5 59 81.5 69 77 77 C71.5 85 61 88 50 88 C39 88 28.5 85 23 77 C18.5 69 19.5 59 21.5 49 C24 37 35 28 50 28Z'
+            : 'M50 28 C68 28 80 41 80 57.5 C80 74 67 87 50 87 C33 87 20 74 20 57.5 C20 41 32 28 50 28Z',
           wing: true,
           outlineArt: s2 => `<g transform="translate(0 -2)">${tuftShapes(s2.tuft, '')}</g>`,
           extraArt: (c, s2) => {
@@ -613,7 +654,7 @@ const Stickers = (() => {
       inner = `<path d="${idd}" fill="${PINK}" opacity=".9"/>` + mirror(`<path d="${idd}" fill="${PINK}" opacity=".9"/>`);
       outlineEars = `<path d="${ed}"/>` + mirror(`<path d="${ed}"/>`);
     } else {
-      k = otherAnimal(s.kind);
+      k = otherAnimal(s.kind, s);
       if (k.wing) {
         const mirror = d => `<g transform="translate(100 0) scale(-1 1)">${d}</g>`;
         earsBack = wingArt(c) + mirror(wingArt(c));
@@ -776,7 +817,8 @@ const Stickers = (() => {
   function frame(s) {
     let f;
     if (s.type === 'alien') {
-      f = { round: [44, 1.08], tall: [42, 1.0], wide: [47, 1.1] }[s.head] || [44, 1.08];
+      f = { round: [44, 1.04], tall: [42, 1.0], wide: [47, 1.1], bulb: [46, 1.04], classic: [45, 0.98] }[s.head] || [44, 1.04];
+      if (s.alienEars && s.alienEars !== 'none') f = [f[0], f[1] * 0.92];
     } else if (s.type === 'animal') {
       f = { cat: [52, 0.98], dog: [55, 1.0], chihuahua: [45, 0.88], bunny: [46, 0.94], bear: [58, 1.0], mouse: [58, 0.95], fox: [55, 0.98], sheep: [54, 0.98], dragon: [51, 0.9] }[s.kind] || [52, 0.98];
       if (s.kind === 'cat' && s.ears === 'big') f = [f[0] - 7, f[1] * 0.91];
@@ -800,7 +842,7 @@ const Stickers = (() => {
     if (!EYES.includes(s.eyes)) s.eyes = 'happy';
     const id = 'stk' + (++clipCounter);
     let part;
-    if (s.type === 'alien') part = alien(s);
+    if (s.type === 'alien') part = alien(s, id);
     else if (s.type === 'animal') part = animal(s, id);
     else part = person(s);
     const [cy, scale] = frame(s);
