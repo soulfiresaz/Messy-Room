@@ -75,6 +75,7 @@ const Stickers = (() => {
       ...FACE_PARTS,
       { key: 'face', icon: '🐱', label: 'Face shape', styles: ['round', 'wide', 'fluffy'], when: s => s.kind === 'cat' },
       { key: 'ears', icon: '👂', label: 'Ears', styles: s => (s.face === 'wide' ? ['pointy', 'big'] : ['pointy', 'big', 'folded']), when: s => s.kind === 'cat' },
+      { key: 'tuft', icon: '🌱', label: 'Tuft', styles: ['none', 'sprout', 'single', 'curl', 'spikes', 'puff'], when: s => s.kind === 'dragon' },
       { key: 'horns', icon: '🐲', label: 'Horns', styles: ['none', 'tiny'], when: s => s.kind === 'dragon' },
       { key: 'coat', icon: '🎀', label: 'Coat', styles: ['plain', 'tabby', 'patch', 'twotone', 'calico', 'mask'] },
       { key: 'color', icon: '🖍️', label: 'Fur color', colors: COLORS.animal },
@@ -88,7 +89,7 @@ const Stickers = (() => {
   const DEFAULTS = {
     person: { type: 'person', bg: '#bfe3ff', skin: '#f6c9a0', hair: 'short', hairColor: '#5a3825', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
     alien: { type: 'alien', bg: '#e2d4ff', color: '#7ee081', head: 'round', eyeCount: 3, antennae: 2, antennaStyle: 'straight', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
-    animal: { type: 'animal', bg: '#bfe3ff', kind: 'cat', face: 'round', ears: 'pointy', coat: 'calico', color: '#fbf8f3', patchColor: '#f5a54a', horns: 'none', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
+    animal: { type: 'animal', bg: '#bfe3ff', kind: 'cat', face: 'round', ears: 'pointy', coat: 'calico', color: '#fbf8f3', patchColor: '#f5a54a', horns: 'none', tuft: 'sprout', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
   };
 
   // Fill in a quick feeling's parts.
@@ -161,6 +162,7 @@ const Stickers = (() => {
   function mouth(kind, nose, human) {
     let n = '';
     if (nose === 'pink') n = `<path d="M-2.4 -1.3 L2.4 -1.3 L0 1.4Z" fill="${PINK}" stroke="${shade(PINK, -0.15)}" stroke-width=".5" stroke-linejoin="round"/>`;
+    if (nose === 'bumps') n = `<g stroke="${INK}" stroke-width="1" fill="none" opacity=".45"><circle cx="-2" cy="-3" r="1.6"/><circle cx="2" cy="-3" r="1.6"/></g>`;
     if (nose === 'dots') n = `<ellipse cx="-2.4" cy="-1.4" rx=".7" ry=".9" fill="${INK}" opacity=".6"/><ellipse cx="2.4" cy="-1.4" rx=".7" ry=".9" fill="${INK}" opacity=".6"/>`;
     if (nose === 'nostrils') n = `<path d="M-5.6 -3.6 q1.2 -.6 1.6 .9" ${line(1.2)} opacity=".7"/><path d="M5.6 -3.6 q-1.2 -.6 -1.6 .9" ${line(1.2)} opacity=".7"/>`;
     if (nose === 'ball') n = `<circle r="2.8" fill="#ff8fa3" stroke="${shade('#ff8fa3', -0.15)}" stroke-width=".5"/><circle cx="-.9" cy="-.9" r=".8" fill="#fff" opacity=".7"/>`;
@@ -395,6 +397,36 @@ const Stickers = (() => {
     return earPath(style2 === 'big' ? 'pointy' : style2, { A: sh(A), B: sh(B), T: sh(t) });
   }
 
+  // Dragon hair tuft. fill is an attribute string ('' lets the white outline fill it).
+  function tuftShapes(style, fill) {
+    switch (style) {
+      case 'sprout':
+        return `<ellipse cx="50" cy="23" rx="3.2" ry="7.5" ${fill}/>` +
+          `<ellipse cx="44.5" cy="28" rx="2.6" ry="5.8" transform="rotate(-55 44.5 28)" ${fill}/>` +
+          `<ellipse cx="55.5" cy="28" rx="2.6" ry="5.8" transform="rotate(55 55.5 28)" ${fill}/>`;
+      case 'single':
+        return `<path d="M50 33 C45 27 46 19 50 14 C54 19 55 27 50 33Z" ${fill}/>`;
+      case 'curl':
+        return `<path d="M50 33 C43 29 43 20 50 17 C56 15 60 20 57 24 C55 26 51.5 25 52.5 22 C49 23 48 28 53 32Z" ${fill}/>`;
+      case 'spikes':
+        return `<path d="M41 34 L44 22 L47 31 L50 19 L53 31 L56 22 L59 34Z" ${fill}/>`;
+      case 'puff':
+        return `<circle cx="44" cy="30" r="4.6" ${fill}/><circle cx="50" cy="26.5" r="5" ${fill}/><circle cx="56" cy="30" r="4.6" ${fill}/>`;
+      default:
+        return '';
+    }
+  }
+
+  // Dragon wing on the left side of the head. The top edge is a thick bone going out
+  // and slightly up to the tip; the wing hangs down from it like an open fan.
+  const WING_PATH = 'M30 37 C28 31 26 27.5 22 27.2 L5 27 Q3 27 4 29 Q8.8 30.5 8.6 34.8 Q13 36 12.8 41.2 Q16.6 42.4 17 47 L27.5 41Z';
+  const WING_RIBS = [[8.6, 34.8], [12.8, 41.2], [17, 47]];
+  function wingArt(c) {
+    const ribs = WING_RIBS.map(([x, y]) => `<path d="M27 37.5 L${x} ${y}" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>`).join('');
+    return `<g transform="translate(28 37) scale(1.2) translate(-28 -37)"><path d="${WING_PATH}" fill="#f6e2a8" stroke="${c}" stroke-width="1.4" stroke-linejoin="round"/>` + ribs +
+      `<path d="M29 36 C27 31 25.5 27.6 22 27.4 L4.5 27.3" stroke="${c}" stroke-width="3" stroke-linecap="round" fill="none"/></g>`;
+  }
+
   // Shapes for dogs, bunnies and bears.
   function otherAnimal(kind) {
     switch (kind) {
@@ -468,34 +500,28 @@ const Stickers = (() => {
           eyes: [[43, 60], [57, 60]], mouthAt: [50, 69], cheeks: [[38, 68], [62, 68]], top: [72, 30], hat: [50, 28, 30], chin: [50, 80],
         };
       case 'dragon':
-        // Baby dragon: big round head, a little hair tuft on top, bat wings high on the
-        // head pointing up and out, cream freckles, a small snout bump, and (optional) tiny horns.
+        // Baby dragon: big round head, a hair tuft (several shapes, or none), bat wings on the
+        // upper sides of the head that hang down like an open fan, cream freckles, little brows,
+        // a soft double-bump nose, and (optional) tiny horns.
         return {
           head: 'M50 30 C70 30 81 43 81 58 C81 73 68 83 50 83 C32 83 19 73 19 58 C19 43 30 30 50 30Z',
-          earsBack: [
-            'M38 34 L5 13 C6 20 8 24 11 26 C15 26 16 30 15 33 C19 33 21 36 21 40 C25 40 27 43 29 46Z',
-            'M62 34 L95 13 C94 20 92 24 89 26 C85 26 84 30 85 33 C81 33 79 36 79 40 C75 40 73 43 71 46Z',
-          ],
-          inner: 'M35 36 L11 20 C12 24 14 27 16 28 C19 29 20 31 20 34 C23 35 24 37 25 40 C27 41 29 43 30 44Z ' +
-            'M65 36 L89 20 C88 24 86 27 84 28 C81 29 80 31 80 34 C77 35 76 37 75 40 C73 41 71 43 70 44Z',
-          innerColor: 'wing',
-          outlineExtra: 'M50 33 C46 27 46 20 50 14 C54 20 54 27 50 33Z M49 33 C43 30 39 25 40 19 C45 21 48 26 49 33Z M51 33 C57 30 61 25 60 19 C55 21 52 26 51 33Z',
-          extraArt: (c, s) => {
-            const tuft = shade(c, -0.08), dots = '#fbe3a0';
-            const horns = s.horns === 'tiny'
-              ? `<path d="M37 35 C36 30 37 27 39 25 C40 28 42 31 43 33Z" fill="#f3e2b3"/><path d="M63 35 C64 30 63 27 61 25 C60 28 58 31 57 33Z" fill="#f3e2b3"/>`
+          wing: true,
+          outlineArt: s2 => tuftShapes(s2.tuft, ''),
+          extraArt: (c, s2) => {
+            const tuft = shade(c, -0.06), dots = '#fbe3a0', brow = shade(c, -0.25);
+            const horns = s2.horns === 'tiny'
+              ? `<path d="M36 36 C35 31 36 28 38 26 C39 29 41 32 42 34Z" fill="#f3e2b3"/><path d="M64 36 C65 31 64 28 62 26 C61 29 59 32 58 34Z" fill="#f3e2b3"/>`
               : '';
-            return horns +
-              `<path d="M49 33 C43 30 39 25 40 19 C45 21 48 26 49 33Z" fill="${tuft}"/><path d="M51 33 C57 30 61 25 60 19 C55 21 52 26 51 33Z" fill="${tuft}"/>` +
-              `<path d="M50 33 C46 27 46 20 50 14 C54 20 54 27 50 33Z" fill="${tuft}"/>` +
-              [[44, 39, 1.5], [50, 37, 2], [56, 39, 1.5], [47, 43, 1.2], [53, 43, 1.2], [41, 44, 1], [59, 44, 1], [50, 46, 1.3]]
+            return horns + tuftShapes(s2.tuft, `fill="${tuft}"`) +
+              [[44, 41, 1.5], [50, 39, 2], [56, 41, 1.5], [47, 45, 1.2], [53, 45, 1.2], [41, 46, 1], [59, 46, 1], [50, 48, 1.3]]
                 .map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${dots}"/>`).join('') +
-              '';
+              `<ellipse cx="31" cy="45" rx="3.6" ry="1.6" transform="rotate(-12 31 45)" fill="${brow}" opacity=".7"/>` +
+              `<ellipse cx="69" cy="45" rx="3.6" ry="1.6" transform="rotate(12 69 45)" fill="${brow}" opacity=".7"/>`;
           },
-          nose: 'dots',
+          nose: 'bumps',
           humanMouth: true,
-          eyeSize: 1.65,
-          eyes: [[37.5, 55], [62.5, 55]], mouthAt: [50, 66], cheeks: [[28, 66], [72, 66]], top: [74, 32], hat: [50, 30, 28], chin: [50, 83],
+          eyeSize: 1.7,
+          eyes: [[37.5, 56], [62.5, 56]], mouthAt: [50, 68], cheeks: [[27, 66], [73, 66]], top: [76, 34], hat: [50, 30, 28], chin: [50, 83],
         };
       default: // bear
         // Small round ears high on the head, a wide face, a big light muzzle.
@@ -565,6 +591,12 @@ const Stickers = (() => {
       outlineEars = `<path d="${ed}"/>` + mirror(`<path d="${ed}"/>`);
     } else {
       k = otherAnimal(s.kind);
+      if (k.wing) {
+        const mirror = d => `<g transform="translate(100 0) scale(-1 1)">${d}</g>`;
+        earsBack = wingArt(c) + mirror(wingArt(c));
+        const wingOutline = `<path transform="translate(28 37) scale(1.2) translate(-28 -37)" d="${WING_PATH}"/>`;
+        outlineEars = wingOutline + mirror(wingOutline);
+      }
       if (k.earsBack) {
         earsBack = `<path d="${k.earsBack[0]}" fill="${earL}"/><path d="${k.earsBack[1]}" fill="${earR}"/>`;
         outlineEars = `<path d="${k.earsBack.join(' ')}"/>`;
@@ -615,7 +647,7 @@ const Stickers = (() => {
     const faceColor = sheepFaceColor || (s.coat === 'mask' ? p : c);
     if (lightness(faceColor) < 0.4 && !muzzle) features = features.split(INK).join(LIGHT_INK);
     const art = `<defs><clipPath id="${clipId}"><path d="${k.head}"/></clipPath></defs>` +
-      outline(outlineEars + `<path d="${k.head}"/>` + (k.outlineExtra ? `<path d="${k.outlineExtra}"/>` : '')) +
+      outline(outlineEars + `<path d="${k.head}"/>` + (k.outlineExtra ? `<path d="${k.outlineExtra}"/>` : '') + (k.outlineArt ? k.outlineArt(s) : '')) +
       earsBack + inner + head + coat(s, clipId, k) + earsFront + muzzle + features + whiskers;
     return { art, eyes: k.eyes, eyeSize: k.eyeSize || 1.05, hat: k.hat, chin: k.chin || [50, k.mouthAt[1] + 18] };
   }
@@ -723,7 +755,7 @@ const Stickers = (() => {
     if (s.type === 'alien') {
       f = { round: [44, 1.08], tall: [42, 1.0], wide: [47, 1.1] }[s.head] || [44, 1.08];
     } else if (s.type === 'animal') {
-      f = { cat: [52, 0.98], dog: [55, 1.0], chihuahua: [45, 0.88], bunny: [46, 0.94], bear: [58, 1.0], mouse: [58, 0.95], fox: [55, 0.98], sheep: [54, 0.98], dragon: [47, 0.82] }[s.kind] || [52, 0.98];
+      f = { cat: [52, 0.98], dog: [55, 1.0], chihuahua: [45, 0.88], bunny: [46, 0.94], bear: [58, 1.0], mouse: [58, 0.95], fox: [55, 0.98], sheep: [54, 0.98], dragon: [50, 0.84] }[s.kind] || [52, 0.98];
       if (s.kind === 'cat' && s.ears === 'big') f = [f[0] - 7, f[1] * 0.91];
     } else {
       f = [50, 1.13];
