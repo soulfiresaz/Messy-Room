@@ -179,6 +179,7 @@ A picture checklist of cleaning jobs. The app suggests them based on what's in t
 ## 8. Look and feel
 
 - Big, friendly buttons that are easy to tap
+- Every circle's background color is different from its picture, so pictures never fade into the circle (for example, a yellow gift sits on purple)
 - Cartoon style for furniture, items and stickers
 - Very few words on the kid screens. Pictures do the explaining.
 - Picture version and word list version can be switched anytime
