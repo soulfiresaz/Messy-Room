@@ -8,7 +8,8 @@ A web app that helps kids organize and clean their rooms. It works entirely with
 
 When the app opens, it always asks **"Who are you?"** and shows everyone's sticker as a big circle, plus a **➕ New** circle.
 
-- **Each person has a profile:** their sticker (person, alien or animal) and an optional name
+- **Each person has a profile:** an optional name, plus one sticker picked from the shared sticker collection
+- **✏️ pencil** on each person opens their sticker page
 - **Any number of people:** 1 kid, 8 kids, or a parent doing their own room
 - **Tap your sticker** to go to the home screen. Your sticker shows in the corner, and tapping it switches person.
 - **Rooms and rewards are shared** by everyone. Profiles are how jobs get assigned to a person later (like "vacuum the living room").
@@ -20,7 +21,7 @@ A row of **big, round circles**, each with a picture sticker so it's easy to see
 | Circle | What happens when you tap it | When |
 |---|---|---|
 | **Rooms** | Opens a list of circles, one for each room: **My Room** first. Later: Bathroom, Living Room, Kitchen and more. | My Room now, other rooms later |
-| **Stickers** | Opens your own sticker so you can change how it looks. See section 2. | Now |
+| **Stickers** | Opens your sticker page (same as the ✏️ pencil). See section 2. | Now |
 | **Rewards** | Opens a page where kids collect the rewards their parents promised them, like money, a game, or a special date or outing. | Now |
 | **Clean** | A parent or child lists jobs the parent asked for, like "pick up my stuff from the living room," "vacuum the living room" or "wipe the kitchen counters." Each job shows a picture of the room plus a picture of the tool (rag, spray bottle, sponge, vacuum). Choosing a job highlights that part of the room, like the kitchen counter. | Later |
 
@@ -48,7 +49,8 @@ One PIN guards everything parent-only:
 - Adding rewards, changing their pictures and goals, and deleting them
 - Changing how often cleaning jobs come up
 - Deleting a room
-- Deleting a person (changing how a sticker looks stays free for kids)
+- Deleting a person
+- Deleting a sticker (only ones nobody is using)
 
 ---
 
@@ -65,13 +67,19 @@ One PIN guards everything parent-only:
 
 ## 2. Stickers ("Who am I?")
 
-Each child has their own sticker, so nobody needs to read a name.
+### Shared sticker collection
+- **All stickers are shared.** Everyone sees the whole collection on the sticker page.
+- **One sticker per person:** a sticker someone is using is **taken**. It shows grayed out with that person's name and can't be picked or changed by anyone else, so siblings don't fight over it.
+- **No two stickers can look exactly the same.** If you try, the app says it's already made.
+- **Your sticker has a ✔️.** Tap any free sticker to switch to it, ✏️ to change a free one, or ➕ to make a new one (a new one becomes yours).
+- **Only parents can delete stickers** (with the PIN), and only stickers nobody is using
+- **Deleting a person** also needs the PIN. Their sticker goes back into the collection.
 
-- **Build a person:** background color, skin color, hair style, hair color, eyes
-- **Build an alien:** the same choices, plus fun extras like antennae and extra eyes
-- **Pick an animal:** choose a ready-made animal, then pick its color and the background color. No building needed.
-- **Keep it really simple:** a few big choices per step
-- **Save or delete stickers anytime**, so a child can change their look whenever they want
+### Making a sticker
+- **Person:** background color, skin color, hair style, hair color, eyes, eye color
+- **Alien:** color, head shape, 1 to 3 eyes, antennae, background
+- **Animal:** pick a ready-made animal (cat, dog, bunny, bear), then its color and the background color
+- **Keep it really simple:** a few big choices per step, each shown as a small picture
 - **"This is me" on the map:** the child can drag their sticker to where they're sitting (like on the bed) and play with it
 
 **Whose space is whose:**

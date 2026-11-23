@@ -3,8 +3,9 @@ const Store = (() => {
   const KEY = 'messyroom.v1';
 
   const defaults = () => ({
-    version: 1,
-    stickers: [],   // kids' own stickers (person, alien, animal)
+    version: 2,
+    people: [],     // everyone who uses the app: { id, name, stickerId }
+    stickers: [],   // shared sticker collection (person, alien, animal)
     rewards: [],    // rewards parents promised
     cleanups: 0,    // finished cleanups, counted automatically
     pin: null,      // parent PIN
@@ -18,6 +19,18 @@ const Store = (() => {
       data = raw ? { ...defaults(), ...JSON.parse(raw) } : defaults();
     } catch (e) {
       data = defaults();
+    }
+    upgrade();
+  }
+
+  // Version 1 kept each person as a sticker with a name.
+  // Version 2 keeps people separate, each using one sticker from a shared collection.
+  function upgrade() {
+    if (!data.version || data.version < 2) {
+      data.people = data.stickers.map(s => ({ id: s.id, name: s.name || '', stickerId: s.id }));
+      data.stickers.forEach(s => { delete s.name; });
+      data.version = 2;
+      save();
     }
   }
 

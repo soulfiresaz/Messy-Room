@@ -75,6 +75,15 @@
     document.body.classList.remove('no-scroll');
   }
 
+  function infoBox(icon, message) {
+    openModal(`
+      <div class="confirm-icon" aria-hidden="true">${icon}</div>
+      <p class="confirm-text">${esc(message)}</p>
+      <div class="confirm-row">
+        <button type="button" class="big-btn yes" data-act="modal-close" aria-label="OK">👍</button>
+      </div>`);
+  }
+
   let confirmYes = null;
   function confirmBox(icon, message, onYes) {
     confirmYes = onYes;
@@ -87,18 +96,48 @@
       </div>`);
   }
 
-  // ---------- Home ----------
+  // ---------- People and stickers ----------
 
-  function currentProfile() {
-    return S.data.stickers.find(s => s.id === currentId) || null;
+  function currentPerson() {
+    return S.data.people.find(p => p.id === currentId) || null;
+  }
+
+  function stickerById(id) {
+    return S.data.stickers.find(s => s.id === id) || null;
+  }
+
+  function personSticker(p) {
+    return stickerById(p.stickerId) || Stickers.DEFAULTS.person;
+  }
+
+  // Who is using this sticker (each sticker belongs to at most one person).
+  function ownerOf(stickerId) {
+    return S.data.people.find(p => p.stickerId === stickerId) || null;
+  }
+
+  // Two stickers look the same if every choice matches.
+  function lookKey(s) {
+    return JSON.stringify(Object.keys(s).filter(k => k !== 'id').sort().map(k => [k, s[k]]));
+  }
+
+  function lockButton() {
+    return parentUnlocked
+      ? `<button type="button" class="round-btn parent-on" data-act="lock" aria-label="Lock parent mode">🔓</button>`
+      : `<button type="button" class="round-btn" data-act="unlock" aria-label="Parent mode">🔒</button>`;
+  }
+
+  function parentBanner() {
+    return parentUnlocked ? `<div class="parent-banner">Parent mode is on. Tap 🔓 to lock it.</div>` : '';
   }
 
   // ---------- Who are you? (first screen) ----------
 
   function renderWho() {
-    const people = S.data.stickers.map(s =>
-      circle({ act: 'pick-profile', id: s.id, icon: Stickers.render(s), label: s.name || '', extraClass: 'sticker-circle' })
-    ).join('');
+    const people = S.data.people.map(p => `
+      <div class="who-item">
+        ${circle({ act: 'pick-profile', id: p.id, icon: Stickers.render(personSticker(p)), label: p.name || '', extraClass: 'sticker-circle' })}
+        <a class="pencil-btn" href="#/people/${p.id}" aria-label="Change ${esc(p.name || 'this')} sticker">✏️</a>
+      </div>`).join('');
     $app.innerHTML = `
       <header class="home-head">
         <h1 class="logo">Messy Room</h1>
@@ -106,25 +145,26 @@
       </header>
       <main class="circle-grid">
         ${people}
-        ${circle({ href: '#/stickers/new', icon: '➕', label: 'New', color: 'var(--c-stickers)', extraClass: 'add-circle' })}
+        ${circle({ href: '#/people/new', icon: '➕', label: 'New', color: 'var(--c-stickers)', extraClass: 'add-circle' })}
       </main>`;
   }
 
   // ---------- Home ----------
 
   function renderHome() {
-    const me = currentProfile();
+    const me = currentPerson();
+    const mine = Stickers.render(personSticker(me));
     $app.innerHTML = `
       <header class="home-head">
         <a class="me-chip" href="#/who" aria-label="Switch person">
-          <span class="me-sticker">${Stickers.render(me)}</span>
+          <span class="me-sticker">${mine}</span>
           <span class="me-switch" aria-hidden="true">🔄</span>
         </a>
         <h1 class="logo">Messy Room</h1>
       </header>
       <main class="circle-grid home-grid">
         ${circle({ href: '#/rooms', icon: '🏠', label: 'Rooms', color: 'var(--c-rooms)' })}
-        ${circle({ href: `#/stickers/edit/${me.id}`, icon: Stickers.render(me), label: 'Stickers', color: 'var(--c-stickers)', extraClass: 'sticker-circle' })}
+        ${circle({ href: `#/people/${me.id}`, icon: mine, label: 'Stickers', color: 'var(--c-stickers)', extraClass: 'sticker-circle' })}
         ${circle({ href: '#/rewards', icon: '🎁', label: 'Rewards', color: 'var(--c-rewards)' })}
         ${circle({ icon: '🧽', label: 'Clean', color: 'var(--c-clean)', disabled: true })}
       </main>`;
@@ -152,16 +192,92 @@
       </main>`;
   }
 
-  // ---------- Stickers ----------
+  // ---------- Sticker page for one person ----------
+  // Shows the whole shared collection. Your sticker has a ✔️.
+  // Stickers someone else is using are taken and can't be picked.
+
+  let pagePersonId = null;   // person whose sticker page is open ('new' while making a person)
+  let pendingName = '';      // name typed before a new person picks a sticker
+
+  function renderPersonPage(id) {
+    const person = id === 'new' ? null : S.data.people.find(p => p.id === id);
+    if (id !== 'new' && !person) { location.replace('#/who'); return; }
+    if (pagePersonId !== id) pendingName = '';
+    pagePersonId = id;
+
+    const order = s => {
+      const owner = ownerOf(s.id);
+      if (person && owner && owner.id === person.id) return 0;
+      return owner ? 2 : 1;
+    };
+    const list = [...S.data.stickers].sort((a, b) => order(a) - order(b));
+
+    const items = list.map(s => {
+      const owner = ownerOf(s.id);
+      const mine = !!(person && owner && owner.id === person.id);
+      const taken = !!owner && !mine;
+      const tools = [];
+      if (!taken) tools.push(`<button type="button" class="tool-btn" data-act="edit-sticker" data-id="${s.id}" aria-label="Change this sticker">✏️</button>`);
+      if (parentUnlocked && !owner) tools.push(`<button type="button" class="tool-btn danger" data-act="delete-sticker" data-id="${s.id}" aria-label="Delete this sticker">🗑️</button>`);
+      return `<div class="stk-item ${mine ? 'mine' : ''} ${taken ? 'taken' : ''}">
+        <button type="button" class="circle-item" data-act="pick-sticker" data-id="${s.id}" aria-label="${taken ? 'Taken' : mine ? 'Your sticker' : 'Pick this sticker'}">
+          <span class="circle sticker-circle"><span class="circle-art">${Stickers.render(s)}</span></span>
+          ${mine ? '<span class="done-badge" aria-hidden="true">✔️</span>' : ''}
+        </button>
+        ${taken ? `<span class="circle-label taken-label">${esc(owner.name || '')}</span>` : ''}
+        ${tools.length ? `<div class="parent-tools">${tools.join('')}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    const back = person && person.id === currentId ? '#/' : '#/who';
+    const title = person ? (person.name || 'Stickers') : 'New person';
+    $app.innerHTML = `
+      ${topBar(title, back, lockButton())}
+      ${parentBanner()}
+      <main>
+        <section class="opt-row name-row">
+          <h2 class="opt-head"><span aria-hidden="true">✏️</span> Name (optional)</h2>
+          <input class="text-input" id="person-name" type="text" maxlength="20" value="${esc(person ? person.name : pendingName)}" placeholder="Name">
+        </section>
+        <h2 class="section-title"><span aria-hidden="true">👇</span> ${person ? 'Pick your sticker' : 'Pick a sticker'}</h2>
+        <div class="circle-grid sticker-grid">
+          ${circle({ act: 'new-sticker', icon: '➕', label: 'Make one', color: 'var(--c-stickers)', extraClass: 'add-circle' })}
+          ${items}
+        </div>
+        ${parentUnlocked && person ? `<div class="action-row">
+          <button type="button" class="tool-btn big danger" data-act="person-delete">🗑️ Delete ${esc(person.name || 'this person')}</button>
+        </div>` : ''}
+      </main>`;
+  }
+
+  // Give a person a sticker. Makes the person first if they're new.
+  function assignSticker(stickerId) {
+    if (pagePersonId === 'new') {
+      const p = { id: S.uid(), name: pendingName, stickerId };
+      S.data.people.push(p);
+      currentId = p.id;
+    } else {
+      const p = S.data.people.find(x => x.id === pagePersonId);
+      if (p) p.stickerId = stickerId;
+    }
+    return saveOrWarn();
+  }
+
+  // ---------- Sticker builder ----------
 
   let draft = null;      // sticker being built
   let draftIsNew = true;
+  let builderBack = '#/who';
 
   function renderStickerBuilder(id) {
-    const existing = id ? S.data.stickers.find(s => s.id === id) : null;
-    if (id && !existing) { location.hash = '#/who'; return; }
+    const existing = id ? stickerById(id) : null;
+    if (id && !existing) { location.replace('#/who'); return; }
+    // A sticker someone else is using can't be changed.
+    const owner = existing && ownerOf(existing.id);
+    if (owner && owner.id !== pagePersonId) { location.replace('#/who'); return; }
+    builderBack = pagePersonId ? `#/people/${pagePersonId}` : '#/who';
     draftIsNew = !existing;
-    draft = existing ? clone(existing) : { ...clone(Stickers.DEFAULTS.person), id: S.uid(), name: '' };
+    draft = existing ? clone(existing) : { ...clone(Stickers.DEFAULTS.person), id: S.uid() };
     drawBuilder();
   }
 
@@ -196,17 +312,12 @@
     }).join('');
 
     $app.innerHTML = `
-      ${topBar(draftIsNew ? 'New person' : 'My sticker', draftIsNew ? '#/who' : '#/')}
+      ${topBar(draftIsNew ? 'Make a sticker' : 'Change sticker', builderBack)}
       <main class="builder">
         <div class="builder-preview">${Stickers.render(draft)}</div>
         <div class="type-row">${typeRow}</div>
         ${optionRows}
-        <section class="opt-row">
-          <h2 class="opt-head"><span aria-hidden="true">✏️</span> Name (optional)</h2>
-          <input class="text-input" id="sticker-name" type="text" maxlength="20" value="${esc(draft.name)}" placeholder="Name">
-        </section>
         <div class="action-row">
-          ${draftIsNew ? '' : `<button type="button" class="big-btn delete" data-act="sticker-delete" aria-label="Delete sticker">🗑️</button>`}
           <button type="button" class="big-btn yes" data-act="sticker-save" aria-label="Save sticker">✔️</button>
         </div>
       </main>`;
@@ -437,7 +548,7 @@
     'sticker-type'(el) {
       const type = el.dataset.value;
       if (draft.type === type) return;
-      draft = { ...clone(Stickers.DEFAULTS[type]), bg: draft.bg, id: draft.id, name: draft.name };
+      draft = { ...clone(Stickers.DEFAULTS[type]), bg: draft.bg, id: draft.id };
       Effects.pop();
       drawBuilder();
     },
@@ -450,39 +561,86 @@
       window.scrollTo(0, y);
     },
     'sticker-save'() {
+      // No two stickers may look exactly the same.
+      const twin = S.data.stickers.find(s => s.id !== draft.id && lookKey(s) === lookKey(draft));
+      if (twin) {
+        infoBox(Stickers.render(twin), 'That sticker is already made. Try changing something!');
+        return;
+      }
       const list = S.data.stickers;
       const i = list.findIndex(s => s.id === draft.id);
       if (i >= 0) list[i] = clone(draft); else list.push(clone(draft));
-      if (!saveOrWarn()) return;
+      // A brand-new sticker made from someone's sticker page becomes theirs.
+      if (draftIsNew && pagePersonId) {
+        if (!assignSticker(draft.id)) return;
+      } else if (!saveOrWarn()) {
+        return;
+      }
       Effects.celebrate();
-      currentId = draft.id;
-      location.hash = '#/';
-    },
-    // Deleting a person needs the parent PIN.
-    'sticker-delete'() {
-      askPin(() => {
-        confirmBox(Stickers.render(draft), 'Delete this person?', () => {
-          S.data.stickers = S.data.stickers.filter(s => s.id !== draft.id);
-          saveOrWarn();
-          if (currentId === draft.id) currentId = null;
-          location.hash = '#/who';
-        });
-      });
+      if (draftIsNew && pagePersonId === 'new') {
+        pagePersonId = currentId;
+        location.hash = '#/';
+      } else {
+        location.hash = builderBack;
+      }
     },
     'pick-profile'(el) {
       currentId = el.dataset.id;
       Effects.pop();
       location.hash = '#/';
     },
+    'pick-sticker'(el) {
+      const id = el.dataset.id;
+      const owner = ownerOf(id);
+      if (owner && owner.id !== pagePersonId) { wiggle(el); Effects.pop(); return; }
+      if (owner) { wiggle(el); return; } // already yours
+      const wasNew = pagePersonId === 'new';
+      if (!assignSticker(id)) return;
+      Effects.celebrate();
+      if (wasNew) {
+        location.hash = '#/';
+      } else {
+        rerender();
+      }
+    },
+    'edit-sticker'(el) {
+      location.hash = `#/sticker/${el.dataset.id}`;
+    },
+    'new-sticker'() {
+      location.hash = '#/sticker/new';
+    },
+    // Only parents can delete stickers, and only ones nobody is using.
+    'delete-sticker'(el) {
+      const s = stickerById(el.dataset.id);
+      if (!s || ownerOf(s.id)) return;
+      confirmBox(Stickers.render(s), 'Delete this sticker?', () => {
+        S.data.stickers = S.data.stickers.filter(x => x.id !== s.id);
+        saveOrWarn();
+        rerender();
+      });
+    },
+    // Deleting a person needs the parent PIN. Their sticker stays in the collection.
+    'person-delete'() {
+      const p = S.data.people.find(x => x.id === pagePersonId);
+      if (!p) return;
+      confirmBox(Stickers.render(personSticker(p)), `Delete ${p.name || 'this person'}?`, () => {
+        S.data.people = S.data.people.filter(x => x.id !== p.id);
+        saveOrWarn();
+        if (currentId === p.id) currentId = null;
+        location.hash = '#/who';
+      });
+    },
 
-    // Rewards
+    // Parent mode (Rewards and sticker pages)
     'unlock'() {
-      askPin(() => { parentUnlocked = true; renderRewards(); });
+      askPin(() => { parentUnlocked = true; rerender(); });
     },
     'lock'() {
       parentUnlocked = false;
-      renderRewards();
+      rerender();
     },
+
+    // Rewards
     'reward-tap'(el) {
       const r = S.data.rewards.find(x => x.id === el.dataset.id);
       if (!r) return;
@@ -583,7 +741,14 @@
   });
 
   document.addEventListener('input', e => {
-    if (e.target.id === 'sticker-name' && draft) draft.name = e.target.value.trim();
+    if (e.target.id !== 'person-name') return;
+    const name = e.target.value.trim();
+    if (pagePersonId === 'new') {
+      pendingName = name;
+    } else {
+      const p = S.data.people.find(x => x.id === pagePersonId);
+      if (p) { p.name = name; S.save(); }
+    }
   });
 
   document.addEventListener('change', async e => {
@@ -609,29 +774,47 @@
     [/^#\/rooms$/, renderRooms],
     [/^#\/rooms\/my-room$/, renderMyRoom],
     [/^#\/who$/, renderWho],
-    [/^#\/stickers\/new$/, () => renderStickerBuilder(null)],
-    [/^#\/stickers\/edit\/([\w-]+)$/, m => renderStickerBuilder(m[1])],
+    [/^#\/people\/(new|[\w-]+)$/, m => renderPersonPage(m[1])],
+    [/^#\/sticker\/new$/, () => renderStickerBuilder(null)],
+    [/^#\/sticker\/([\w-]+)$/, m => renderStickerBuilder(m[1])],
     [/^#\/rewards$/, renderRewards],
   ];
 
+  // These pages work before someone has picked who they are.
+  const openToEveryone = /^#\/(who|people\/.+|sticker\/.+)$/;
+
+  function renderRoute(hash) {
+    for (const [re, fn] of routes) {
+      const m = hash.match(re);
+      if (m) { fn(m); return true; }
+    }
+    return false;
+  }
+
+  // Redraw the current page without leaving it (keeps parent mode on).
+  function rerender() {
+    const y = window.scrollY;
+    renderRoute(location.hash || '#/');
+    window.scrollTo(0, y);
+  }
+
+  let lastHash = null;
+
   function router() {
     const hash = location.hash || '#/';
-    if (hash !== '#/rewards') parentUnlocked = false;
+    // Parent mode turns off whenever you leave the page.
+    if (hash !== lastHash) parentUnlocked = false;
+    lastHash = hash;
     closeModal();
-    // Everyone starts at "Who are you?" until they pick or make a profile.
-    if (!currentProfile() && hash !== '#/who' && hash !== '#/stickers/new') {
+    if (!currentPerson() && !openToEveryone.test(hash)) {
       location.replace('#/who');
       return;
     }
-    for (const [re, fn] of routes) {
-      const m = hash.match(re);
-      if (m) {
-        fn(m);
-        window.scrollTo(0, 0);
-        return;
-      }
+    if (renderRoute(hash)) {
+      window.scrollTo(0, 0);
+    } else {
+      location.hash = '#/';
     }
-    location.hash = '#/';
   }
 
   window.addEventListener('hashchange', router);

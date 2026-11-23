@@ -10,10 +10,10 @@ To use it on a tablet or phone, put the folder on any simple web host and open t
 
 ## What's built so far
 
-- **Who are you?** The app opens by showing everyone's sticker. Tap yours, or ➕ to make a new person. Any number of people.
+- **Who are you?** The app opens by showing everyone's sticker. Tap yours, ✏️ to change someone's sticker, or ➕ to add a new person. Any number of people.
 - **Home screen:** four round circles, in order: Rooms, Stickers, Rewards, Clean (grayed out, coming soon)
 - **Rooms:** My Room, plus Bathroom, Living Room and Kitchen grayed out. The room builder is next.
-- **Stickers:** change your own sticker (person, alien or animal). Tap your sticker in the corner of the home screen to switch person.
+- **Stickers:** one shared collection (person, alien or animal). Each person picks one, and a sticker someone is using is taken. Only parents can delete stickers or people. Tap your sticker in the corner of the home screen to switch person.
 - **Rewards** (shared by everyone): reward circles with stars that fill up as cleanups are finished. A ready reward bounces, and tapping it plays a sound and confetti.
 - **Parent PIN** (tap 🔒 on Rewards): add rewards with a photo or picture, set how many cleanups are needed, mark "Earned," give a reward again, or delete it.
 
