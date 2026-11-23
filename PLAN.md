@@ -16,6 +16,15 @@ A row of **big, round circles**, each with a picture sticker so it's easy to see
 
 All buttons that lead to more choices are also round circles with pictures, so every screen feels the same.
 
+**Circles that aren't built yet** (Bathroom, Living Room, Kitchen, Clean) show **grayed out** as "coming soon."
+
+### Rewards
+
+- **The parent sets a goal** for each reward, like "5 cleanups = a game"
+- **A cleanup counts automatically** when the child puts everything away in a room or finishes a deep clean. Each one counts toward the reward right away.
+- **When the goal is reached**, the reward is ready to collect on the Rewards page
+- **Parent "Earned" button:** a parent can also mark a reward as earned whenever they choose. This button is **behind a PIN**, so kids can't tap it themselves.
+
 ---
 
 ## 1. Who it's for and where it runs
