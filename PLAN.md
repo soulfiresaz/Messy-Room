@@ -241,8 +241,11 @@ A picture checklist of cleaning jobs. The app suggests them based on what's in t
 ## 7. Saving
 
 - **Saves automatically** on the device, so the room is there every day
-- **Export** the room (including photos and stickers) to a file, as a backup or to move it
-- **Import** that file on another device (tablet, computer or phone)
+- **Backup and restore** ✅ built: a 🔒 ⚙️ button on the home screen (parent PIN) opens the backup page
+  - **Copy backup** copies everything (people, stickers, rewards with photos, rooms) as one block of text to paste into a note or an email. Inside claude.ai downloads are blocked, so copying is the main way.
+  - **Save as a file** works when the app is opened on its own website
+  - **Restore** from pasted text or a chosen file, on this device or another one. It asks before replacing everything.
+  - Shows when the last backup was made
 - No accounts or sign-in needed
 
 ---
@@ -270,7 +273,7 @@ Each stage gives something usable before moving on.
 3. **Item stickers:** cartoon drawings, color chooser, patterns, photos
 4. **Tidying:** floor checklist, Pictures / Words tabs, dragging items into drawers and cubbies, sound and confetti
 5. **Deep clean:** suggested jobs, daily and weekly schedule, parent settings
-6. **Saving:** automatic save, export and import
+6. **Saving:** automatic save ✅, backup and restore ✅
 7. **Phone layout and polish:** word list version first on phones, final touches
 
 ---

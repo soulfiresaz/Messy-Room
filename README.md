@@ -19,6 +19,7 @@ To use it on a tablet or phone, put the folder on any simple web host and open t
 - **My Room furniture:** tap ➕ to pick a ready-made piece (beds, dressers, side tables, drawer containers, cubbies, bookshelves, wire shelves, wall shelves, seats, hampers, baskets, bags, boxes, hooks, a wall file sorter). Tap any drawer, cubby, cupboard, shelf or rod to open it. In a closet, the big 🚪 button switches between the inside and the outside of its doors. Change colors, add an optional label, and use 🔧 to change the parts (columns, drawers, cubbies that are open or hold a bin, a paper sorter or a paper drawer box, cupboard shelves, closet sections with one rod, a low rod, two rods or shelves). Removing a part that already holds things needs the parent PIN.
 - **Stickers:** one shared collection (person, alien or animal). Each person picks one, and a sticker someone is using is taken. Only parents can delete stickers or people. Tap your sticker in the corner of the home screen to switch person.
 - **Rewards** (shared by everyone): reward circles with stars that fill up as cleanups are finished. A ready reward bounces, and tapping it plays a sound and confetti.
+- **Backup and restore** (tap ⚙️ 🔒 on the home screen, parent PIN): copy a backup as text to paste into a note or email, or save it as a file when the app runs on its own website. Restore by pasting it back or choosing the file.
 - **Parent PIN** (tap 🔒 on Rewards): add rewards with a photo or picture, set how many cleanups are needed, mark "Earned," give a reward again, or delete it.
 
 ## Files

@@ -161,6 +161,7 @@
           <span class="me-switch" aria-hidden="true">🔄</span>
         </a>
         <h1 class="logo">Messy Room</h1>
+        <button type="button" class="round-btn home-settings" data-act="open-backup" aria-label="Backup and restore (parent)"><span aria-hidden="true">⚙️</span><span class="lock-mini" aria-hidden="true">🔒</span></button>
       </header>
       <main class="circle-grid home-grid">
         ${circle({ href: '#/rooms', icon: '🏠', label: 'Rooms', color: 'var(--c-rooms)' })}
@@ -773,6 +774,91 @@
     return null;
   }
 
+  // ---------- Backup and restore (parent only) ----------
+  // The viewer inside claude.ai blocks downloads, so a backup is copied as text
+  // (to paste into a note or an email). A file works too where downloads are allowed.
+
+  let backupUnlocked = false;
+
+  function backupText() {
+    return JSON.stringify({ app: 'messy-room', savedAt: new Date().toISOString(), data: S.data });
+  }
+
+  // Accepts a backup made by "Save a backup", or the plain saved data.
+  function readBackup(text) {
+    let obj;
+    try { obj = JSON.parse(String(text).trim()); } catch (e) { return null; }
+    const data = obj && obj.app === 'messy-room' && obj.data ? obj.data : obj;
+    if (!data || !Array.isArray(data.people) || !Array.isArray(data.stickers)) return null;
+    return { data, savedAt: obj.savedAt || null };
+  }
+
+  function niceDate(iso) {
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); } catch (e) { return ''; }
+  }
+
+  function renderBackup() {
+    if (!backupUnlocked) { location.replace('#/'); return; }
+    const d = S.data;
+    const rooms = d.rooms && d.rooms['my-room'] ? d.rooms['my-room'].pieces.length : 0;
+    $app.innerHTML = `
+      ${topBar('Backup', '#/')}
+      <main class="backup-page">
+        <section class="opt-row backup-box">
+          <h2 class="opt-head"><span aria-hidden="true">💾</span> Save a backup</h2>
+          <p class="backup-note">Everything: ${d.people.length} ${d.people.length === 1 ? 'person' : 'people'}, ${d.stickers.length} stickers, ${d.rewards.length} rewards, and My Room with ${rooms} ${rooms === 1 ? 'piece' : 'pieces'} of furniture.
+          ${d.lastBackup ? `<br>Last backup: ${esc(niceDate(d.lastBackup))}` : ''}</p>
+          <div class="backup-actions">
+            <button type="button" class="save-btn" data-act="backup-copy"><span aria-hidden="true">📋</span> Copy backup</button>
+            <button type="button" class="tool-btn big" data-act="backup-file"><span aria-hidden="true">📄</span> Save as a file</button>
+          </div>
+          <p class="backup-note">Copy it, then paste it into a note or an email to yourself. Saving as a file works when the app is opened on its own, not inside claude.ai.</p>
+          <textarea id="backup-out" class="text-input backup-text" rows="4" readonly hidden aria-label="Backup text"></textarea>
+        </section>
+        <section class="opt-row backup-box">
+          <h2 class="opt-head"><span aria-hidden="true">♻️</span> Restore</h2>
+          <p class="backup-note">This replaces everything on this device with the backup.</p>
+          <textarea id="restore-text" class="text-input backup-text" rows="4" placeholder="Paste a backup here" aria-label="Paste a backup"></textarea>
+          <div class="backup-actions">
+            <button type="button" class="save-btn" data-act="restore-text"><span aria-hidden="true">♻️</span> Restore</button>
+            <label class="tool-btn big"><span aria-hidden="true">📂</span> Choose a file
+              <input type="file" accept=".json,.txt,application/json,text/plain" data-restore-file hidden>
+            </label>
+          </div>
+        </section>
+      </main>`;
+  }
+
+  function markBackedUp() {
+    S.data.lastBackup = new Date().toISOString();
+    S.save();
+  }
+
+  // If copying isn't allowed, show the text, selected, so it can be copied by hand.
+  function showBackupText(text) {
+    const out = document.getElementById('backup-out');
+    if (!out) return;
+    out.hidden = false;
+    out.value = text;
+    out.focus();
+    out.select();
+  }
+
+  function askRestore(text) {
+    const b = readBackup(text);
+    if (!b) { infoBox('🤔', 'That doesn’t look like a Messy Room backup. Check that the whole backup was pasted.'); return; }
+    const when = b.savedAt ? ` from ${niceDate(b.savedAt)}` : '';
+    const n = b.data.people.length;
+    confirmBox('♻️', `Replace everything on this device with the backup${when} (${n} ${n === 1 ? 'person' : 'people'})?`, () => {
+      if (!S.restore(b.data)) { infoBox('⚠️', 'This device is out of space, so the backup could not be restored. Nothing was changed.'); return; }
+      Effects.celebrate();
+      backupUnlocked = false;
+      currentId = null;
+      location.hash = '#/who';
+    });
+  }
+
   // ---------- Sticker page for one person ----------
   // Shows the whole shared collection. Your sticker has a ✔️.
   // Stickers someone else is using are taken and can't be picked.
@@ -1294,6 +1380,38 @@
       saveOrWarn();
       Effects.pop();
       drawMapAll();
+    },
+    'open-backup'() {
+      askPin(() => { backupUnlocked = true; location.hash = '#/backup'; });
+    },
+    'backup-copy'() {
+      const text = backupText();
+      const done = () => { markBackedUp(); renderBackup(); infoBox('📋', 'Copied! Paste it into a note or an email to keep it safe.'); };
+      try {
+        navigator.clipboard.writeText(text).then(done, () => showBackupText(text));
+      } catch (e) {
+        showBackupText(text);
+      }
+    },
+    'backup-file'() {
+      const text = backupText();
+      try {
+        const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `messy-room-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        markBackedUp();
+      } catch (e) {
+        showBackupText(text);
+      }
+    },
+    'restore-text'() {
+      const box = document.getElementById('restore-text');
+      askRestore(box ? box.value : '');
     },
     'color-picker'(el) {
       openColorPicker(el.dataset.for);
@@ -1844,6 +1962,11 @@
   });
 
   document.addEventListener('change', async e => {
+    if (e.target.matches('[data-restore-file]') && e.target.files[0]) {
+      try { askRestore(await e.target.files[0].text()); } catch (err) { infoBox('🤔', 'That file could not be read.'); }
+      e.target.value = '';
+      return;
+    }
     if (!e.target.matches('[data-photo]') || !e.target.files[0]) return;
     try {
       const data = await readPhoto(e.target.files[0]);
@@ -1892,6 +2015,7 @@
     [/^#\/sticker\/new$/, () => renderStickerBuilder(null)],
     [/^#\/sticker\/([\w-]+)$/, m => renderStickerBuilder(m[1])],
     [/^#\/rewards$/, renderRewards],
+    [/^#\/backup$/, renderBackup],
   ];
 
   // These pages work before someone has picked who they are.
@@ -1918,6 +2042,7 @@
     const hash = location.hash || '#/';
     // Parent mode turns off whenever you leave the page.
     if (hash !== lastHash) parentUnlocked = false;
+    if (hash !== '#/backup') backupUnlocked = false;
     if (hash !== lastHash && !hash.startsWith('#/rooms/my-room')) mapStep = null;
     if (hash !== lastHash) mapSelected = null;
     lastHash = hash;

@@ -54,11 +54,21 @@ const Store = (() => {
     save();
   }
 
+  // Replace everything with a backup. Returns false if it didn't fit on the device.
+  function restore(saved) {
+    const before = data;
+    data = { ...defaults(), ...saved };
+    upgrade();
+    if (!save()) { data = before; save(); return false; }
+    return true;
+  }
+
   load();
 
   return {
     get data() { return data; },
     save,
+    restore,
     uid,
     addCleanup,
   };
