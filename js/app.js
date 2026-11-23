@@ -790,6 +790,20 @@
     if (e.key === 'Escape' && !$modal.hidden) closeModal();
   });
 
+  // ---------- Starter stickers ----------
+  // Added to the shared collection once, so there's always something to pick.
+  function addStarterStickers() {
+    if (S.data.startersAdded) return;
+    S.data.startersAdded = true;
+    Stickers.STARTERS.forEach(st => {
+      const full = { ...clone(Stickers.DEFAULTS[st.type]), ...st, id: S.uid() };
+      // Skip a starter if someone already made one that looks exactly the same.
+      if (!S.data.stickers.some(x => lookKey(x) === lookKey(full))) S.data.stickers.push(full);
+    });
+    S.save();
+  }
+  addStarterStickers();
+
   // ---------- Router ----------
 
   const routes = [

@@ -65,7 +65,6 @@ const Stickers = (() => {
       ...FACE_PARTS,
       { key: 'color', icon: '👽', label: 'Alien color', colors: COLORS.alien },
       { key: 'head', icon: '🥚', label: 'Head', styles: ['round', 'tall', 'wide', 'xwide', 'bulb', 'classic'] },
-      { key: 'alienEars', icon: '👂', label: 'Ears', styles: ['none', 'pointy', 'round'] },
       { key: 'skinPattern', icon: '✨', label: 'Skin', styles: ['plain', 'spots', 'stars'] },
       { key: 'eyeCount', icon: '👁️', label: 'How many eyes', styles: [1, 2, 3] },
       { key: 'antennae', icon: '📡', label: 'Antennae', styles: [0, 1, 2] },
@@ -91,7 +90,7 @@ const Stickers = (() => {
   const FACE_DEFAULT = { ...PRESETS.happy };
   const DEFAULTS = {
     person: { type: 'person', bg: '#bfe3ff', faceShape: 'oval', skin: '#f6c9a0', hair: 'short', hairColor: '#5a3825', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
-    alien: { type: 'alien', bg: '#e2d4ff', color: '#7ee081', head: 'round', eyeCount: 3, antennae: 2, antennaStyle: 'straight', alienEars: 'none', skinPattern: 'spots', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
+    alien: { type: 'alien', bg: '#e2d4ff', color: '#7ee081', head: 'round', eyeCount: 3, antennae: 2, antennaStyle: 'straight', skinPattern: 'spots', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
     animal: { type: 'animal', bg: '#bfe3ff', kind: 'cat', face: 'round', ears: 'pointy', coat: 'calico', color: '#fbf8f3', patchColor: '#f5a54a', horns: 'none', tuft: 'sprout', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
   };
 
@@ -363,15 +362,6 @@ const Stickers = (() => {
     const headD = h.d || `M50 ${h.cy - h.ry} A${h.rx} ${h.ry} 0 1 1 49.99 ${h.cy - h.ry}Z`;
     const headShape = `<path d="${headD}" fill="${c}"/>`;
 
-    // Ears on the sides of the head.
-    const ex = 50 - h.rx + 2, ey0 = h.cy - 3;
-    let earL = '';
-    if (s.alienEars === 'pointy') earL = `<path d="M${ex} ${ey0 - 6} L${ex - 14} ${ey0 - 15} Q${ex - 15} ${ey0 - 4} ${ex - 9} ${ey0 + 3} L${ex} ${ey0 + 5}Z"/>`;
-    if (s.alienEars === 'round') earL = `<circle cx="${ex - 4}" cy="${ey0}" r="7"/>`;
-    const mirror = d => `<g transform="translate(100 0) scale(-1 1)">${d}</g>`;
-    const ears = earL ? `<g fill="${c}">${earL}${mirror(earL)}</g>` : '';
-    const earsOutline = earL ? earL + mirror(earL) : '';
-
     // Skin: a few spots, lots of freckles, or twinkling stars.
     const clipId = uid + 'a';
     let skin = '';
@@ -395,7 +385,7 @@ const Stickers = (() => {
     let features = face(s, { eyes, size, mouthAt: [50, h.cy + h.ry * 0.42], cheeks: [[50 - h.rx * 0.62, ey + 9], [50 + h.rx * 0.62, ey + 9]], top: [50 + h.rx * 0.7, top + 4], human: true });
     // On a dark alien, draw the face lines light so they can be seen.
     if (lightness(c) < 0.4) features = features.split(INK).join(LIGHT_INK);
-    const art = antOutline + outline(earsOutline + headShape) + ant + ears + headShape + skinLayer + features;
+    const art = antOutline + outline(headShape) + ant + headShape + skinLayer + features;
     return { art, eyes, eyeSize: size * 0.8, hat: [50, top + 5, h.rx * 1.25], chin: [50, h.cy + h.ry - 1] };
   }
 
@@ -820,7 +810,6 @@ const Stickers = (() => {
     let f;
     if (s.type === 'alien') {
       f = { round: [44, 1.04], tall: [42, 1.0], wide: [47, 1.1], xwide: [50, 1.08], bulb: [46, 1.04], classic: [45, 0.98] }[s.head] || [44, 1.04];
-      if (s.alienEars && s.alienEars !== 'none') f = [f[0], f[1] * (s.head === 'xwide' ? 0.8 : 0.92)];
     } else if (s.type === 'animal') {
       f = { cat: [52, 0.98], dog: [55, 1.0], chihuahua: [45, 0.88], bunny: [46, 0.94], bear: [58, 1.0], mouse: [58, 0.95], fox: [55, 0.98], sheep: [54, 0.98], dragon: [51, 0.9] }[s.kind] || [52, 0.98];
       if (s.kind === 'cat' && s.ears === 'big') f = [f[0] - 7, f[1] * 0.91];
@@ -856,5 +845,41 @@ const Stickers = (() => {
       `</g></g></svg>`;
   }
 
-  return { COLORS, OPTIONS, DEFAULTS, FEELINGS, PRESETS, applyPreset, presetOf, render };
+  // Starter stickers: at least one of every animal, plus people, aliens and dragons.
+  // Kids can pick one and change it however they like.
+  const STARTERS = [
+    // Cats
+    { type: 'animal', kind: 'cat', face: 'round', coat: 'calico', color: '#fbf8f3', patchColor: '#f5a54a', eyes: 'happy', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#bfe3ff' },
+    { type: 'animal', kind: 'cat', face: 'wide', ears: 'pointy', coat: 'tabby', color: '#9e9e9e', eyes: 'happy', mouth: 'smile', cheeks: 'none', extra: 'none', bg: '#ffd2b0' },
+    { type: 'animal', kind: 'cat', face: 'fluffy', coat: 'plain', color: '#fbf8f3', eyes: 'shiny', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#ffd6e0' },
+    { type: 'animal', kind: 'cat', face: 'round', coat: 'mask', color: '#f6e3c3', patchColor: '#6b4a3a', eyes: 'big', mouth: 'small', cheeks: 'none', extra: 'none', bg: '#9be7c4' },
+    { type: 'animal', kind: 'cat', face: 'wide', coat: 'twotone', color: '#4a4545', patchColor: '#fbf8f3', eyes: 'heart', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#ffe9a8' },
+    // Other animals
+    { type: 'animal', kind: 'dog', coat: 'patch', color: '#fbf8f3', patchColor: '#a47551', eyes: 'shiny', mouth: 'tongue', cheeks: 'none', extra: 'none', bg: '#ffe9a8' },
+    { type: 'animal', kind: 'chihuahua', coat: 'plain', color: '#e0a878', eyes: 'shiny', mouth: 'smile', cheeks: 'none', extra: 'none', bg: '#bfe3ff' },
+    { type: 'animal', kind: 'bunny', coat: 'plain', color: '#fbf8f3', eyes: 'shiny', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#ffd6e0' },
+    { type: 'animal', kind: 'bear', coat: 'plain', color: '#a47551', eyes: 'happy', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#e2d4ff' },
+    { type: 'animal', kind: 'mouse', coat: 'plain', color: '#b9a89a', eyes: 'shiny', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#ffe9a8' },
+    { type: 'animal', kind: 'fox', coat: 'plain', color: '#e8925a', eyes: 'happy', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#bfe3ff' },
+    { type: 'animal', kind: 'sheep', coat: 'plain', color: '#fbf8f3', eyes: 'happy', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#c8f0c0' },
+    // Dragons
+    { type: 'animal', kind: 'dragon', face: 'round', tuft: 'sprout', horns: 'none', coat: 'plain', color: '#e8655a', eyes: 'big', mouth: 'smile', cheeks: 'none', extra: 'none', bg: '#bfe3ff' },
+    { type: 'animal', kind: 'dragon', face: 'round', tuft: 'curl', horns: 'none', coat: 'plain', color: '#7ccf7c', eyes: 'big', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#ffe9a8' },
+    { type: 'animal', kind: 'dragon', face: 'chubby', tuft: 'puff', horns: 'tiny', coat: 'plain', color: '#6fa8dc', eyes: 'slit', mouth: 'smile', cheeks: 'none', extra: 'none', bg: '#ffd6e0' },
+    // Aliens
+    { type: 'alien', head: 'round', color: '#5aa9c9', eyeCount: 2, antennae: 2, antennaStyle: 'straight', skinPattern: 'spots', eyes: 'big', mouth: 'small', cheeks: 'none', extra: 'none', bg: '#e2d4ff' },
+    { type: 'alien', head: 'classic', color: '#7ee081', eyeCount: 2, antennae: 0, antennaStyle: 'straight', skinPattern: 'plain', eyes: 'almond', mouth: 'smile', cheeks: 'none', extra: 'none', bg: '#bfe3ff' },
+    { type: 'alien', head: 'bulb', color: '#c79bff', eyeCount: 2, antennae: 2, antennaStyle: 'spiral', skinPattern: 'spots', eyes: 'big', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#ffe9a8' },
+    { type: 'alien', head: 'xwide', color: '#9be35a', eyeCount: 3, antennae: 1, antennaStyle: 'straight', skinPattern: 'spots', eyes: 'wide', mouth: 'open', cheeks: 'none', extra: 'none', bg: '#bfe3ff' },
+    { type: 'alien', head: 'tall', color: '#2f3b2f', eyeCount: 2, antennae: 2, antennaStyle: 'zigzag', skinPattern: 'stars', eyes: 'slit', mouth: 'small', cheeks: 'none', extra: 'none', bg: '#ffd6e0' },
+    // People
+    { type: 'person', faceShape: 'oval', skin: '#f6c9a0', hair: 'short', hairColor: '#5a3825', eyes: 'shiny', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#bfe3ff' },
+    { type: 'person', faceShape: 'round', skin: '#f6c9a0', hair: 'pigtails', hairColor: '#d94f2b', eyes: 'shiny', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#ffd6e0' },
+    { type: 'person', faceShape: 'long', skin: '#c68642', hair: 'long', hairColor: '#2b1b12', eyes: 'shiny', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#ffe9a8' },
+    { type: 'person', faceShape: 'square', skin: '#ffe0c7', hair: 'spiky', hairColor: '#e0b050', eyes: 'shiny', mouth: 'teeth', cheeks: 'blush', extra: 'none', bg: '#c8f0c0' },
+    { type: 'person', faceShape: 'heart', skin: '#6e4423', hair: 'bun', hairColor: '#2b1b12', eyes: 'shiny', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#e2d4ff' },
+    { type: 'person', faceShape: 'round', skin: '#4a2c17', hair: 'curly', hairColor: '#2b1b12', eyes: 'big', mouth: 'smile', cheeks: 'blush', extra: 'none', bg: '#ffd2b0' },
+  ];
+
+  return { COLORS, OPTIONS, DEFAULTS, FEELINGS, PRESETS, STARTERS, applyPreset, presetOf, render };
 })();

@@ -72,6 +72,7 @@ One PIN guards everything parent-only:
 - **One sticker per person:** a sticker someone is using is **taken**. It shows grayed out with that person's name and can't be picked or changed by anyone else, so siblings don't fight over it.
 - **No two stickers can look exactly the same.** If you try, the app says it's already made.
 - **Your sticker has a ✔️.** Tap any free sticker to switch to it, ✏️ to change a free one, or ➕ to make a new one (a new one becomes yours).
+- **Starter stickers:** the collection starts with 26 ready-made stickers (at least one of every animal, plus dragons, aliens and people). Kids pick one and change it however they like.
 - **Only parents can delete stickers** (with the PIN), and only stickers nobody is using
 - **Deleting a person** also needs the PIN. Their sticker goes back into the collection.
 
