@@ -126,6 +126,11 @@ The child (with a parent's help if needed) places the door on a wall first.
 - **Room size by eye:** the room grows on its own to make space, and you can drag an edge to make it wider or longer
 - **Room shape:** rectangle for now (odd shapes like L-shaped rooms could come later)
 
+### Who builds it (decided)
+- **Both the child and a grown-up, depending on the step**
+- **Ready-made pieces** (like "6-drawer dresser" or "12-cubby unit") are shown as pictures the child can drag in alone
+- **"Change the parts"** is a simple option a grown-up can open when a ready-made piece doesn't match the real one
+
 ### Furniture is built from parts
 Real furniture comes in all shapes and sizes, so each piece is made of parts you choose:
 
