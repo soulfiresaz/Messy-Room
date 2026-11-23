@@ -4,6 +4,20 @@ A web app that helps kids organize and clean their rooms. It works entirely with
 
 ---
 
+## 0. First screen (home)
+
+A row of **big, round circles**, each with a picture sticker so it's easy to see and tap. No reading needed.
+
+| Circle | What happens when you tap it | When |
+|---|---|---|
+| **Messy Room** | Opens more circles, one for each room: **My Room** first. Later: Bathroom, Living Room, Kitchen and more. | My Room now, other rooms later |
+| **Clean** | A parent or child lists jobs the parent asked for, like "pick up my stuff from the living room," "vacuum the living room" or "wipe the kitchen counters." Each job shows a picture of the room plus a picture of the tool (rag, spray bottle, sponge, vacuum). Choosing a job highlights that part of the room, like the kitchen counter. | Later |
+| **Rewards** | Opens a page where kids collect the rewards their parents promised them, like money, a game, or a special date or outing. | Now |
+
+All buttons that lead to more choices are also round circles with pictures, so every screen feels the same.
+
+---
+
 ## 1. Who it's for and where it runs
 
 - **Kids**, including those who can't read yet
