@@ -54,6 +54,7 @@ const Stickers = (() => {
   const OPTIONS = {
     person: [
       ...FACE_PARTS,
+      { key: 'faceShape', icon: '🙂', label: 'Face shape', styles: ['oval', 'round', 'long', 'square', 'heart'] },
       { key: 'skin', icon: '🖐️', label: 'Skin', colors: COLORS.skin },
       { key: 'hair', icon: '💇', label: 'Hair', styles: ['short', 'long', 'curly', 'bun', 'pigtails', 'spiky', 'bald'] },
       { key: 'hairColor', icon: '🖍️', label: 'Hair color', colors: COLORS.hair },
@@ -63,7 +64,7 @@ const Stickers = (() => {
     alien: [
       ...FACE_PARTS,
       { key: 'color', icon: '👽', label: 'Alien color', colors: COLORS.alien },
-      { key: 'head', icon: '🥚', label: 'Head', styles: ['round', 'tall', 'wide'] },
+      { key: 'head', icon: '🥚', label: 'Head', styles: ['round', 'tall', 'wide', 'bulb'] },
       { key: 'eyeCount', icon: '👁️', label: 'How many eyes', styles: [1, 2, 3] },
       { key: 'antennae', icon: '📡', label: 'Antennae', styles: [0, 1, 2] },
       { key: 'antennaStyle', icon: '🌀', label: 'Antenna shape', styles: ['straight', 'spiral', 'zigzag', 'crooked'], when: s => s.antennae > 0 },
@@ -87,7 +88,7 @@ const Stickers = (() => {
 
   const FACE_DEFAULT = { ...PRESETS.happy };
   const DEFAULTS = {
-    person: { type: 'person', bg: '#bfe3ff', skin: '#f6c9a0', hair: 'short', hairColor: '#5a3825', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
+    person: { type: 'person', bg: '#bfe3ff', faceShape: 'oval', skin: '#f6c9a0', hair: 'short', hairColor: '#5a3825', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
     alien: { type: 'alien', bg: '#e2d4ff', color: '#7ee081', head: 'round', eyeCount: 3, antennae: 2, antennaStyle: 'straight', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
     animal: { type: 'animal', bg: '#bfe3ff', kind: 'cat', face: 'round', ears: 'pointy', coat: 'calico', color: '#fbf8f3', patchColor: '#f5a54a', horns: 'none', tuft: 'sprout', ...FACE_DEFAULT, hat: 'none', glasses: 'none', neck: 'none' },
   };
@@ -240,6 +241,15 @@ const Stickers = (() => {
 
   // ---------- People ----------
 
+  // Human face shapes. Each has its outline, where the ears go, and where the chin is.
+  const PERSON_FACES = {
+    oval: { d: 'M50 26 C64 26 74 36 74 50 C74 62 69 71 62 76 C58 79 54 80 50 80 C46 80 42 79 38 76 C31 71 26 62 26 50 C26 36 36 26 50 26Z', ear: 26, chin: 80 },
+    round: { d: 'M50 27 C65 27 76 38 76 52 C76 67 64 78 50 78 C36 78 24 67 24 52 C24 38 35 27 50 27Z', ear: 24.5, chin: 78 },
+    long: { d: 'M50 25 C62 25 71 34 71 48 C71 62 68 73 61 78 C57 81 53 82 50 82 C47 82 43 81 39 78 C32 73 29 62 29 48 C29 34 38 25 50 25Z', ear: 29, chin: 82 },
+    square: { d: 'M50 26 C66 26 74 34 74 48 C74 60 73 70 68 75 C63 79 57 80 50 80 C43 80 37 79 32 75 C27 70 26 60 26 48 C26 34 34 26 50 26Z', ear: 26, chin: 80 },
+    heart: { d: 'M50 26 C65 26 75 36 75 48 C75 57 72 64 66 70 C61.5 75 57 80 50 80 C43 80 38.5 75 34 70 C28 64 25 57 25 48 C25 36 35 26 50 26Z', ear: 25.5, chin: 80 },
+  };
+
   function person(s) {
     const skin = s.skin, hc = s.hairColor;
     let back = '', front = '';
@@ -270,13 +280,14 @@ const Stickers = (() => {
       default:
         break; // bald
     }
-    const head = `<circle cx="26" cy="54" r="5" fill="${skin}"/><circle cx="74" cy="54" r="5" fill="${skin}"/>` +
-      `<ellipse cx="50" cy="52" rx="24" ry="26" fill="${skin}"/>`;
+    const f = PERSON_FACES[s.faceShape] || PERSON_FACES.oval;
+    const head = `<circle cx="${f.ear}" cy="54" r="5" fill="${skin}"/><circle cx="${100 - f.ear}" cy="54" r="5" fill="${skin}"/>` +
+      `<path d="${f.d}" fill="${skin}"/>`;
     const eyes = [[41, 54], [59, 54]];
     const art = outline(back + head + front) + back + head + front +
       face(s, { eyes, size: 1.05, mouthAt: [50, 62], cheeks: [[35, 62], [65, 62]], top: [70, 28], human: true });
     const hatY = s.hair === 'spiky' ? 25 : s.hair === 'curly' ? 24 : 27;
-    return { art, eyes, eyeSize: 1.05, hat: [50, hatY, 44], chin: [50, 78] };
+    return { art, eyes, eyeSize: 1.05, hat: [50, hatY, 44], chin: [50, f.chin] };
   }
 
   // ---------- Aliens ----------
@@ -322,6 +333,8 @@ const Stickers = (() => {
       round: { cy: 54, rx: 25, ry: 24 },
       tall: { cy: 52, rx: 21, ry: 30 },
       wide: { cy: 56, rx: 31, ry: 21 },
+      // Classic alien: big forehead tapering to a small chin.
+      bulb: { cy: 52, rx: 28, ry: 27, d: 'M50 25 C68 25 78 36 78 49 C78 61 67 71 59 77 C56 79 53 81 50 81 C47 81 44 79 41 77 C33 71 22 61 22 49 C22 36 32 25 50 25Z' },
     };
     const h = heads[s.head] || heads.round;
     const top = h.cy - h.ry;
@@ -333,7 +346,7 @@ const Stickers = (() => {
     };
     const ant = ants(dark);
     const antOutline = ants('#fff');
-    const headShape = `<ellipse cx="50" cy="${h.cy}" rx="${h.rx}" ry="${h.ry}" fill="${c}"/>`;
+    const headShape = h.d ? `<path d="${h.d}" fill="${c}"/>` : `<ellipse cx="50" cy="${h.cy}" rx="${h.rx}" ry="${h.ry}" fill="${c}"/>`;
     const spots = `<circle cx="${50 - h.rx * 0.6}" cy="${h.cy + h.ry * 0.45}" r="2.4" fill="${dark}" opacity=".45"/>` +
       `<circle cx="${50 + h.rx * 0.62}" cy="${h.cy - h.ry * 0.45}" r="2" fill="${dark}" opacity=".45"/>`;
     const ey = h.cy - 3;
@@ -443,7 +456,7 @@ const Stickers = (() => {
       case 'dog':
         // Puppy: long floppy ears, a big light muzzle, nose on top of the muzzle.
         return {
-          head: 'M50 29 C69 29 80 41 80 56 C80 72 68 82 50 82 C32 82 20 72 20 56 C20 41 31 29 50 29Z',
+          head: 'M50 29 C66 29 77 38 79 51 C81 62 79 72 72 78 C66 83 58 84 50 84 C42 84 34 83 28 78 C21 72 19 62 21 51 C23 38 34 29 50 29Z',
           earsFront: ['M31 33 C17 30 8 44 10 61 C11 71 19 74 24 66 C28 57 30 45 35 37Z', 'M69 33 C83 30 92 44 90 61 C89 71 81 74 76 66 C72 57 70 45 65 37Z'],
           nose: 'black',
           muzzle: [50, 67, 14, 10.5],
@@ -514,7 +527,7 @@ const Stickers = (() => {
         // upper sides of the head that hang down like an open fan, cream freckles, little brows,
         // a soft double-bump nose, and (optional) tiny horns.
         return {
-          head: 'M50 28 C68 28 80 41 80 57.5 C80 74 67 87 50 87 C33 87 20 74 20 57.5 C20 41 32 28 50 28Z',
+          head: 'M50 28 C65 28 76 37 78.5 49 C80.5 59 81.5 69 77 77 C71.5 85 61 88 50 88 C39 88 28.5 85 23 77 C18.5 69 19.5 59 21.5 49 C24 37 35 28 50 28Z',
           wing: true,
           outlineArt: s2 => `<g transform="translate(0 -2)">${tuftShapes(s2.tuft, '')}</g>`,
           extraArt: (c, s2) => {
@@ -536,7 +549,7 @@ const Stickers = (() => {
       default: // bear
         // Small round ears high on the head, a wide face, a big light muzzle.
         return {
-          head: 'M50 33 C70 33 83 44 83 60 C83 76 69 85 50 85 C31 85 17 76 17 60 C17 44 30 33 50 33Z',
+          head: 'M50 33 C65 33 77 41 80 53 C84 65 80 76 70 82 C64 85 57 86 50 86 C43 86 36 85 30 82 C20 76 16 65 20 53 C23 41 35 33 50 33Z',
           earsBack: ['M18 34 A9 9 0 1 1 36 34 A9 9 0 1 1 18 34Z', 'M64 34 A9 9 0 1 1 82 34 A9 9 0 1 1 64 34Z'],
           inner: 'M22.5 34 A4.5 4.5 0 1 1 31.5 34 A4.5 4.5 0 1 1 22.5 34Z M68.5 34 A4.5 4.5 0 1 1 77.5 34 A4.5 4.5 0 1 1 68.5 34Z',
           innerColor: 'light',
@@ -782,7 +795,8 @@ const Stickers = (() => {
     let s = { ...DEFAULTS[sticker.type || 'person'], ...sticker };
     // Older stickers: one "feeling", or old eye names.
     if (sticker.feeling && !sticker.mouth) s = applyPreset(s, PRESETS[sticker.feeling] ? sticker.feeling : 'happy');
-    if (OLD_EYES[s.eyes]) s.eyes = OLD_EYES[s.eyes];
+    // Very old person stickers (before mouths existed) used different eye names.
+    if (!sticker.mouth && OLD_EYES[sticker.eyes]) s.eyes = OLD_EYES[sticker.eyes];
     if (!EYES.includes(s.eyes)) s.eyes = 'happy';
     const id = 'stk' + (++clipCounter);
     let part;

@@ -280,6 +280,8 @@
     draft = existing ? clone(existing) : { ...clone(Stickers.DEFAULTS.person), id: S.uid() };
     // Older stickers kept a single "feeling"; turn it into eyes, mouth and cheeks.
     if (draft.feeling) draft = Stickers.applyPreset(draft, draft.feeling);
+    // Very old person stickers used other eye names and had no mouth choice.
+    if (!draft.mouth) draft.eyes = ({ dots: 'dot', big: 'shiny' })[draft.eyes] || draft.eyes;
     drawBuilder();
   }
 
