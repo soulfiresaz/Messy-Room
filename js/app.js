@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 7;
+  const APP_VERSION = 8;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -267,8 +267,10 @@
   })();
   let pickerFor = null;
 
-  function openColorPicker(act) {
+  let pickerKey = null;
+  function openColorPicker(act, key) {
     pickerFor = act;
+    pickerKey = key || null;
     openModal(`
       <div class="color-grid">
         ${PICKER.map(row => `<div class="color-row ${row.length > 6 ? 'wide' : ''}">${row.map(c => `<button type="button" class="color-box" style="--swatch:${c}" data-act="pick-color" data-value="${c}" aria-label="Color"></button>`).join('')}</div>`).join('')}
@@ -1120,13 +1122,15 @@
             ${Stickers.render(Stickers.applyPreset(draft, f))}</button>`
         ).join('');
       } else if (opt.colors) {
-        choices = opt.colors.map(c =>
+        const list = opt.colors.includes(draft[opt.key]) || !draft[opt.key] ? opt.colors : [...opt.colors, draft[opt.key]];
+        choices = list.map(c =>
           `<button type="button" class="swatch ${draft[opt.key] === c ? 'picked' : ''}" style="--swatch:${c}" data-act="sticker-opt" data-key="${opt.key}" data-value="${c}" aria-label="${opt.label} ${c}" aria-pressed="${draft[opt.key] === c}"></button>`
-        ).join('');
+        ).join('') +
+          `<button type="button" class="swatch more-colors" data-act="color-picker" data-for="sticker-opt" data-key="${opt.key}" aria-label="More colors"><span aria-hidden="true">➕</span></button>`;
       } else {
         choices = (typeof opt.styles === 'function' ? opt.styles(draft) : opt.styles).map(v =>
           `<button type="button" class="pick small ${draft[opt.key] === v ? 'picked' : ''}" data-act="sticker-opt" data-key="${opt.key}" data-value="${v}" data-num="${typeof v === 'number'}" aria-label="${opt.label} ${v}" aria-pressed="${draft[opt.key] === v}">
-            ${Stickers.render({ ...draft, [opt.key]: v })}</button>`
+            ${Stickers.render({ ...draft, [opt.key]: v, ...(opt.key === 'hair' ? { hat: 'none' } : {}) })}</button>`
         ).join('');
       }
       return `<section class="opt-row">
@@ -1589,12 +1593,14 @@
       });
     },
     'color-picker'(el) {
-      openColorPicker(el.dataset.for);
+      openColorPicker(el.dataset.for, el.dataset.key);
     },
     'pick-color'(el) {
       const act = pickerFor;
       closeModal();
-      if (act && actions[act]) actions[act]({ dataset: { value: el.dataset.value } });
+      const dataset = { value: el.dataset.value };
+      if (pickerKey) dataset.key = pickerKey;
+      if (act && actions[act]) actions[act]({ dataset });
     },
     'door-color'(el) {
       const door = room().wallItems.find(it => it.id === pageDoorId);

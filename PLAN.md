@@ -87,7 +87,9 @@ One PIN guards everything parent-only:
   - **Cheeks:** none, blush, shy lines
   - **Extras:** sweat drop, Zzz, question marks, heart, sparkle, anger mark
   - **Quick feelings** (happy, laugh, cute, silly, love, shy, sleepy, surprised, nervous, confused, sad, grumpy) are only starting points: one tap fills in the parts, and any part can then be changed
-- **Person:** expression, face shape (oval, round, long, square, heart), skin color, hair style, hair color, hat, glasses, background
+- **Person:** expression, face shape (oval, round, long, square, heart), skin color, hair style (short, long, curly, long curly, two braids, bun, pigtails, spiky, bald), hair color, hat, glasses, background
+- **Hats are worn, not perched:** a beanie or nightcap sits down over the hair and hides the hair on top; only hair that hangs down (pigtails, braids, long hair, curls) shows. The pulled-down beanie covers the hair on top too.
+- **More colors in the sticker maker:** every color row (skin, hair, fur, background) has the ➕ color picker
 - **Alien:** expression, color (including gray and dark space green), head shape (round, tall, wide, extra wide, bulb, classic), ears (none, pointy, round), skin (plain, spots, stars), 1 to 3 eyes, antennae (none, 1 or 2; straight, spiral, zigzag or crooked), hat, glasses, background
 - **Animal:** cat, dog, chihuahua, bunny, bear, mouse, fox, sheep or baby dragon (each with its own face, not a cat face with new ears), then expression, coat (plain, tabby, patch, two-tone, calico, colorpoint), fur color, patch color, hat, glasses and background. Calico cat is the starting animal.
 - **Cats also get:** face shape (round, wide, fluffy), ears (pointy, big, folded; folded isn't offered on the wide face) and long whiskers

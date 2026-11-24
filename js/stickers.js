@@ -56,7 +56,7 @@ const Stickers = (() => {
       ...FACE_PARTS,
       { key: 'faceShape', icon: '🙂', label: 'Face shape', styles: ['oval', 'round', 'long', 'square', 'heart'] },
       { key: 'skin', icon: '🖐️', label: 'Skin', colors: COLORS.skin },
-      { key: 'hair', icon: '💇', label: 'Hair', styles: ['short', 'long', 'curly', 'bun', 'pigtails', 'spiky', 'bald'] },
+      { key: 'hair', icon: '💇', label: 'Hair', styles: ['short', 'long', 'curly', 'longcurly', 'braids', 'bun', 'pigtails', 'spiky', 'bald'] },
       { key: 'hairColor', icon: '🖍️', label: 'Hair color', colors: COLORS.hair },
       HAT, GLASSES, NECK,
       { key: 'bg', icon: '🎨', label: 'Background', colors: COLORS.bg },
@@ -275,6 +275,31 @@ const Stickers = (() => {
         front = [[29, 38], [37, 29], [50, 25], [63, 29], [71, 38], [25, 48], [75, 48]]
           .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="9.5" fill="${hc}"/>`).join('');
         break;
+      case 'longcurly': {
+        // A big cloud of curls down past the shoulders, with curly bangs.
+        const mass = [[24, 38], [19, 48], [17, 58], [18, 68], [21, 77], [27, 85], [30, 28], [40, 21], [50, 19], [60, 21], [70, 28], [76, 38], [81, 48], [83, 58], [82, 68], [79, 77], [73, 85]];
+        back = mass.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="10" fill="${hc}"/>`).join('');
+        front = [[30, 36], [37, 29], [45, 26], [55, 26], [63, 29], [70, 36]]
+          .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="7.5" fill="${hc}"/>`).join('');
+        break;
+      }
+      case 'braids': {
+        // Two braids hanging down past the ears, tied with a little band.
+        const tie = '#ff86ab';
+        const braid = side => {
+          const x = side < 0 ? 22 : 78;
+          let o = '';
+          [58, 66, 74, 82].forEach((y, i) => {
+            o += `<ellipse cx="${x + side * (i % 2 ? 1.2 : -1.2)}" cy="${y}" rx="6.4" ry="5.2" fill="${hc}" stroke="${shade(hc, -0.25)}" stroke-width=".9"/>`;
+          });
+          o += `<rect x="${x - 4}" y="86" width="8" height="4" rx="2" fill="${tie}"/>`;
+          o += `<path d="M${x - 3.5} 90 L${x} 97 L${x + 3.5} 90Z" fill="${hc}"/>`;
+          return o;
+        };
+        back = braid(-1) + braid(1);
+        front = shortTop;
+        break;
+      }
       case 'bun':
         back = `<circle cx="50" cy="16" r="10" fill="${hc}"/>`;
         front = shortTop;
@@ -289,14 +314,25 @@ const Stickers = (() => {
       default:
         break; // bald
     }
+    // Under a beanie or nightcap the hair on top is hidden; only what hangs down shows.
+    if (s.hat === 'beanie' || s.hat === 'pulled' || s.hat === 'nightcap') {
+      const below = 38;
+      const keepLow = svgStr => svgStr.replace(/<circle cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"([^>]*)\/>/g, (m, x, y) => (Number(y) >= below ? m : ''));
+      if (s.hair === 'curly' || s.hair === 'longcurly') { back = keepLow(back); front = keepLow(front); }
+      else if (s.hair === 'bun') { back = ''; front = ''; }
+      else if (s.hair === 'long') { back = `<path d="M22 44 L78 44 L79 80 Q50 87 21 80Z" fill="${hc}"/>`; front = ''; }
+      else front = '';
+    }
     const f = PERSON_FACES[s.faceShape] || PERSON_FACES.oval;
     const head = `<circle cx="${f.ear}" cy="54" r="5" fill="${skin}"/><circle cx="${100 - f.ear}" cy="54" r="5" fill="${skin}"/>` +
       `<path d="${f.d}" fill="${skin}"/>`;
     const eyes = [[41, 54], [59, 54]];
     const art = outline(back + head + front) + back + head + front +
       face(s, { eyes, size: 1.05, mouthAt: [50, 62], cheeks: [[35, 62], [65, 62]], top: [70, 28], human: true });
-    const hatY = s.hair === 'spiky' ? 25 : s.hair === 'curly' ? 24 : 27;
-    return { art, eyes, eyeSize: 1.05, hat: [50, hatY, 44], chin: [50, f.chin] };
+    const hatY = s.hair === 'spiky' ? 25 : s.hair === 'curly' || s.hair === 'longcurly' ? 24 : 27;
+    // Beanies and nightcaps are pulled down over the hair, not perched on top of it.
+    const big = s.hair === 'curly' || s.hair === 'longcurly' || s.hair === 'spiky';
+    return { art, eyes, eyeSize: 1.05, hat: [50, hatY, 44], worn: [50, big ? 35 : 37, big ? 62 : 58], hairTop: big ? 14 : 18, chin: [50, f.chin] };
   }
 
   // ---------- Aliens ----------
@@ -757,8 +793,18 @@ const Stickers = (() => {
     if (s.hat === 'pulled') {
       const [[x1, y1]] = part.eyes;
       const [x2] = part.eyes[part.eyes.length - 1];
+      // On a person it covers all the hair on top; the hair only peeks out at the sides.
+      if (part.worn) {
+        const bottom = y1 + 6, w = part.worn[2];
+        const sy = (bottom - part.hairTop) / 22;
+        return `<g transform="translate(${(x1 + x2) / 2} ${bottom}) scale(${w / 34} ${sy})" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" paint-order="stroke">${hatArt('beanie')}</g>`;
+      }
       const w = Math.max(34, (x2 - x1) * 2.3);
       return `<g transform="translate(${(x1 + x2) / 2} ${y1 + 6}) scale(${w / 34} ${w / 40})" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" paint-order="stroke">${hatArt('beanie')}</g>`;
+    }
+    if (part.worn && (s.hat === 'beanie' || s.hat === 'nightcap')) {
+      const [x, y, w] = part.worn;
+      return `<g transform="translate(${x} ${y}) scale(${w / 34})" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" paint-order="stroke">${hatArt(s.hat)}</g>`;
     }
     const [x, y, w] = part.hat;
     const art = hatArt(s.hat);
