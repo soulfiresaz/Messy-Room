@@ -284,6 +284,9 @@ Each stage gives something usable before moving on.
 
 ## 10. Technical notes (for building)
 
+- **App icon:** the title pink with a white spinning top tilted to one side (`icons/`). It's the browser-tab icon and the iPad Home Screen icon. The Home Screen icon opens the app in Safari, not as a separate full-screen app, because a separate app would get its own storage and the saved room would look missing.
+- **Website:** GitHub Pages can serve the app from this repository, so it runs on its own site (no claude.ai viewer, and backup files download)
+
 - Web app that works in any modern browser, and can be added to a tablet's home screen like a regular app
 - Works without internet once loaded
 - Everything is stored on the device, including photos

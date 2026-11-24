@@ -24,6 +24,9 @@ To use it on a tablet or phone, put the folder on any simple web host and open t
 
 ## Files
 
+- `icons/`: the app icon (browser tab and iPad Home Screen)
+- `manifest.webmanifest`: the app's name and icon for Home Screens
+
 - `index.html`: the page
 - `css/styles.css`: look and layout
 - `js/store.js`: saving on the device
