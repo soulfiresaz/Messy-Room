@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 6;
+  const APP_VERSION = 7;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -1088,8 +1088,9 @@
     const owner = existing && ownerOf(existing.id);
     if (owner && owner.id !== pagePersonId) { location.replace('#/who'); return; }
     builderBack = pagePersonId ? `#/people/${pagePersonId}` : '#/who';
-    draftIsNew = !existing;
-    draft = existing ? clone(existing) : { ...clone(Stickers.DEFAULTS.person), id: S.uid() };
+    // Changing a sticker makes a new copy, so the one you started from stays in the collection.
+    draftIsNew = true;
+    draft = existing ? { ...clone(existing), id: S.uid() } : { ...clone(Stickers.DEFAULTS.person), id: S.uid() };
     // Older stickers kept a single "feeling"; turn it into eyes, mouth and cheeks.
     if (draft.feeling) draft = Stickers.applyPreset(draft, draft.feeling);
     // Very old person stickers used other eye names and had no mouth choice.
@@ -1138,6 +1139,11 @@
       ${topBar(draftIsNew ? 'Make a sticker' : 'Change sticker', builderBack)}
       <main class="builder">
         <div class="builder-preview">${Stickers.render(draft)}</div>
+        <section class="opt-row start-row">
+          <h2 class="opt-head"><span aria-hidden="true">✨</span> Start from</h2>
+          <div class="opt-choices">${Stickers.STARTERS.map((st, i) =>
+            `<button type="button" class="pick small" data-act="sticker-start" data-value="${i}" aria-label="Start from this sticker">${Stickers.render({ ...Stickers.DEFAULTS[st.type], ...st })}</button>`).join('')}</div>
+        </section>
         <div class="type-row">${typeRow}</div>
         ${optionRows}
         <div class="action-row">
@@ -1377,6 +1383,15 @@
       draft = { ...clone(Stickers.DEFAULTS[type]), ...keep, id: draft.id };
       Effects.pop();
       drawBuilder();
+    },
+    'sticker-start'(el) {
+      const st = Stickers.STARTERS[Number(el.dataset.value)];
+      if (!st) return;
+      draft = { ...clone(Stickers.DEFAULTS[st.type]), ...clone(st), id: draft.id };
+      Effects.pop();
+      const y = window.scrollY;
+      drawBuilder();
+      window.scrollTo(0, y);
     },
     'sticker-preset'(el) {
       draft = Stickers.applyPreset(draft, el.dataset.value);

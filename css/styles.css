@@ -1208,3 +1208,5 @@ button { font: inherit; color: inherit; }
 .basket-ghost svg { width: 100%; height: 100%; }
 
 .fpart.drop-ok > rect:first-child { fill: rgba(58, 134, 255, .35); }
+
+.start-row .opt-choices { max-height: 260px; overflow-y: auto; padding: 4px; }

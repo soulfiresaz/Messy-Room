@@ -78,6 +78,8 @@ One PIN guards everything parent-only:
 - **Deleting a person** also needs the PIN. Their sticker goes back into the collection.
 
 ### Making a sticker
+- **Start from any ready-made sticker:** the sticker maker opens with a "Start from" row of all the ready-made stickers (every animal, dragons, aliens, people). Tap one, then change anything.
+- **Changing a sticker makes a new copy:** ✏️ never replaces the sticker you started from; it stays in the collection. The new copy becomes the sticker of the person whose page it was made on.
 - **Style:** floating faces (no bodies), flat shapes, a white sticker outline, and simple line eyes and mouths
 - **Build the expression** (every sticker), piece by piece:
   - **Eyes:** open, shiny, big and sparkly (white around a big pupil), almond, almond with a cat-like slit, wide, closed happy, sleepy, wink, looking up, down or to the side, cross-eyed, crying, hearts, angry, sad
