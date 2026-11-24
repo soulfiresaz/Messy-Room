@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 5;
+  const APP_VERSION = 6;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -615,12 +615,13 @@
     $app.innerHTML = `
       ${topBar(p.label || '', back, `<button type="button" class="round-btn save-top" data-act="piece-save" aria-label="Save">✔️</button>`)}
       <main class="piece-page">
-        <div class="piece-stage ${p.kind === 'closet' ? 'wide' : ''}">${pic}</div>
+        <div class="piece-stage ${p.kind === 'closet' ? 'wide' : ''} ${hasCubbies(p) ? 'drag-stage' : ''}">${pic}</div>
         <div class="piece-tools">
           ${p.kind === 'closet' && p.doors !== 'none' ? `<button type="button" class="round-btn big-door ${closetOutside ? 'on' : ''}" data-act="closet-side" aria-label="${closetOutside ? 'Open the closet' : 'Close the doors'}" aria-pressed="${closetOutside}">🚪</button>` : ''}
           ${canChange ? `<button type="button" class="round-btn ${partsMode ? 'on' : ''}" data-act="parts-mode" aria-label="Change the parts" aria-pressed="${partsMode}">🔧</button>` : ''}
           <button type="button" class="round-btn" data-act="piece-delete" aria-label="Delete">🗑️</button>
         </div>
+        ${basketRow(p)}
         ${sizeRow(p)}
         ${partsMode ? partsPanel(p) : ''}
         <section class="opt-row">
@@ -639,6 +640,132 @@
 
   const stepBtn = (act, icon, label, extra = '') =>
     `<button type="button" class="tool-btn step" data-act="${act}" ${extra} aria-label="${label}">${icon}</button>`;
+
+  // ---------- Baskets: drag to move, add or take out ----------
+
+  const hasCubbies = p => Furniture.hasParts(p) && p.style !== 'plastic' && p.cols.some(c => c.cells.some(k => k.type === 'open'));
+
+  function basketRow(p) {
+    if (!hasCubbies(p)) return '';
+    const chip = v => `<div class="basket-chip" data-basket="${v}" role="button" aria-label="${v === 'bin' ? 'Drag a bin into a cubby' : v === 'sorter' ? 'Drag a paper sorter into a cubby' : 'Drag paper drawers into a cubby'}">${Furniture.partIcon('open', v)}</div>`;
+    return `<section class="opt-row basket-row">
+      <div class="basket-chips">${chip('bin')}${chip('sorter')}${chip('drawers')}</div>
+      <div class="basket-out" data-drop="out" aria-label="Drop here to take it out"><span aria-hidden="true">🗑️</span></div>
+    </section>`;
+  }
+
+  let basketDrag = null;
+  let suppressClick = false;
+
+  function cellUnder(x, y) {
+    const hit = document.elementFromPoint(x, y);
+    if (!hit) return null;
+    if (hit.closest('[data-drop="out"]')) return { out: true };
+    const g = hit.closest('.piece-stage g.fpart[data-act="part"]');
+    if (!g) return null;
+    const p = pieceById(pagePieceId);
+    const k = p && Furniture.findCell(p, g.dataset.id);
+    return k && k.type === 'open' && k.id === g.dataset.id ? { cell: k, g } : null;
+  }
+
+  function markDrop(target) {
+    document.querySelectorAll('.drop-ok').forEach(el => el.classList.remove('drop-ok'));
+    if (target && target.g) target.g.classList.add('drop-ok');
+    if (target && target.out) document.querySelector('[data-drop="out"]').classList.add('drop-ok');
+  }
+
+  // What travels with a basket when it moves: the basket and anything kept in it.
+  const BASKET_KEYS = ['insert', 'binColor', 'count', 'spots', 'holds', 'owners'];
+
+  function swapBaskets(a, b) {
+    BASKET_KEYS.forEach(key => {
+      const t = a[key];
+      if (b[key] === undefined) delete a[key]; else a[key] = b[key];
+      if (t === undefined) delete b[key]; else b[key] = t;
+    });
+    if (!a.insert) a.insert = 'empty';
+    if (!b.insert) b.insert = 'empty';
+  }
+
+  document.addEventListener('pointerdown', e => {
+    const chip = e.target.closest('[data-basket]');
+    const g = e.target.closest('.piece-stage g.fpart[data-act="part"]');
+    if (!chip && !g) return;
+    const p = pieceById(pagePieceId);
+    if (!p || !hasCubbies(p)) return;
+    let from = null, insert, color;
+    if (chip) {
+      insert = chip.dataset.basket;
+      color = insert === 'drawers' ? '#3d4a45' : Furniture.BIN_COLORS[1];
+    } else {
+      const k = Furniture.findCell(p, g.dataset.id);
+      if (!k || k.type !== 'open' || k.id !== g.dataset.id || k.insert === 'empty') return;
+      from = k;
+      insert = k.insert;
+      color = k.binColor;
+    }
+    basketDrag = { from, insert, color, x0: e.clientX, y0: e.clientY, moved: false, ghost: null };
+    if (chip) e.preventDefault();
+  });
+
+  document.addEventListener('pointermove', e => {
+    const d = basketDrag;
+    if (!d) return;
+    if (!d.moved && Math.hypot(e.clientX - d.x0, e.clientY - d.y0) < 8) return;
+    if (!d.moved) {
+      d.moved = true;
+      d.ghost = document.createElement('div');
+      d.ghost.className = 'basket-ghost';
+      d.ghost.innerHTML = Furniture.partIcon('open', d.insert).replace('#8fd3ff', d.insert === 'bin' ? d.color : '#8fd3ff').replace('#3d4a45', d.color || '#3d4a45');
+      document.body.appendChild(d.ghost);
+      document.body.classList.add('dragging-basket');
+    }
+    e.preventDefault();
+    d.ghost.style.left = `${e.clientX}px`;
+    d.ghost.style.top = `${e.clientY}px`;
+    markDrop(cellUnder(e.clientX, e.clientY));
+  }, { passive: false });
+
+  document.addEventListener('pointerup', e => {
+    const d = basketDrag;
+    basketDrag = null;
+    if (!d || !d.moved) return;
+    d.ghost.remove();
+    document.body.classList.remove('dragging-basket');
+    markDrop(null);
+    suppressClick = true;
+    setTimeout(() => { suppressClick = false; }, 0);
+    const target = cellUnder(e.clientX, e.clientY);
+    if (!target) return;
+    const p = pieceById(pagePieceId);
+    const done = () => { saveOrWarn(); Effects.pop(); redrawPiece(); };
+    if (target.out) {
+      if (!d.from) return;
+      guardUsed(Furniture.cellUsed(d.from), () => { Furniture.setInsert(d.from, 'empty'); done(); });
+      return;
+    }
+    const to = target.cell;
+    if (d.from) {
+      if (to === d.from) return;
+      swapBaskets(d.from, to);
+      done();
+      return;
+    }
+    // A new basket from the row: it goes in, and anything already there comes out.
+    guardUsed(to.insert !== 'empty' && Furniture.cellUsed(to), () => {
+      Furniture.setInsert(to, d.insert);
+      to.binColor = d.color;
+      done();
+    });
+  });
+
+  document.addEventListener('pointercancel', () => {
+    if (!basketDrag) return;
+    if (basketDrag.ghost) basketDrag.ghost.remove();
+    document.body.classList.remove('dragging-basket');
+    markDrop(null);
+    basketDrag = null;
+  });
 
   // Bigger or smaller: always showing on pieces that can change size.
   function sizeRow(p) {
@@ -1964,6 +2091,7 @@
   }
 
   document.addEventListener('click', e => {
+    if (suppressClick) { suppressClick = false; return; }
     const el = e.target.closest('[data-act]');
     if (!el) {
       if (e.target === $modal) closeModal();

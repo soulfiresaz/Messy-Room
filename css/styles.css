@@ -1151,3 +1151,60 @@ button { font: inherit; color: inherit; }
 .app-version { text-align: center; color: var(--ink-soft); font-size: 14px; margin-top: 28px; }
 .round-btn.save-top { background: var(--yes); font-size: 28px; }
 .inside-choices { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 6px 0 4px; }
+
+/* ---------- Baskets: drag to move, add or take out ---------- */
+
+.piece-stage.drag-stage { touch-action: none; user-select: none; -webkit-user-select: none; }
+
+.basket-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.basket-chips { display: flex; gap: 14px; flex-wrap: wrap; }
+
+.basket-chip {
+  width: 84px;
+  height: 84px;
+  padding: 6px;
+  border-radius: 20px;
+  background: var(--bg);
+  border: 3px solid var(--line);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.basket-chip svg { width: 100%; height: 100%; display: block; }
+
+.basket-out {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 4px dashed var(--danger);
+  display: grid;
+  place-items: center;
+  font-size: 36px;
+  opacity: .55;
+}
+
+.dragging-basket .basket-out { opacity: 1; }
+.basket-out.drop-ok { background: var(--danger); transform: scale(1.1); }
+
+.basket-ghost {
+  position: fixed;
+  width: 76px;
+  height: 76px;
+  margin: -38px 0 0 -38px;
+  pointer-events: none;
+  z-index: 20;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .25));
+}
+
+.basket-ghost svg { width: 100%; height: 100%; }
+
+.fpart.drop-ok > rect:first-child { fill: rgba(58, 134, 255, .35); }

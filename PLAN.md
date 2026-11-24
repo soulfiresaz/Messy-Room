@@ -166,6 +166,7 @@ Ready-made pieces to start from (not every possible option, just good ones). Any
 - **A big ✔️ Save button** on every piece, at the top and at the bottom, so it's clear changes are kept
 - **Size is always showing** (↔️ wider/narrower, ↕️ taller/shorter) right under the picture, not hidden behind 🔧
 - **Tap a cubby to change what's in it:** take the basket out (open), or put in a bin, a paper sorter or paper drawers
+- **Drag baskets:** drag a bin, sorter or paper-drawer box from one cubby to another (if the other cubby is full, they swap, and what's kept inside moves with the basket). A row under the picture holds a bin, a sorter and paper drawers to drag into any cubby, and a 🗑️ circle to drop one on to take it out.
 - **A version number** shows small on the home screen, so it's easy to tell which copy of the app is open
 - **"Change the parts"** is a simple option a grown-up can open when a ready-made piece doesn't match the real one
 - **Anyone can add parts** or change an empty part
