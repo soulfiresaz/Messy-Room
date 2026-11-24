@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 9;
+  const APP_VERSION = 10;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -364,7 +364,7 @@
         ? `<div class="step-group"><span class="step-icon" aria-hidden="true">⤵️</span>${stepBtn('map-depth', '➖', 'Less deep', 'data-dir="-1"')}${stepBtn('map-depth', '➕', 'Deeper', 'data-dir="1"')}</div>` : '';
       const tools = (isItem
         ? (sel.type === 'door' ? stepBtn('map-flip', '🔄', 'Swing the door the other way') + stepBtn('map-open-door', '👀', 'Open the door to hang things on it') : '') + stepBtn('map-remove', '🗑️', 'Take it away')
-        : stepBtn('map-turn', '🔄', 'Turn it') + stepBtn('map-open', '👀', 'Open it') + stepBtn('map-unplace', '↩️', 'Take it off the map')) + wide + deep;
+        : (sel.kind === 'closet' ? '' : stepBtn('map-turn', '🔄', 'Turn it')) + stepBtn('map-open', '👀', 'Open it') + stepBtn('map-unplace', '↩️', 'Take it off the map')) + wide + deep;
       return `<div class="map-tools">${tools}${stepBtn('map-deselect', '✔️', 'Done')}</div>`;
     }
     if (mapStep === 1) {
@@ -448,7 +448,7 @@
     d.x0 = e.clientX;
     d.y0 = e.clientY;
     d.moved = false;
-    if (d.kind === 'piece' && d.piece && d.piece.place) {
+    if (d.kind === 'piece' && d.piece && d.piece.place && !isWallPiece(d.piece)) {
       const pt = toRoom(e);
       d.off = { x: pt.x - d.piece.place.x, y: pt.y - d.piece.place.y };
     }
@@ -473,7 +473,8 @@
     if (drag.kind === 'new-piece') {
       drag.piece = pieceById(drag.id);
       if (!drag.piece) { drag = null; return; }
-      drag.piece.place = { x: pt.x, y: pt.y, rot: 0 };
+      if (isWallPiece(drag.piece)) RoomMap.placeCloset(r, drag.piece, pt.x, pt.y);
+      else drag.piece.place = { x: pt.x, y: pt.y, rot: 0 };
       drag.off = { x: 0, y: 0 };
       drag.kind = 'piece';
       mapSelected = null;
@@ -489,6 +490,8 @@
       else if (drag.piece && drag.piece.place) RoomMap.stretchPiece(r, drag.piece, pt.x, pt.y);
     } else if (drag.kind === 'handle') {
       RoomMap.resize(r, drag.dim, drag.dim === 'w' ? pt.x : pt.y, mapPieces());
+    } else if (drag.kind === 'piece' && isWallPiece(drag.piece)) {
+      RoomMap.placeCloset(r, drag.piece, pt.x, pt.y);
     } else if (drag.kind === 'piece') {
       drag.piece.place.x = pt.x - drag.off.x;
       drag.piece.place.y = pt.y - drag.off.y;
@@ -500,8 +503,8 @@
   });
 
   // Far outside the walls means "take it off the map".
-  function farOutside(r, pt) {
-    return !pt || pt.x < -2.5 || pt.y < -2.5 || pt.x > r.size.w + 2.5 || pt.y > r.size.d + 2.5;
+  function farOutside(r, pt, m = 2.5) {
+    return !pt || pt.x < -m || pt.y < -m || pt.x > r.size.w + m || pt.y > r.size.d + m;
   }
 
   document.addEventListener('pointerup', e => {
@@ -520,9 +523,8 @@
       } else if (d.kind === 'new-piece' && d.allowed) {
         const p = pieceById(d.id);
         if (p) {
-          p.place = { x: r.size.w / 2, y: r.size.d / 2, rot: 0 };
-          if (isWallPiece(p)) p.place.y = 0;
-          RoomMap.settle(r, p);
+          if (isWallPiece(p)) RoomMap.placeCloset(r, p, r.size.w / 2, 0);
+          else { p.place = { x: r.size.w / 2, y: r.size.d / 2, rot: 0 }; RoomMap.settle(r, p); }
           mapSelected = p.id;
         }
       } else if (d.kind === 'new-wall' && d.allowed) {
@@ -542,7 +544,8 @@
     }
     const pt = toRoom(e) || d.last;
     if (d.kind === 'piece') {
-      if (farOutside(r, pt)) delete d.piece.place;
+      const far = isWallPiece(d.piece) ? farOutside(r, pt, 6) : farOutside(r, pt);
+      if (far) delete d.piece.place;
       else RoomMap.settle(r, d.piece);
     } else if (d.kind === 'wall') {
       if (farOutside(r, pt)) r.wallItems = r.wallItems.filter(it => it !== d.item);

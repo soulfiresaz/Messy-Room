@@ -31,7 +31,65 @@ const RoomMap = (() => {
     settleWallItem(room, it);
   }
 
+  // ---------- Closets: built into a wall ----------
+  // A closet sits on the other side of a wall. Only its doors open into the room.
+  // Its place is { wall, pos }: which wall, and how far along it its middle is.
+
+  // Closets placed before this change stood inside the room; move them into their wall.
+  function fixClosetPlace(p) {
+    const pl = p.place;
+    if (!pl || pl.wall != null) return;
+    const wall = (pl.rot || 0) % 4;
+    p.place = { wall, pos: wall % 2 ? pl.y : pl.x };
+  }
+
+  function clampCloset(room, p) {
+    fixClosetPlace(p);
+    const L = wallLength(room, p.place.wall);
+    const half = Furniture.footprint(p).w / 2;
+    p.place.pos = half * 2 >= L ? L / 2 : Math.max(half, Math.min(L - half, p.place.pos));
+  }
+
+  // Put a closet on the wall nearest to a point.
+  function placeCloset(room, p, x, y) {
+    const { w, d } = room.size;
+    const gaps = [Math.abs(y), Math.abs(w - x), Math.abs(d - y), Math.abs(x)];
+    const wall = gaps.indexOf(Math.min(...gaps));
+    p.place = { wall, pos: wall % 2 === 0 ? x : y };
+    clampCloset(room, p);
+  }
+
+  function stretchCloset(room, p, x, y) {
+    fixClosetPlace(p);
+    const f = wallFrame(room, p.place.wall, p.place.pos);
+    const [ax, ay] = WALL_AXIS[p.place.wall];
+    const half = Math.abs((x - f.x) * ax + (y - f.y) * ay);
+    Furniture.setWidth(p, Math.min(half * 2, wallLength(room, p.place.wall)));
+    clampCloset(room, p);
+  }
+
+  function closetArt(room, p, selected, dim) {
+    fixClosetPlace(p);
+    const fr = wallFrame(room, p.place.wall, p.place.pos);
+    const { w: fw, d: fd } = Furniture.footprint(p);
+    const W = fw * S, D = fd * S, Tp = T * S;
+    let o = '';
+    // The closet space behind the wall, with its own walls around it
+    o += `<rect x="${-W / 2}" y="${-Tp - D}" width="${W}" height="${D}" fill="#fffaf0"/>`;
+    o += `<path d="M${-W / 2 - Tp / 2} ${-Tp} V${-Tp - D - Tp / 2} H${W / 2 + Tp / 2} V${-Tp}" fill="none" stroke="${INK}" stroke-width="${Tp}" stroke-linejoin="round"/>`;
+    o += `<path d="M${-W / 2 + 10} ${-Tp - D * 0.55} H${W / 2 - 10}" stroke="#a8a8b8" stroke-width="6" stroke-linecap="round"/>`;
+    // The opening in the wall, and the closet doors across it
+    o += `<rect x="${-W / 2}" y="${-Tp - 2}" width="${W}" height="${Tp + 4}" fill="#fffaf0"/>`;
+    o += Furniture.closetDoorTop(p.doors || 'bifold', -W / 2, 0, W);
+    const sel = selected
+      ? `<rect x="${-W / 2 - 8}" y="${-Tp - D - 8}" width="${W + 16}" height="${D + Tp + 24}" rx="10" fill="none" stroke="#3a86ff" stroke-width="4" stroke-dasharray="10 6"/>`
+      : '';
+    return `<g class="map-item${dim ? ' dim' : ''}" data-map="piece" data-id="${p.id}" transform="translate(${fr.x * S} ${fr.y * S}) rotate(${fr.a})">` +
+      `<rect x="${-W / 2}" y="${-Tp - D}" width="${W}" height="${D + Tp + 16}" fill="transparent"/>` + o + sel + '</g>';
+  }
+
   function stretchPiece(room, p, x, y) {
+    if (p.kind === 'closet') { stretchCloset(room, p, x, y); return; }
     const [ax, ay] = WALL_AXIS[(p.place.rot || 0) % 4];
     const half = Math.abs((x - p.place.x) * ax + (y - p.place.y) * ay);
     Furniture.setWidth(p, half * 2);
@@ -68,9 +126,10 @@ const RoomMap = (() => {
   // Keep a piece inside the room. Closets and wall shelves always stand against a wall,
   // and anything dropped near a wall turns so its back is against it.
   function settle(room, p) {
+    if (p.kind === 'closet') { clampCloset(room, p); return; }
     const { w, d } = room.size;
     const pl = p.place;
-    const mustWall = ['closet', 'wallshelf', 'hooks', 'wallsorter'].includes(p.kind);
+    const mustWall = ['wallshelf', 'hooks', 'wallsorter'].includes(p.kind);
     let { hx, hy } = halfSize(p);
     const gaps = [pl.y - hy, w - (pl.x + hx), d - (pl.y + hy), pl.x - hx];   // top, right, bottom, left
     let wall = gaps.indexOf(Math.min(...gaps));
@@ -175,8 +234,10 @@ const RoomMap = (() => {
     defaults(room);
     const { w, d } = room.size;
     const r = room.view;
-    const VW = ((r % 2 ? d : w) + 2 * M) * S;
-    const VH = ((r % 2 ? w : d) + 2 * M) * S;
+    const deepest = pieces.filter(p => p.place && p.kind === 'closet').reduce((a, p) => Math.max(a, Furniture.footprint(p).d + T + 1), 0);
+    const m = Math.max(M, deepest);
+    const VW = ((r % 2 ? d : w) + 2 * m) * S;
+    const VH = ((r % 2 ? w : d) + 2 * m) * S;
     const Wp = w * S, Dp = d * S, Tp = T * S;
     let o = `<g id="room-g" transform="translate(${VW / 2} ${VH / 2}) rotate(${r * 90}) translate(${-Wp / 2} ${-Dp / 2})">`;
     // Floor
@@ -184,13 +245,16 @@ const RoomMap = (() => {
     for (let i = 1; i < d; i += 1.6) o += `<path d="M0 ${i * S} L${Wp} ${i * S}" stroke="#e8cfa6" stroke-width="2"/>`;
     // Walls
     o += `<path d="M${-Tp / 2} ${-Tp / 2} H${Wp + Tp / 2} V${Dp + Tp / 2} H${-Tp / 2} Z" fill="none" stroke="${INK}" stroke-width="${Tp}" stroke-linejoin="round"/>`;
-    // Furniture (closets and wall shelves first, they stand against the walls)
+    // Closets, behind the walls
     const placed = pieces.filter(p => p.place);
-    const order = p => (p.kind === 'closet' ? 0 : p.kind === 'wallshelf' ? 2 : 1);
     const dimFurniture = state.step === 1 || state.step === 2;
-    placed.sort((a, b) => order(a) - order(b)).forEach(p => {
-      const isWall = p.kind === 'closet';
-      o += pieceArt(p, state.selected === p.id, dimFurniture && !(state.step === 2 && isWall));
+    placed.filter(p => p.kind === 'closet').forEach(p => {
+      o += closetArt(room, p, state.selected === p.id, state.step === 1);
+    });
+    // Furniture (wall shelves last, they hang above things)
+    const order = p => (p.kind === 'wallshelf' ? 2 : 1);
+    placed.filter(p => p.kind !== 'closet').sort((a, b) => order(a) - order(b)).forEach(p => {
+      o += pieceArt(p, state.selected === p.id, dimFurniture);
     });
     // Doors, windows and light switches
     room.wallItems.forEach(it => { o += wallItemArt(room, it, state.selected === it.id); });
@@ -200,6 +264,10 @@ const RoomMap = (() => {
     if (pickedItem) {
       const f = wallFrame(room, pickedItem.wall, pickedItem.pos);
       o += `<g transform="translate(${f.x * S} ${f.y * S}) rotate(${f.a})">${stretchHandle(itemW(pickedItem) * S / 2 + 6, S * 1.2, pickedItem.id)}</g>`;
+    } else if (pickedPiece && pickedPiece.kind === 'closet') {
+      const fr = wallFrame(room, pickedPiece.place.wall, pickedPiece.place.pos);
+      const f = Furniture.footprint(pickedPiece);
+      o += `<g transform="translate(${fr.x * S} ${fr.y * S}) rotate(${fr.a})">${stretchHandle(f.w * S / 2 + 8, -T * S - f.d * S / 2, pickedPiece.id)}</g>`;
     } else if (pickedPiece && Furniture.canStretch(pickedPiece)) {
       const W = Furniture.footprint(pickedPiece).w * S;
       const { x, y, rot } = pickedPiece.place;
@@ -235,5 +303,5 @@ const RoomMap = (() => {
       `<g transform="translate(46 22)"><path d="M0 -10 C-8 -10 -11 -3 -8 2 C-6 5 -5 7 -5 10 L5 10 C5 7 6 5 8 2 C11 -3 8 -10 0 -10Z" fill="#ffd54a" ${line(2)}/><rect x="-4" y="10" width="8" height="5" rx="2" fill="#c9cfd8" ${line(1.6)}/></g></svg>`;
   }
 
-  return { S, defaults, render, settle, settleWallItem, resize, halfSize, itemIcon, ITEM_W, itemW, wallLength, MIN, MAX, stretchItem, stretchPiece };
+  return { S, defaults, render, settle, settleWallItem, resize, halfSize, itemIcon, ITEM_W, itemW, wallLength, MIN, MAX, stretchItem, stretchPiece, placeCloset };
 })();

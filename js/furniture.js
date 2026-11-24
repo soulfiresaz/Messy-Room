@@ -1107,6 +1107,6 @@ const Furniture = (() => {
     section, fixCloset, sectionSpaces, findSection,
     cell, col, uid, shade, setInsert, INSERT_COUNTS, fixPiece,
     footprint, topArt, renderTop, canStretch, canDeepen, setWidth, setDepth,
-    DOOR_KINDS, doorIcon, renderDoor, sizePockets, sizeHooks,
+    DOOR_KINDS, doorIcon, renderDoor, sizePockets, sizeHooks, closetDoorTop,
   };
 })();
