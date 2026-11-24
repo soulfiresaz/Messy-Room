@@ -985,14 +985,20 @@ const Furniture = (() => {
 
   const DEPTH = { dresser: 2.6, table: 2.3, tower: 2.1, cubby: 2.3, bookshelf: 1.7, wallshelf: 1.2, closet: 3.6, wire: 2, hooks: 0.6, wallsorter: 0.6, pockets: 0.4 };
   const BED_SIZE = { twin: [5.6, 10.8], bunk: [5.8, 11.2], loft: [5.8, 11.2], queen: [8.6, 11.6], king: [11, 11.6] };
+  const SEAT_FRONT_W = { chair: 2.2, beanbag: 3, floorchair: 2.8, recliner: 4.8 };
   const SEAT_SIZE = { chair: [2.6, 2.8], beanbag: [4.2, 4.2], floorchair: [3, 3.6], recliner: [3.8, 5.6] };
 
   // Width and depth of a piece seen from above, in units.
   function footprint(p) {
     if (p.kind === 'bed') { const [w, d] = BED_SIZE[p.bed] || BED_SIZE.twin; return { w, d }; }
-    if (p.kind === 'seat') { const [w, d] = SEAT_SIZE[p.seat] || SEAT_SIZE.chair; return { w, d }; }
+    if (p.kind === 'seat') {
+      // Made bigger or smaller on its page: the top on the map grows with it.
+      const [w, d] = SEAT_SIZE[p.seat] || SEAT_SIZE.chair;
+      const f = p.w / (SEAT_FRONT_W[p.seat] || p.w);
+      return { w: w * f, d: d * f };
+    }
     if (p.kind === 'closet') return { w: fixCloset(p).sections.reduce((a, x) => a + x.w, 0), d: DEPTH.closet };
-    if (p.kind === 'container') { const z = CONTAINER_SIZE[p.sub]; return { w: z[2], d: z[3] }; }
+    if (p.kind === 'container') { const z = CONTAINER_SIZE[p.sub]; const f = p.w / z[0]; return { w: z[2] * f, d: z[3] * f }; }
     return { w: p.w, d: p.depth || DEPTH[p.kind] || 2.2 };
   }
 

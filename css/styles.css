@@ -1147,3 +1147,7 @@ button { font: inherit; color: inherit; }
 .backup-actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 8px 0 12px; }
 .backup-actions .tool-btn.big { cursor: pointer; }
 .backup-text { font-family: ui-monospace, Menlo, monospace; font-size: 13px; resize: vertical; margin-bottom: 12px; }
+
+.app-version { text-align: center; color: var(--ink-soft); font-size: 14px; margin-top: 28px; }
+.round-btn.save-top { background: var(--yes); font-size: 28px; }
+.inside-choices { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 6px 0 4px; }

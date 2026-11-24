@@ -6,6 +6,9 @@
   // Parent mode stays unlocked only while on the Rewards page.
   let parentUnlocked = false;
 
+  // Shown small on the home screen, so it's easy to tell which copy of the app is open.
+  const APP_VERSION = 5;
+
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
 
@@ -168,7 +171,8 @@
         ${circle({ href: `#/people/${me.id}`, icon: mine, label: 'Stickers', color: 'var(--c-stickers)', extraClass: 'sticker-circle' })}
         ${circle({ href: '#/rewards', icon: '🎁', label: 'Rewards', color: 'var(--c-rewards)' })}
         ${circle({ icon: '🧽', label: 'Clean', color: 'var(--c-clean)', disabled: true })}
-      </main>`;
+      </main>
+      <p class="app-version">Version ${APP_VERSION}</p>`;
   }
 
   // ---------- Rooms ----------
@@ -609,7 +613,7 @@
     const current = p.kind === 'closet' && closetOutside ? p.doorColor : p.color;
     const colors = swatches(current, 'piece-color');
     $app.innerHTML = `
-      ${topBar(p.label || '', back)}
+      ${topBar(p.label || '', back, `<button type="button" class="round-btn save-top" data-act="piece-save" aria-label="Save">✔️</button>`)}
       <main class="piece-page">
         <div class="piece-stage ${p.kind === 'closet' ? 'wide' : ''}">${pic}</div>
         <div class="piece-tools">
@@ -617,6 +621,7 @@
           ${canChange ? `<button type="button" class="round-btn ${partsMode ? 'on' : ''}" data-act="parts-mode" aria-label="Change the parts" aria-pressed="${partsMode}">🔧</button>` : ''}
           <button type="button" class="round-btn" data-act="piece-delete" aria-label="Delete">🗑️</button>
         </div>
+        ${sizeRow(p)}
         ${partsMode ? partsPanel(p) : ''}
         <section class="opt-row">
           <h2 class="opt-head"><span aria-hidden="true">🎨</span></h2>
@@ -635,11 +640,19 @@
   const stepBtn = (act, icon, label, extra = '') =>
     `<button type="button" class="tool-btn step" data-act="${act}" ${extra} aria-label="${label}">${icon}</button>`;
 
+  // Bigger or smaller: always showing on pieces that can change size.
+  function sizeRow(p) {
+    const wide = Furniture.canStretch(p) || p.kind === 'seat' || p.kind === 'container';
+    const tall = p.kind !== 'wallshelf' && p.kind !== 'closet' && p.kind !== 'bed' && p.kind !== 'pockets' && p.kind !== 'hooks';
+    if (p.kind === 'bed' || p.kind === 'pockets' || p.kind === 'hooks') return '';
+    return `<section class="opt-row size-row"><h2 class="opt-head">Size</h2><div class="opt-choices">
+      ${wide ? `<div class="step-group"><span class="step-icon" aria-hidden="true">↔️</span>${stepBtn('size', '➖', 'Narrower', 'data-dim="w" data-dir="-1"')}${stepBtn('size', '➕', 'Wider', 'data-dim="w" data-dir="1"')}</div>` : ''}
+      ${tall ? `<div class="step-group"><span class="step-icon" aria-hidden="true">↕️</span>${stepBtn('size', '➖', 'Shorter', 'data-dim="h" data-dir="-1"')}${stepBtn('size', '➕', 'Taller', 'data-dim="h" data-dir="1"')}</div>` : ''}
+    </div></section>`;
+  }
+
   function partsPanel(p) {
     const rows = [];
-    const size = `<div class="step-group"><span class="step-icon" aria-hidden="true">↔️</span>${stepBtn('size', '➖', 'Narrower', 'data-dim="w" data-dir="-1"')}${stepBtn('size', '➕', 'Wider', 'data-dim="w" data-dir="1"')}</div>` +
-      (p.kind === 'wallshelf' ? '' : `<div class="step-group"><span class="step-icon" aria-hidden="true">↕️</span>${stepBtn('size', '➖', 'Shorter', 'data-dim="h" data-dir="-1"')}${stepBtn('size', '➕', 'Taller', 'data-dim="h" data-dir="1"')}</div>`);
-    rows.push(`<section class="opt-row"><h2 class="opt-head">Size</h2><div class="opt-choices">${size}</div></section>`);
 
     if (p.kind === 'closet') {
       Furniture.fixCloset(p);
@@ -740,8 +753,13 @@
   }
 
   function openPartInside(p, partId) {
+    const k = Furniture.hasParts(p) && p.style !== 'wire' ? Furniture.findCell(p, partId) : null;
+    const cubby = k && k.type === 'open' && k.id === partId;
+    const choices = cubby ? `<div class="inside-choices">${[['empty', 'Take it out (open)'], ['bin', 'Bin'], ['sorter', 'Paper sorter'], ['drawers', 'Paper drawers']].map(([v, label]) =>
+      `<button type="button" class="pick small square ${k.insert === v ? 'picked' : ''}" data-act="inside-insert" data-id="${k.id}" data-value="${v}" aria-label="${label}" aria-pressed="${k.insert === v}">${Furniture.partIcon('open', v)}</button>`).join('')}</div>` : '';
     openModal(`
       <div class="inside-view">${Furniture.renderInside(p, partId)}</div>
+      ${choices}
       <div class="confirm-row">
         <button type="button" class="big-btn yes" data-act="modal-close" aria-label="Close">👍</button>
       </div>`);
@@ -1412,6 +1430,21 @@
     'restore-text'() {
       const box = document.getElementById('restore-text');
       askRestore(box ? box.value : '');
+    },
+    'inside-insert'(el) {
+      const p = pieceById(pagePieceId);
+      const k = p && Furniture.findCell(p, el.dataset.id);
+      if (!k || k.insert === el.dataset.value) return;
+      const insert = el.dataset.value;
+      guardUsed((k.spots || []).some(Furniture.spaceUsed) || Furniture.spaceUsed(k), () => {
+        Furniture.setInsert(k, insert);
+        if (insert === 'drawers' && !['#3d4a45', '#ffffff'].includes(k.binColor)) k.binColor = '#3d4a45';
+        if (insert === 'bin' && (!k.binColor || k.binColor === '#3d4a45')) k.binColor = Furniture.BIN_COLORS[1];
+        saveOrWarn();
+        Effects.pop();
+        redrawPiece();
+        openPartInside(p, k.id);
+      });
     },
     'color-picker'(el) {
       openColorPicker(el.dataset.for);

@@ -163,7 +163,10 @@ Ready-made pieces to start from (not every possible option, just good ones). Any
 ### Who builds it (decided)
 - **Both the child and a grown-up, depending on the step**
 - **Ready-made pieces** (like "6-drawer dresser" or "12-cubby unit") are shown as pictures the child can drag in alone
-- **A big ✔️ Save button** on every piece, so it's clear changes are kept
+- **A big ✔️ Save button** on every piece, at the top and at the bottom, so it's clear changes are kept
+- **Size is always showing** (↔️ wider/narrower, ↕️ taller/shorter) right under the picture, not hidden behind 🔧
+- **Tap a cubby to change what's in it:** take the basket out (open), or put in a bin, a paper sorter or paper drawers
+- **A version number** shows small on the home screen, so it's easy to tell which copy of the app is open
 - **"Change the parts"** is a simple option a grown-up can open when a ready-made piece doesn't match the real one
 - **Anyone can add parts** or change an empty part
 - **Removing a part that already has things assigned to it needs the parent PIN**, so a child can't lose what they set up by accident
