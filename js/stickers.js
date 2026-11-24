@@ -38,7 +38,7 @@ const Stickers = (() => {
   // Old stickers kept one "feeling" or old eye names; turn them into parts.
   const OLD_EYES = { dots: 'dot', big: 'shiny', happy: 'happy', wink: 'wink' };
 
-  const HAT = { key: 'hat', icon: '🎩', label: 'Hat', styles: ['none', 'party', 'crown', 'bowler', 'beanie', 'pulled', 'cap', 'bow', 'flower', 'tophat', 'nightcap'] };
+  const HAT = { key: 'hat', icon: '🎩', label: 'Hat', styles: ['none', 'party', 'crown', 'bowler', 'beanie', 'cap', 'bow', 'flower', 'tophat', 'nightcap'] };
   const NECK = { key: 'neck', icon: '🎀', label: 'Bow tie', styles: ['none', 'bowtie', 'bowtie-blue'] };
   const GLASSES = { key: 'glasses', icon: '👓', label: 'Glasses', styles: ['none', 'round', 'sun', 'heart', 'star'] };
   const FACE_PARTS = [
@@ -315,7 +315,7 @@ const Stickers = (() => {
         break; // bald
     }
     // Under a beanie or nightcap the hair on top is hidden; only what hangs down shows.
-    if (s.hat === 'beanie' || s.hat === 'pulled' || s.hat === 'nightcap') {
+    if (s.hat === 'beanie' || s.hat === 'nightcap') {
       const below = 38;
       const keepLow = svgStr => svgStr.replace(/<circle cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"([^>]*)\/>/g, (m, x, y) => (Number(y) >= below ? m : ''));
       if (s.hair === 'curly' || s.hair === 'longcurly') { back = keepLow(back); front = keepLow(front); }
@@ -789,19 +789,6 @@ const Stickers = (() => {
   const HAT_SIZE = { crown: 0.55, bowler: 0.6, nightcap: 0.8 };
 
   function hatLayer(s, part) {
-    // A beanie pulled down over the eyes.
-    if (s.hat === 'pulled') {
-      const [[x1, y1]] = part.eyes;
-      const [x2] = part.eyes[part.eyes.length - 1];
-      // On a person it covers all the hair on top; the hair only peeks out at the sides.
-      if (part.worn) {
-        const bottom = y1 + 6, w = part.worn[2];
-        const sy = (bottom - part.hairTop) / 22;
-        return `<g transform="translate(${(x1 + x2) / 2} ${bottom}) scale(${w / 34} ${sy})" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" paint-order="stroke">${hatArt('beanie')}</g>`;
-      }
-      const w = Math.max(34, (x2 - x1) * 2.3);
-      return `<g transform="translate(${(x1 + x2) / 2} ${y1 + 6}) scale(${w / 34} ${w / 40})" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" paint-order="stroke">${hatArt('beanie')}</g>`;
-    }
     if (part.worn && (s.hat === 'beanie' || s.hat === 'nightcap')) {
       const [x, y, w] = part.worn;
       return `<g transform="translate(${x} ${y}) scale(${w / 34})" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" paint-order="stroke">${hatArt(s.hat)}</g>`;
@@ -863,7 +850,7 @@ const Stickers = (() => {
       f = [50, 1.13];
     }
     // Make room for a tall hat on top.
-    if (s.hat && !['none', 'bow', 'flower', 'crown', 'bowler', 'pulled'].includes(s.hat)) f = [f[0] - 6, f[1] * 0.92];
+    if (s.hat && !['none', 'bow', 'flower', 'crown', 'bowler'].includes(s.hat)) f = [f[0] - 6, f[1] * 0.92];
     return f;
   }
 
@@ -872,6 +859,7 @@ const Stickers = (() => {
   // Returns an SVG string for a sticker, clipped to a circle.
   function render(sticker) {
     let s = { ...DEFAULTS[sticker.type || 'person'], ...sticker };
+    if (s.hat === 'pulled') s.hat = 'beanie';   // the pulled-down beanie was taken out
     // Older stickers: one "feeling", or old eye names.
     if (sticker.feeling && !sticker.mouth) s = applyPreset(s, PRESETS[sticker.feeling] ? sticker.feeling : 'happy');
     // Very old person stickers (before mouths existed) used different eye names.

@@ -88,13 +88,13 @@ One PIN guards everything parent-only:
   - **Extras:** sweat drop, Zzz, question marks, heart, sparkle, anger mark
   - **Quick feelings** (happy, laugh, cute, silly, love, shy, sleepy, surprised, nervous, confused, sad, grumpy) are only starting points: one tap fills in the parts, and any part can then be changed
 - **Person:** expression, face shape (oval, round, long, square, heart), skin color, hair style (short, long, curly, long curly, two braids, bun, pigtails, spiky, bald), hair color, hat, glasses, background
-- **Hats are worn, not perched:** a beanie or nightcap sits down over the hair and hides the hair on top; only hair that hangs down (pigtails, braids, long hair, curls) shows. The pulled-down beanie covers the hair on top too.
+- **Hats are worn, not perched:** a beanie or nightcap sits down over the hair and hides the hair on top; only hair that hangs down (pigtails, braids, long hair, curls) shows.
 - **More colors in the sticker maker:** every color row (skin, hair, fur, background) has the ➕ color picker
 - **Alien:** expression, color (including gray and dark space green), head shape (round, tall, wide, extra wide, bulb, classic), ears (none, pointy, round), skin (plain, spots, stars), 1 to 3 eyes, antennae (none, 1 or 2; straight, spiral, zigzag or crooked), hat, glasses, background
 - **Animal:** cat, dog, chihuahua, bunny, bear, mouse, fox, sheep or baby dragon (each with its own face, not a cat face with new ears), then expression, coat (plain, tabby, patch, two-tone, calico, colorpoint), fur color, patch color, hat, glasses and background. Calico cat is the starting animal.
 - **Cats also get:** face shape (round, wide, fluffy), ears (pointy, big, folded; folded isn't offered on the wide face) and long whiskers
 - **Baby dragon:** face shape round (default) or chubby; bat wings on the top corners of the head (a thick arm bone rises to an elbow, runs out to the tip, and thin ribs fan down to a scalloped edge); cream freckles, little brows; hair tuft is a choice (none, sprout, single, curl, spikes, puff); horns are optional and tiny
-- **Hats:** party hat, tiny crown, tiny bowler hat, beanie, cap, bow (on the ear), flower, top hat, nightcap, beanie pulled down over the eyes
+- **Hats:** party hat, tiny crown, tiny bowler hat, beanie, cap, bow (on the ear), flower, top hat, nightcap (the beanie pulled down over the eyes was taken out)
 - **Bow tie** under the chin (pink or blue)
 - **Glasses:** round, sunglasses, hearts, stars
 - **Face shapes vary:** round faces are fine, but each kind offers other shapes too, so stickers don't all look alike

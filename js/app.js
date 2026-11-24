@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 8;
+  const APP_VERSION = 9;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
