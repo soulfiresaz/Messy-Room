@@ -155,6 +155,7 @@ Ready-made pieces to start from (not every possible option, just good ones). Any
 - **Hooks:** single, double, a set of three over a door, a belt rack, and wall hooks for things like aprons and backpacks. Each hook is its own space.
 - **Wall file sorter** with key hooks
 - **Laundry hampers** (round plastic and rectangular), **baskets, bags and boxes**
+- **Trash cans:** kitchen (tall with a lid and foot pedal), small rectangle, round small to medium, and a blue recycling bin with the recycling arrows. Useful later for jobs like taking out the trash and the recycling.
 - **The top of a piece is a space too**, like a TV and a dish sitting on top of the cubbies
 - **Closet** (inside view, see above)
 - **On the walls:** windows, shelves, light switch (drawn as a switch plate with a light bulb, so it isn't mistaken for an outlet), outlets (useful later for jobs like plugging in the vacuum), hooks, wall file sorter
@@ -170,6 +171,7 @@ Ready-made pieces to start from (not every possible option, just good ones). Any
 - **Ready-made pieces** (like "6-drawer dresser" or "12-cubby unit") are shown as pictures the child can drag in alone
 - **A big ✔️ Save button** on every piece, at the top and at the bottom, so it's clear changes are kept
 - **Size is always showing** (↔️ wider/narrower, ↕️ taller/shorter) right under the picture, not hidden behind 🔧
+- **Every piece can change size:** beds, chairs, hampers and trash cans too, on their page and on the map (wider with the yellow handle or ↔️, deeper or longer with ⤵️). Hooks and pocket organizers get bigger or smaller as a whole (🔍).
 - **Tap a cubby to change what's in it:** take the basket out (open), or put in a bin, a paper sorter or paper drawers
 - **Drag baskets:** drag a bin, sorter or paper-drawer box from one cubby to another (if the other cubby is full, they swap, and what's kept inside moves with the basket). A row under the picture holds a bin, a sorter and paper drawers to drag into any cubby, and a 🗑️ circle to drop one on to take it out.
 - **A version number** shows small on the home screen, so it's easy to tell which copy of the app is open

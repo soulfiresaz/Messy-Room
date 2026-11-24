@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 10;
+  const APP_VERSION = 12;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -774,9 +774,14 @@
 
   // Bigger or smaller: always showing on pieces that can change size.
   function sizeRow(p) {
-    const wide = Furniture.canStretch(p) || p.kind === 'seat' || p.kind === 'container';
-    const tall = p.kind !== 'wallshelf' && p.kind !== 'closet' && p.kind !== 'bed' && p.kind !== 'pockets' && p.kind !== 'hooks';
-    if (p.kind === 'bed' || p.kind === 'pockets' || p.kind === 'hooks') return '';
+    // Hooks and pocket organizers get bigger or smaller as a whole.
+    if (p.kind === 'pockets' || p.kind === 'hooks') {
+      return `<section class="opt-row size-row"><h2 class="opt-head">Size</h2><div class="opt-choices">
+        <div class="step-group"><span class="step-icon" aria-hidden="true">🔍</span>${stepBtn('size-scale', '➖', 'Smaller', 'data-dir="-1"')}${stepBtn('size-scale', '➕', 'Bigger', 'data-dir="1"')}</div>
+      </div></section>`;
+    }
+    const wide = Furniture.canStretch(p);
+    const tall = p.kind !== 'wallshelf' && p.kind !== 'closet';
     return `<section class="opt-row size-row"><h2 class="opt-head">Size</h2><div class="opt-choices">
       ${wide ? `<div class="step-group"><span class="step-icon" aria-hidden="true">↔️</span>${stepBtn('size', '➖', 'Narrower', 'data-dim="w" data-dir="-1"')}${stepBtn('size', '➕', 'Wider', 'data-dim="w" data-dir="1"')}</div>` : ''}
       ${tall ? `<div class="step-group"><span class="step-icon" aria-hidden="true">↕️</span>${stepBtn('size', '➖', 'Shorter', 'data-dim="h" data-dir="-1"')}${stepBtn('size', '➕', 'Taller', 'data-dim="h" data-dir="1"')}</div>` : ''}
@@ -1789,6 +1794,11 @@
         saveOrWarn();
         location.hash = p.insideId ? `#/rooms/my-room/piece/${p.insideId}` : '#/rooms/my-room';
       }));
+    },
+    'size-scale'(el) {
+      changePiece(p => {
+        p.hs = Math.round(Math.max(0.5, Math.min(2.5, (p.hs || 1) + Number(el.dataset.dir) * 0.15)) * 100) / 100;
+      });
     },
     'size'(el) {
       const dim = el.dataset.dim, dir = Number(el.dataset.dir);

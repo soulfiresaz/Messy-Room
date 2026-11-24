@@ -169,6 +169,10 @@ const Furniture = (() => {
     { key: 'basket', group: 'baskets', make: () => container('basket', '#d9b98a') },
     { key: 'bag', group: 'baskets', make: () => container('bag', '#7fd8c0') },
     { key: 'box', group: 'baskets', make: () => container('box', '#c9a57a') },
+    { key: 'trashKitchen', group: 'trash', make: () => container('trashKitchen', '#d5dbe3') },
+    { key: 'trashRect', group: 'trash', make: () => container('trashRect', '#7fd8c0') },
+    { key: 'trashRound', group: 'trash', make: () => container('trashRound', '#ff9fb8') },
+    { key: 'recycle', group: 'trash', make: () => container('recycle', '#4f8fe0') },
     { key: 'hookSingle', group: 'hooks', where: 'both', make: () => hooks('single', 1, '#c9cfd8') },
     { key: 'hookDouble', group: 'hooks', where: 'both', make: () => hooks('double', 1, '#c9cfd8') },
     { key: 'hookWall', group: 'hooks', make: () => hooks('wall', 2, '#c98b5a') },
@@ -200,6 +204,7 @@ const Furniture = (() => {
     { key: 'closet', icon: '👕', label: 'Closets' },
     { key: 'seats', icon: '💺', label: 'Seats' },
     { key: 'baskets', icon: '🧺', label: 'Hampers, baskets and boxes' },
+    { key: 'trash', icon: '🗑️', label: 'Trash cans' },
     { key: 'hooks', icon: '🪝', label: 'Hooks and wall pieces' },
     { key: 'door', icon: '🚪', label: 'On a door' },
   ];
@@ -236,7 +241,15 @@ const Furniture = (() => {
   // ---------- Front view drawings ----------
 
   // Size of the drawing for a piece, in pixels, including tops, legs and wheels.
+  // Hooks and pocket organizers can be made bigger or smaller as a whole (p.hs).
+  const scaleOf = p => ((p.kind === 'hooks' || p.kind === 'pockets') && p.hs ? p.hs : 1);
+
   function frontBox(p) {
+    const b = baseBox(p), k = scaleOf(p);
+    return k === 1 ? b : { W: b.W * k, H: b.H * k, ox: b.ox * k, oy: b.oy * k };
+  }
+
+  function baseBox(p) {
     if (p.kind === 'closet') return closetBox(p);
     const w = p.w * U, h = p.h * U;
     if (p.style === 'wood') return { W: w + 24, H: h + 40, ox: 12, oy: 18 };
@@ -596,7 +609,28 @@ const Furniture = (() => {
     return p;
   }
 
-  const CONTAINER_SIZE = { hamperRound: [2.8, 3.6, 2.8, 2.8], hamperRect: [3.2, 3.6, 3.2, 2.2], basket: [3, 2, 2.6, 1.8], bag: [2.4, 2.8, 2.2, 1.2], box: [3, 2, 2.6, 2] };
+  const CONTAINER_SIZE = {
+    hamperRound: [2.8, 3.6, 2.8, 2.8], hamperRect: [3.2, 3.6, 3.2, 2.2], basket: [3, 2, 2.6, 1.8], bag: [2.4, 2.8, 2.2, 1.2], box: [3, 2, 2.6, 2],
+    trashKitchen: [3.2, 5.4, 3, 2.2], trashRect: [2.6, 2.8, 2.2, 1.5], trashRound: [2.8, 3.6, 2.6, 2.6], recycle: [3, 4.4, 2.8, 2.2],
+  };
+
+  // Three white arrows chasing each other around a triangle.
+  function recycleMark(cx, cy, s, c = '#fff') {
+    const r = 13 * s;
+    const V = [-90, 30, 150].map(a => [cx + r * Math.cos(a * Math.PI / 180), cy + r * Math.sin(a * Math.PI / 180)]);
+    let o = '';
+    for (let i = 0; i < 3; i++) {
+      const [x1, y1] = V[i], [x2, y2] = V[(i + 1) % 3];
+      const P = t => [x1 + (x2 - x1) * t, y1 + (y2 - y1) * t];
+      const [ax, ay] = P(0.18), [bx, by] = P(0.72);
+      const ang = Math.atan2(y2 - y1, x2 - x1), h = 5 * s;
+      const l = [bx - h * Math.cos(ang - 0.6), by - h * Math.sin(ang - 0.6)];
+      const rr = [bx - h * Math.cos(ang + 0.6), by - h * Math.sin(ang + 0.6)];
+      o += `<path d="M${ax} ${ay} L${bx} ${by}" stroke="${c}" stroke-width="${2.6 * s}" stroke-linecap="round"/>`;
+      o += `<path d="M${l[0]} ${l[1]} L${bx + 1.5 * s * Math.cos(ang)} ${by + 1.5 * s * Math.sin(ang)} L${rr[0]} ${rr[1]} Z" fill="${c}" stroke="${c}" stroke-width="${1.2 * s}" stroke-linejoin="round"/>`;
+    }
+    return o;
+  }
 
   function pocketArt(x, y, pw, ph) {
     return `<path d="M${x} ${y + ph * 0.22} L${x + pw} ${y + ph * 0.22} L${x + pw - 2} ${y + ph} L${x + 2} ${y + ph} Z" fill="#eaf6ff" fill-opacity=".9" ${line(1.6)}/>` +
@@ -611,7 +645,7 @@ const Furniture = (() => {
     ? `<g class="fpart" data-act="part" data-id="${id}" role="button" aria-label="Open">${hit}${art}</g>` : art;
 
   function pocketsArt(p, state) {
-    const { ox, oy } = frontBox(p);
+    const { ox, oy } = baseBox(p);
     const w = p.w * U, h = p.h * U, gap = 5;
     const pw = (w - gap * (p.cols + 1)) / p.cols, ph = (h - gap * (p.rows + 1)) / p.rows;
     let o = overHooks(ox, oy, w) + rect(ox, oy, w, h, p.color, 6, 2.5);
@@ -635,7 +669,7 @@ const Furniture = (() => {
   }
 
   function hooksArt(p, state) {
-    const { ox, oy } = frontBox(p);
+    const { ox, oy } = baseBox(p);
     const w = p.w * U, h = p.h * U, metal = '#9aa7b8', brass = '#d9b14a';
     const step = HOOK_SPACING[p.sub] * U;
     let o = '';
@@ -696,6 +730,23 @@ const Furniture = (() => {
     } else if (p.sub === 'bag') {
       o += `<path d="M${x + w * 0.25} ${y + h * 0.28} Q${x + w * 0.25} ${y} ${x + w / 2} ${y} Q${x + w * 0.75} ${y} ${x + w * 0.75} ${y + h * 0.28}" fill="none" ${line(4)}/>`;
       o += `<path d="M${x + 4} ${y + h * 0.26} L${x + w - 4} ${y + h * 0.26} L${x + w} ${y + h} L${x} ${y + h} Z" fill="${c}" ${line()}/>`;
+    } else if (p.sub === 'trashKitchen') {
+      o += rect(x + w * 0.06, y + h * 0.12, w * 0.88, h * 0.8, c, 12);
+      o += `<path d="M${x} ${y + h * 0.13} Q${x + w / 2} ${y - h * 0.03} ${x + w} ${y + h * 0.13} Z" fill="${shade(c, -0.12)}" ${line()}/>`;
+      o += rect(x + w * 0.38, y, w * 0.24, h * 0.04, shade(c, -0.3), 4, 2);
+      o += rect(x + w * 0.25, y + h * 0.9, w * 0.5, h * 0.08, '#9aa7b8', 5, 2.5);
+      o += `<path d="M${x + w * 0.18} ${y + h * 0.25} L${x + w * 0.18} ${y + h * 0.78} M${x + w * 0.82} ${y + h * 0.25} L${x + w * 0.82} ${y + h * 0.78}" stroke="${shade(c, 0.35)}" stroke-width="5" stroke-linecap="round"/>`;
+    } else if (p.sub === 'trashRect') {
+      o += `<path d="M${x + 4} ${y + h * 0.1} L${x + w - 4} ${y + h * 0.1} L${x + w - 10} ${y + h} L${x + 10} ${y + h} Z" fill="${c}" ${line()}/>`;
+      o += rect(x, y, w, h * 0.15, shade(c, -0.15), 6) + rect(x + w * 0.33, y + h * 0.2, w * 0.34, h * 0.07, shade(c, -0.35), 4, 2);
+    } else if (p.sub === 'trashRound') {
+      o += `<path d="M${x} ${y + h * 0.07} L${x + w * 0.09} ${y + h * 0.95} Q${x + w / 2} ${y + h * 1.03} ${x + w * 0.91} ${y + h * 0.95} L${x + w} ${y + h * 0.07} Z" fill="${c}" ${line()}/>`;
+      o += `<ellipse cx="${x + w / 2}" cy="${y + h * 0.07}" rx="${w / 2}" ry="${h * 0.075}" fill="${shade(c, -0.3)}" ${line()}/>`;
+      o += `<path d="M${x + w * 0.11} ${y + h * 0.27} Q${x + w / 2} ${y + h * 0.35} ${x + w * 0.89} ${y + h * 0.27}" fill="none" stroke="${shade(c, 0.3)}" stroke-width="5"/>`;
+    } else if (p.sub === 'recycle') {
+      o += rect(x + 2, y + h * 0.11, w - 4, h * 0.89, c, 10) + rect(x - 2, y, w + 4, h * 0.14, shade(c, -0.15), 8);
+      o += rect(x + w * 0.3, y + h * 0.035, w * 0.4, h * 0.05, shade(c, -0.4), 4, 2);
+      o += recycleMark(x + w / 2, y + h * 0.58, Math.min(w, h) / 46);
     } else {
       o += rect(x, y + h * 0.2, w, h * 0.8, c, 4) + rect(x - 4, y, w + 8, h * 0.28, shade(c, -0.08), 4) + rect(x + w * 0.36, y + h * 0.5, w * 0.28, h * 0.18, '#fff', 3, 1.6);
     }
@@ -865,6 +916,8 @@ const Furniture = (() => {
       art = tap(state, p.spot.id, `<rect x="${ox}" y="${oy}" width="${p.w * U}" height="${p.h * U}" fill="transparent"/>`, containerArt(p, ox, oy, p.w * U, p.h * U));
     } else if (p.style === 'wire') art = wireArt(p, state);
     else art = storageArt(p, state);
+    const k = scaleOf(p);
+    if (k !== 1) art = `<g transform="scale(${k})">${art}</g>`;
     if (state.bare) return art;
     return svg(box.W, box.H, art, 'furn-svg');
   }
@@ -990,26 +1043,44 @@ const Furniture = (() => {
 
   // Width and depth of a piece seen from above, in units.
   function footprint(p) {
-    if (p.kind === 'bed') { const [w, d] = BED_SIZE[p.bed] || BED_SIZE.twin; return { w, d }; }
+    if (p.kind === 'bed') {
+      const [w, d] = BED_SIZE[p.bed] || BED_SIZE.twin;
+      const f = p.w / (BED_FRONT_W[p.bed] || p.w);
+      // Twin, queen and king are seen from the foot (width); bunk and loft from the side (length).
+      return p.bed === 'bunk' || p.bed === 'loft' ? { w: w * (p.bw || 1), d: p.depth || d * f } : { w: w * f, d: p.depth || d };
+    }
     if (p.kind === 'seat') {
       // Made bigger or smaller on its page: the top on the map grows with it.
       const [w, d] = SEAT_SIZE[p.seat] || SEAT_SIZE.chair;
       const f = p.w / (SEAT_FRONT_W[p.seat] || p.w);
-      return { w: w * f, d: d * f };
+      return { w: w * f, d: p.depth || d * f };
     }
-    if (p.kind === 'closet') return { w: fixCloset(p).sections.reduce((a, x) => a + x.w, 0), d: DEPTH.closet };
-    if (p.kind === 'container') { const z = CONTAINER_SIZE[p.sub]; const f = p.w / z[0]; return { w: z[2] * f, d: z[3] * f }; }
-    return { w: p.w, d: p.depth || DEPTH[p.kind] || 2.2 };
+    if (p.kind === 'closet') return { w: fixCloset(p).sections.reduce((a, x) => a + x.w, 0), d: p.depth || DEPTH.closet };
+    if (p.kind === 'container') { const z = CONTAINER_SIZE[p.sub]; const f = p.w / z[0]; return { w: z[2] * f, d: p.depth || z[3] * f }; }
+    return { w: p.w * scaleOf(p), d: p.depth || DEPTH[p.kind] || 2.2 };
   }
 
   // Beds come in set sizes (twin, queen...); seats stay as they are.
-  const canStretch = p => hasParts(p) || p.kind === 'closet' || p.kind === 'wallshelf';
-  const canDeepen = p => hasParts(p) || p.kind === 'closet';
+  const canStretch = () => true;
+  const canDeepen = p => !['pockets', 'hooks', 'wallshelf'].includes(p.kind);
+  const BED_FRONT_W = { twin: 3, bunk: 6, loft: 6, queen: 4.5, king: 5.5 };
 
   // Make a piece wider or narrower, by eye. A closet stretches every section.
   function setWidth(p, w) {
     if (!canStretch(p)) return;
     w = Math.round(Math.max(1.5, Math.min(40, w)) * 10) / 10;
+    if (p.kind === 'hooks' || p.kind === 'pockets') {
+      p.hs = Math.round(Math.max(0.5, Math.min(2.5, w / p.w)) * 100) / 100;
+      return;
+    }
+    if (p.kind === 'bed' || p.kind === 'seat' || p.kind === 'container') {
+      // These are sized by their front width; set it so the top on the map is w wide.
+      if (!(p.kind === 'bed' && (p.bed === 'bunk' || p.bed === 'loft'))) {
+        const now = footprint(p).w;
+        p.w = Math.round(p.w * w / now * 10) / 10;
+        return;
+      }
+    }
     if (p.kind === 'closet') {
       fixCloset(p);
       const total = p.sections.reduce((a, x) => a + x.w, 0);
@@ -1017,12 +1088,17 @@ const Furniture = (() => {
       p.w = p.sections.reduce((a, x) => a + x.w, 0);
       return;
     }
+    if (p.kind === 'bed' && (p.bed === 'bunk' || p.bed === 'loft')) {
+      // On the map the stretch makes the mattress wider; on its page ↔ makes it longer.
+      p.bw = Math.round(w / BED_SIZE[p.bed][0] * 100) / 100;
+      return;
+    }
     p.w = w;
   }
 
   function setDepth(p, d) {
     if (!canDeepen(p)) return;
-    p.depth = Math.round(Math.max(0.8, Math.min(8, d)) * 10) / 10;
+    p.depth = Math.round(Math.max(0.8, Math.min(20, d)) * 10) / 10;
   }
 
   // The top of a piece, front edge at the bottom. S is pixels per unit.
@@ -1062,6 +1138,9 @@ const Furniture = (() => {
     }
     if (p.kind === 'wallshelf' || p.kind === 'hooks' || p.kind === 'wallsorter' || p.kind === 'pockets') return rect(x, y, W, D, c, 4);
     if (p.kind === 'container') {
+      if (p.sub === 'trashRound') return `<ellipse cx="${x + W / 2}" cy="${y + D / 2}" rx="${W / 2 - 2}" ry="${D / 2 - 2}" fill="${c}" ${line()}/><ellipse cx="${x + W / 2}" cy="${y + D / 2}" rx="${W * 0.36}" ry="${D * 0.36}" fill="${shade(c, -0.25)}"/>`;
+      if (p.sub === 'trashKitchen') return rect(x, y, W, D - 8, c, 14) + `<path d="M${x + 8} ${y + D * 0.45} Q${x + W / 2} ${y + D * 0.15} ${x + W - 8} ${y + D * 0.45}" fill="none" stroke="${INK}" stroke-width="2" opacity=".4"/>` + rect(x + W * 0.3, y + D - 10, W * 0.4, 10, '#9aa7b8', 4, 2);
+      if (p.sub === 'recycle') return rect(x, y, W, D, c, 8) + recycleMark(x + W / 2, y + D / 2 + 1, Math.min(W, D) / 52);
       if (p.sub === 'hamperRound') return `<ellipse cx="${x + W / 2}" cy="${y + D / 2}" rx="${W / 2 - 2}" ry="${D / 2 - 2}" fill="${c}" ${line()}/><ellipse cx="${x + W / 2}" cy="${y + D / 2}" rx="${W / 2 - 9}" ry="${D / 2 - 9}" fill="${shade(c, -0.15)}"/>`;
       return rect(x, y, W, D, c, p.sub === 'bag' ? 12 : 6) + rect(x + 6, y + 6, W - 12, D - 12, shade(c, -0.15), 4, 1.5);
     }
