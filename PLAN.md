@@ -302,7 +302,7 @@ Each stage gives something usable before moving on.
    - ✅ Step B built: the map from above in three steps (📐 room size, 🚪 door, closet, windows and light switch, 🛏️ furniture), big rotate button, dragging from the tray, pieces turning their backs to the wall, tap a piece to turn it, open it or take it off the map
 2. **People stickers and ownership** ✅ built: sticker builder, a 👤 Whose? row for each piece and each space, owner badges on spaces, shared spaces, the PIN to take a space away from someone, and 🧺 what goes where
 3. **Item stickers** ✅ built: 🧸 Things with the same pictures (recolorable drawings), colors, patterns, photos, owners and a home spot
-4. **Tidying:** floor checklist, Pictures / Words tabs, dragging items into drawers and cubbies, sound and confetti
+4. **Tidying** ✅ built: Clean → 🧺 Tidy up, what's on the floor (your things, kinds, trash, recycling, dishes, dirty clothes), one thing or one kind at a time, the spot glowing 📍 with others' spaces dimmed, drag or tap to put away, confetti, and the cleanup counts toward Rewards. (Pictures / Words tabs come with the phone word-list version in stage 7.)
 5. **Deep clean:** suggested jobs, daily and weekly schedule, parent settings
 6. **Saving:** automatic save ✅, backup and restore ✅
 7. **Phone layout and polish:** word list version first on phones, final touches

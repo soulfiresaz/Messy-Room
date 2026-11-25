@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 14;
+  const APP_VERSION = 15;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -170,7 +170,7 @@
         ${circle({ href: '#/rooms', icon: '🏠', label: 'Rooms', color: 'var(--c-rooms)' })}
         ${circle({ href: `#/people/${me.id}`, icon: mine, label: 'Stickers', color: 'var(--c-stickers)', extraClass: 'sticker-circle' })}
         ${circle({ href: '#/rewards', icon: '🎁', label: 'Rewards', color: 'var(--c-rewards)' })}
-        ${circle({ icon: '🧽', label: 'Clean', color: 'var(--c-clean)', disabled: true })}
+        ${circle({ href: '#/clean', icon: '🧽', label: 'Clean', color: 'var(--c-clean)' })}
         ${circle({ href: '#/things', icon: '🧸', label: 'Things', color: 'var(--c-things)' })}
       </main>
       <p class="app-version">Version ${APP_VERSION}</p>`;
@@ -1256,6 +1256,257 @@
     location.hash = thingIsNew ? '#/thing/new' : `#/thing/${thingDraft.id}`;
   }
 
+  // ---------- 🧺 Tidy up ----------
+  // What's on the floor? Then put it away, one thing (or one kind) at a time,
+  // with the spot where it goes glowing 📍. Everyone else's spaces are dimmed.
+  // A pick is 'thing:<id>', 'kind:<key>' (a clean kind, or trash, recycling, dishes) or 'dirty:<key>'.
+
+  let tidy = { mode: 'group', picks: [], steps: [], i: 0, done: new Set() };
+  let tidyDrag = null;
+
+  const CLOTHES_KEYS = Items.GROUPS.find(g => g.key === 'clothes').items.map(([k]) => k);
+  const TRASH_SUBS = ['trashKitchen', 'trashRect', 'trashRound'];
+
+  function renderClean() {
+    $app.innerHTML = `
+      ${topBar('Clean', '#/')}
+      <main class="circle-grid">
+        ${circle({ href: '#/tidy', icon: '🧺', label: 'Tidy up', color: 'var(--c-clean)' })}
+        ${circle({ icon: '🧽', label: 'Jobs', disabled: true })}
+      </main>`;
+  }
+
+  function dirtyIcon(key) {
+    const stink = `<g fill="none" stroke="#8a6a3a" stroke-width="2.6" stroke-linecap="round" opacity=".9"><path d="M14 10 q3 -4 0 -8 M30 8 q3 -4 0 -8 M46 10 q3 -4 0 -8"/></g><circle cx="38" cy="40" r="5" fill="#8a6a3a" opacity=".55"/><circle cx="22" cy="46" r="3.5" fill="#8a6a3a" opacity=".5"/>`;
+    return Items.icon(key).replace(/<\/svg>$/, `${stink}</svg>`);
+  }
+
+  function pickArt(pick) {
+    const [type, key] = pick.split(':');
+    if (type === 'thing') { const t = things().find(x => x.id === key); return t ? thingArt(t) : ''; }
+    if (type === 'dirty') return dirtyIcon(key);
+    return Items.icon(key, S.data.customHolds || []);
+  }
+
+  // Which group a pick belongs to, for "one kind at a time".
+  function pickGroup(pick) {
+    const [type, key] = pick.split(':');
+    if (type === 'thing') return { key: 'things', icon: '🧸' };
+    if (type === 'dirty') return { key: 'dirty', icon: '🧺' };
+    const it = Items.ALL[key];
+    if (it && it.group) { const g = Items.FLOOR.find(x => x.key === it.group); return { key: g.key, icon: g.icon }; }
+    const g = Items.GROUPS.find(x => x.items.some(([k]) => k === key));
+    return g ? { key: g.key, icon: g.icon } : { key: 'other', icon: '❓' };
+  }
+
+  // Every piece in the room, including ones in closets and hung on doors.
+  const allPieces = () => room().pieces;
+  const mine = owners => !owners.length || owners.includes(currentId);
+
+  // Where a pick goes: spaces to glow, or the kitchen.
+  function targetsOf(pick) {
+    const [type, key] = pick.split(':');
+    const spaces = [];
+    const add = (p, s) => spaces.push({ p, s });
+    if (type === 'thing') {
+      const t = things().find(x => x.id === key);
+      const h = t && homeOf(t);
+      if (h) add(h.p, h.space);
+      return { spaces };
+    }
+    const it = Items.ALL[key];
+    const dest = type === 'dirty' ? 'hamper' : it && it.dest;
+    if (dest === 'kitchen') return { spaces, kitchen: true };
+    if (dest) {
+      const subs = dest === 'trash' ? TRASH_SUBS : dest === 'recycle' ? ['recycle'] : ['hamperRound', 'hamperRect'];
+      allPieces().filter(p => p.kind === 'container' && subs.includes(p.sub)).forEach(p => add(p, p.spot));
+      if (!spaces.length && dest === 'recycle') allPieces().filter(p => p.kind === 'container' && TRASH_SUBS.includes(p.sub)).forEach(p => add(p, p.spot));
+      return { spaces };
+    }
+    // A clean kind: every space marked "what goes here" with it; your own and shared ones first.
+    allPieces().forEach(p => Furniture.spacesOf(p).forEach(s => { if ((s.holds || []).includes(key)) add(p, s); }));
+    const ours = spaces.filter(x => mine(ownersOf(x.p, x.s)));
+    return { spaces: ours.length ? ours : spaces };
+  }
+
+  function renderTidy() {
+    const custom = S.data.customHolds || [];
+    const sel = new Set(tidy.picks);
+    const pick = (id, art, label) => `<button type="button" class="hold-pick floor-pick ${sel.has(id) ? 'picked' : ''}" data-act="tidy-pick" data-value="${id}" aria-label="${esc(label)}" aria-pressed="${sel.has(id)}">${art}</button>`;
+    const myThings = things().filter(t => mine(t.owners || []));
+    const row = (icon, label, picks) => picks ? `<section class="opt-row"><h2 class="opt-head"><span aria-hidden="true">${icon}</span> ${label}</h2><div class="opt-choices">${picks}</div></section>` : '';
+    const floor = Items.FLOOR.map(g => row(g.icon, g.label, g.items.map(([k]) => pick(`kind:${k}`, Items.icon(k), Items.label(k))).join(''))).join('');
+    const dirty = row('🧺', 'Dirty clothes', CLOTHES_KEYS.map(k => pick(`dirty:${k}`, dirtyIcon(k), `Dirty ${Items.label(k)}`)).join(''));
+    const kinds = Items.GROUPS.map(g => row(g.icon, g.label, g.items.map(([k]) => pick(`kind:${k}`, Items.icon(k, custom), Items.label(k, custom))).join(''))).join('');
+    const one = `<svg viewBox="0 0 60 60">${ItemArt.inner('shirts')}</svg>`;
+    const many = `<svg viewBox="0 0 60 60"><g transform="translate(-6 4) scale(.6)">${ItemArt.inner('socks')}</g><g transform="translate(22 4) scale(.6)">${ItemArt.inner('shirts')}</g><g transform="translate(8 24) scale(.6)">${ItemArt.inner('pants')}</g></svg>`;
+    $app.innerHTML = `
+      ${topBar('', '#/clean', `<span class="me-mini">${Stickers.render(personSticker(currentPerson()))}</span>`)}
+      <main class="piece-page">
+        <h1 class="tidy-title"><span aria-hidden="true">👀</span> What's on the floor?</h1>
+        <div class="mode-row">
+          <button type="button" class="mode-btn ${tidy.mode === 'one' ? 'picked' : ''}" data-act="tidy-mode" data-value="one" aria-label="One thing at a time" aria-pressed="${tidy.mode === 'one'}">${one}<span class="mode-n">1</span></button>
+          <button type="button" class="mode-btn ${tidy.mode === 'group' ? 'picked' : ''}" data-act="tidy-mode" data-value="group" aria-label="One kind at a time" aria-pressed="${tidy.mode === 'group'}">${many}</button>
+        </div>
+        ${row('🧸', 'My things', myThings.map(t => pick(`thing:${t.id}`, thingArt(t), t.label || 'Thing')).join(''))}
+        ${floor}${dirty}${kinds}
+        <div class="go-bar"><button type="button" class="save-btn go-btn" data-act="tidy-go" ${tidy.picks.length ? '' : 'disabled'} aria-label="Start">▶️ ${tidy.picks.length || ''}</button></div>
+      </main>`;
+  }
+
+  function buildSteps() {
+    if (tidy.mode === 'one') return tidy.picks.map(pk => ({ icon: pickGroup(pk).icon, picks: [pk] }));
+    const groups = [];
+    tidy.picks.forEach(pk => {
+      const g = pickGroup(pk);
+      let step = groups.find(x => x.key === g.key);
+      if (!step) groups.push(step = { key: g.key, icon: g.icon, picks: [] });
+      step.picks.push(pk);
+    });
+    return groups;
+  }
+
+  // Glow the spaces where things go; dim spaces that belong only to someone else.
+  function tidyMarks(p, glowIds) {
+    const base = marksFor(p);
+    return (ids, x, y, w, h) => {
+      const spaces = ids.map(id => findSpace(p, id)).filter(Boolean);
+      if (ids.some(id => glowIds.has(id))) {
+        return `<g pointer-events="none"><rect x="${x + 2}" y="${y + 2}" width="${w - 4}" height="${h - 4}" rx="8" fill="#ffd54a" fill-opacity=".45" stroke="#ffb703" stroke-width="5" class="glow"/>` +
+          `<text x="${x + w / 2}" y="${y + h / 2}" font-size="${Math.min(40, Math.max(16, h * 0.55))}" text-anchor="middle" dominant-baseline="central">📍</text></g>`;
+      }
+      const others = spaces.length && spaces.every(sp => { const o = ownersOf(p, sp); return o.length && !o.includes(currentId); });
+      return base(ids, x, y, w, h) + (others ? `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" fill-opacity=".6" pointer-events="none"/>` : '');
+    };
+  }
+
+  function renderTidyGo() {
+    if (!tidy.steps.length) { location.replace('#/tidy'); return; }
+    if (tidy.i >= tidy.steps.length) { renderTidyDone(); return; }
+    const step = tidy.steps[tidy.i];
+    const left = step.picks.filter(pk => !tidy.done.has(pk));
+    // Where everything in this step goes
+    const glow = new Set();
+    const pieceIds = [];
+    let kitchen = false, missing = [];
+    step.picks.forEach(pk => {
+      const t = targetsOf(pk);
+      if (t.kitchen) kitchen = true;
+      if (!t.kitchen && !t.spaces.length) missing.push(pk);
+      t.spaces.forEach(({ p, s }) => { glow.add(s.id); if (!pieceIds.includes(p.id)) pieceIds.push(p.id); });
+    });
+    const dots = tidy.steps.map((s, i) => `<span class="dot ${i < tidy.i ? 'done' : i === tidy.i ? 'now' : ''}"></span>`).join('');
+    const items = step.picks.map(pk => `<div class="tidy-item ${tidy.done.has(pk) ? 'done' : ''}" data-tidy-item="${pk}" role="button" aria-label="Put it away">${pickArt(pk)}${tidy.done.has(pk) ? '<span class="tick" aria-hidden="true">✔️</span>' : ''}</div>`).join('');
+    const pieces = pieceIds.map(id => {
+      const p = pieceById(id);
+      return `<div class="piece-stage tidy-stage">${Furniture.render(p, { interactive: true, inside: p.kind === 'closet' ? piecesIn(p.id) : [], marks: tidyMarks(p, glow) })}</div>`;
+    }).join('');
+    const kitchenCard = kitchen ? `<div class="kitchen-card" data-tidy-drop="kitchen"><span class="kitchen-pic" aria-hidden="true">🍽️</span><span class="kitchen-arrow" aria-hidden="true">➡️</span><span class="kitchen-pic" aria-hidden="true">🍳</span><span class="kitchen-word">Take to the kitchen</span></div>` : '';
+    const noSpot = missing.length ? `<div class="no-spot"><span aria-hidden="true">📍❓</span> No spot yet for ${missing.map(pk => `<span class="thing-inline">${pickArt(pk)}</span>`).join('')}
+      ${missing.some(pk => pk.startsWith('thing:')) ? `<button type="button" class="tool-btn big" data-act="tidy-set-home" data-value="${missing.find(pk => pk.startsWith('thing:'))}">📍</button>` : ''}</div>` : '';
+    $app.innerHTML = `
+      ${topBar('', '#/tidy', `<span class="me-mini">${Stickers.render(personSticker(currentPerson()))}</span>`)}
+      <main class="piece-page tidy-go">
+        <div class="dots">${dots}</div>
+        <div class="tidy-items"><span class="step-icon big" aria-hidden="true">${step.icon}</span>${items}</div>
+        ${kitchenCard}${pieces}${noSpot}
+        <div class="go-bar"><button type="button" class="save-btn ${left.length ? '' : 'pulse'}" data-act="tidy-next" aria-label="Done, next">✔️</button></div>
+      </main>`;
+  }
+
+  function renderTidyDone() {
+    $app.innerHTML = `
+      ${topBar('', '#/')}
+      <main class="tidy-done">
+        <div class="done-sticker">${Stickers.render(personSticker(currentPerson()))}</div>
+        <div class="done-party" aria-hidden="true">🎉🧹✨</div>
+        <div class="action-row">
+          <a class="round-btn big-round" href="#/rewards" aria-label="Rewards">🎁</a>
+          <a class="round-btn big-round" href="#/" aria-label="Home">🏠</a>
+        </div>
+      </main>`;
+  }
+
+  // Put one thing away: check it off, and move on when the step is done.
+  function putAway(pk) {
+    if (!pk || tidy.done.has(pk)) return;
+    tidy.done.add(pk);
+    Effects.chime();
+    const step = tidy.steps[tidy.i];
+    if (step.picks.every(x => tidy.done.has(x))) {
+      renderTidyGo();
+      setTimeout(() => { if (location.hash === '#/tidy/go' && tidy.steps[tidy.i] === step) nextStep(); }, 700);
+    } else {
+      renderTidyGo();
+    }
+  }
+
+  function nextStep() {
+    const step = tidy.steps[tidy.i];
+    if (step) step.picks.forEach(pk => tidy.done.add(pk));
+    tidy.i += 1;
+    if (tidy.i >= tidy.steps.length) {
+      S.addCleanup();
+      Effects.celebrate();
+    } else {
+      Effects.pop();
+    }
+    window.scrollTo(0, 0);
+    renderTidyGo();
+  }
+
+  // Which pick (still on the floor in this step) goes to this space or the kitchen?
+  function pickFor(target) {
+    const step = tidy.steps[tidy.i];
+    if (!step) return null;
+    return step.picks.find(pk => {
+      if (tidy.done.has(pk)) return false;
+      const t = targetsOf(pk);
+      if (target === 'kitchen') return t.kitchen;
+      return t.spaces.some(({ p, s }) => target === s.id || (Furniture.findCell(p, target) || {}).spots?.some(x => x.id === s.id));
+    }) || null;
+  }
+
+  // Dragging a picture onto its glowing spot
+  document.addEventListener('pointerdown', e => {
+    const el = e.target.closest('[data-tidy-item]');
+    if (!el || el.classList.contains('done')) return;
+    tidyDrag = { pk: el.dataset.tidyItem, x0: e.clientX, y0: e.clientY, moved: false, ghost: null, el };
+    e.preventDefault();
+  });
+
+  document.addEventListener('pointermove', e => {
+    const d = tidyDrag;
+    if (!d) return;
+    if (!d.moved && Math.hypot(e.clientX - d.x0, e.clientY - d.y0) < 8) return;
+    if (!d.moved) {
+      d.moved = true;
+      d.ghost = document.createElement('div');
+      d.ghost.className = 'basket-ghost';
+      d.ghost.innerHTML = pickArt(d.pk);
+      document.body.appendChild(d.ghost);
+      d.el.classList.add('lifted');
+    }
+    d.ghost.style.left = `${e.clientX}px`;
+    d.ghost.style.top = `${e.clientY}px`;
+  });
+
+  document.addEventListener('pointerup', e => {
+    const d = tidyDrag;
+    tidyDrag = null;
+    if (!d) return;
+    if (d.ghost) d.ghost.remove();
+    if (d.el) d.el.classList.remove('lifted');
+    if (!d.moved) { putAway(d.pk); return; }   // a tap puts it away too
+    const hit = document.elementFromPoint(e.clientX, e.clientY);
+    const kitchen = hit && hit.closest('[data-tidy-drop="kitchen"]');
+    const g = hit && hit.closest('.tidy-stage g.fpart[data-act="part"]');
+    const target = kitchen ? 'kitchen' : g ? g.dataset.id : null;
+    const ok = target && targetsOf(d.pk).kitchen === (target === 'kitchen') && (target === 'kitchen' || pickFor(target) === d.pk || targetsOf(d.pk).spaces.some(({ p, s }) => s.id === target || (Furniture.findCell(p, target) || {}).spots?.some(x => x.id === s.id)));
+    if (ok) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 0); putAway(d.pk); }
+    else { Effects.pop(); wiggle(d.el); }
+  });
+
   // ---------- Sticker page for one person ----------
   // Shows the whole shared collection. Your sticker has a ✔️.
   // Stickers someone else is using are taken and can't be picked.
@@ -2039,6 +2290,35 @@
       Effects.chime();
       location.hash = `#/rooms/my-room/piece/${p.id}`;
     },
+    'tidy-pick'(el) {
+      const v = el.dataset.value;
+      tidy.picks = tidy.picks.includes(v) ? tidy.picks.filter(x => x !== v) : [...tidy.picks, v];
+      Effects.pop();
+      const y = window.scrollY;
+      renderTidy();
+      window.scrollTo(0, y);
+    },
+    'tidy-mode'(el) {
+      tidy.mode = el.dataset.value;
+      Effects.pop();
+      const y = window.scrollY;
+      renderTidy();
+      window.scrollTo(0, y);
+    },
+    'tidy-go'() {
+      if (!tidy.picks.length) return;
+      tidy.steps = buildSteps();
+      tidy.i = 0;
+      tidy.done = new Set();
+      Effects.chime();
+      location.hash = '#/tidy/go';
+    },
+    'tidy-next'() {
+      nextStep();
+    },
+    'tidy-set-home'(el) {
+      location.hash = `#/thing/${el.dataset.value.split(':')[1]}`;
+    },
     'home-piece'(el) {
       homePiece = el.dataset.id;
       Effects.pop();
@@ -2108,6 +2388,7 @@
       });
     },
     'open-piece'(el) {
+      if (location.hash === '#/tidy/go') return;
       if (location.hash === '#/thing-home') { homePiece = el.dataset.id; renderThingHome(); return; }
       Effects.pop();
       location.hash = `#/rooms/my-room/piece/${el.dataset.id}`;
@@ -2116,6 +2397,11 @@
       location.hash = `#/rooms/my-room/add/${pagePieceId}`;
     },
     'part'(el) {
+      if (location.hash === '#/tidy/go') {
+        const pk = pickFor(el.dataset.id);
+        if (pk) putAway(pk); else { Effects.pop(); wiggle(el.closest('.piece-stage')); }
+        return;
+      }
       if (location.hash === '#/thing-home' && homePiece) {
         const hp = pieceById(homePiece);
         const spaces = hp ? spacesIn(hp, el.dataset.id) : [];
@@ -2613,6 +2899,9 @@
     [/^#\/sticker\/new$/, () => renderStickerBuilder(null)],
     [/^#\/sticker\/([\w-]+)$/, m => renderStickerBuilder(m[1])],
     [/^#\/rewards$/, renderRewards],
+    [/^#\/clean$/, renderClean],
+    [/^#\/tidy$/, () => { if (tidy.i >= tidy.steps.length && tidy.steps.length) tidy = { mode: tidy.mode, picks: [], steps: [], i: 0, done: new Set() }; renderTidy(); }],
+    [/^#\/tidy\/go$/, renderTidyGo],
     [/^#\/things$/, () => { thingDraft = null; renderThings(); }],
     [/^#\/thing\/(new|[\w-]+)$/, m => renderThing(m[1])],
     [/^#\/thing-home$/, renderThingHome],

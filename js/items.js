@@ -11,6 +11,9 @@ const Items = (() => {
     belt: `<path d="M6 34 Q30 22 54 34" fill="none" stroke="${INK}" stroke-width="13" stroke-linecap="round"/><path d="M6 34 Q30 22 54 34" fill="none" stroke="#a0522d" stroke-width="8" stroke-linecap="round"/><rect x="22" y="20" width="16" height="16" rx="3" fill="none" stroke="#e0b050" stroke-width="4"/>`,
     apron: `<path d="M22 8 L38 8 L40 22 L50 26 L46 54 L14 54 L10 26 L20 22 Z" fill="#ff9fb8" ${L()}/><rect x="22" y="34" width="16" height="10" rx="2" fill="#ff7aa2" ${L(2)}/><path d="M10 26 L4 30 M50 26 L56 30" ${L(3)}/>`,
     pajamas: `<path d="M14 10 L24 6 Q30 12 36 6 L46 10 L52 22 L44 26 L42 22 L42 54 L18 54 L18 22 L16 26 L8 22 Z" fill="#b9a2ff" ${L()}/><g fill="#fff"><circle cx="24" cy="28" r="2.2"/><circle cx="35" cy="34" r="2.2"/><circle cx="26" cy="44" r="2.2"/><path d="M33 14 l1.2 2.6 2.8 .3 -2.1 1.9 .6 2.8 -2.5 -1.4 -2.5 1.4 .6 -2.8 -2.1 -1.9 2.8 -.3z"/></g>`,
+    bottle: `<rect x="23" y="4" width="14" height="8" rx="2" fill="#4f8fe0" ${L()}/><path d="M24 12 L36 12 Q44 18 44 26 L44 52 Q44 56 40 56 L20 56 Q16 56 16 52 L16 26 Q16 18 24 12 Z" fill="#cfeaff" fill-opacity=".9" ${L()}/><rect x="16" y="30" width="28" height="12" fill="#7fd8c0" ${L(2)}/>`,
+    waterbottle: `<rect x="22" y="2" width="16" height="10" rx="3" fill="#ff8fa3" ${L()}/><path d="M38 6 Q48 6 46 16" fill="none" ${L(2.5)}/><rect x="18" y="12" width="24" height="44" rx="8" fill="#8fd3ff" ${L()}/><path d="M18 26 H42 M18 40 H42" stroke="#fff" stroke-width="3"/>`,
+    scrappaper: `<path d="M12 18 L24 10 L36 16 L48 12 L50 30 L44 44 L30 50 L16 46 L10 32 Z" fill="#f6f2ea" ${L()}/><path d="M18 22 L28 30 L22 38 M34 22 L40 34 M28 30 L38 40" fill="none" stroke="#b9b0a0" stroke-width="2" stroke-linecap="round"/>`,
     blanket: `<rect x="6" y="14" width="48" height="34" rx="6" fill="#7fd8c0" ${L()}/><path d="M6 24 H54 M6 38 H54" stroke="#fff" stroke-width="3"/><path d="M14 14 V48 M30 14 V48 M46 14 V48" stroke="#5fb8a0" stroke-width="2"/><path d="M8 48 l-2 5 M16 48 l-1 5 M24 48 v5 M32 48 v5 M40 48 l1 5 M48 48 l2 5" ${L(2)}/>`,
   };
 
@@ -36,7 +39,23 @@ const Items = (() => {
     ] },
   ];
 
+  // Things found on the floor that don't live in a drawer. dest says where they go.
+  const FLOOR = [
+    { key: 'trash', icon: '🗑️', label: 'Trash', dest: 'trash', items: [
+      ['tissues', '🧻', 'Tissues'], ['wrappers', '🍬', 'Wrappers'], ['scraps', '🍌', 'Food scraps'], ['juiceboxes', '🧃', 'Juice boxes'],
+      ['snackbags', '🍿', 'Snack bags'], ['scrappaper', 'd:scrappaper', 'Scrap paper'],
+    ] },
+    { key: 'recycling', icon: '♻️', label: 'Recycling', dest: 'recycle', items: [
+      ['cans', '🥫', 'Cans'], ['cardboard', '📦', 'Boxes and cardboard'], ['newspaper', '📰', 'Paper'], ['bottles', 'd:bottle', 'Plastic bottles'],
+    ] },
+    { key: 'dishes', icon: '🍽️', label: 'Dishes', dest: 'kitchen', items: [
+      ['cups', '🥤', 'Cups'], ['mugs', '☕', 'Mugs'], ['plates', '🍽️', 'Plates'], ['bowls', '🥣', 'Bowls'],
+      ['utensils', '🍴', 'Spoons and forks'], ['waterbottles', 'd:waterbottle', 'Water bottles'],
+    ] },
+  ];
+
   const ALL = {};
+  FLOOR.forEach(g => g.items.forEach(([key, pic, label]) => { ALL[key] = { key, pic, label, dest: g.dest, group: g.key }; }));
   GROUPS.forEach(g => g.items.forEach(([key, pic, label]) => { ALL[key] = { key, pic, label }; }));
 
   // A picture as a whole <svg> (for buttons). custom: the person's own photo items.
@@ -63,5 +82,5 @@ const Items = (() => {
 
   const label = (key, custom = []) => (ALL[key] ? ALL[key].label : (custom.find(c => c.key === key) ? 'My photo' : ''));
 
-  return { GROUPS, ALL, icon, place, label };
+  return { GROUPS, FLOOR, ALL, icon, place, label };
 })();
