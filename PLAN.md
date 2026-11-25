@@ -226,6 +226,18 @@ Every item is a sticker the child can drag.
 
 ## 5. Tidying up (one thing at a time)
 
+**Decided:**
+- **Where it starts:** the Clean circle opens 🧺 Tidy up (now) and 🧽 Jobs (stage 5)
+- **Show the spot:** the app shows where each thing goes, with the spot glowing 📍. The child puts the real thing away, then drags its picture onto the glowing spot (or taps ✔️). A "let them find it" game could be a parent setting later.
+- **Two ways to go:** one thing at a time, or one kind at a time (all the trash, then all the dishes, then all the clothes)
+- **What's on the floor:** your things, kinds of things (socks, books, toys), plus:
+  - 🗑️ **Trash** → the trash cans: tissues, wrappers, food scraps, juice boxes, snack bags, scrap paper
+  - ♻️ **Recycling** → the recycling bin: cans, boxes and cardboard, paper, plastic bottles
+  - 🍽️ **Dishes** → "take to the kitchen": cups, mugs, plates, bowls, spoons and forks, water bottles
+  - 🧺 **Dirty clothes** → the hampers
+- Only the child's own spaces and shared ones glow; everyone else's are dimmed
+- **Done:** confetti, and the cleanup counts toward Rewards
+
 1. **Who's cleaning?** The child taps their sticker.
 2. **What's on the floor?** The child picks from a checklist: trash, clothes, toys, puzzles, games, musical instruments and so on.
    - **Pictures / Words tabs** switch between picture cards and a word list
