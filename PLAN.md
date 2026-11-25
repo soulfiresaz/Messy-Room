@@ -209,6 +209,8 @@ Real furniture comes in all shapes and sizes, so each piece is made of parts you
 
 Every item is a sticker the child can drag.
 
+- **Item stickers start from the same pictures as "what goes here" (decided).** Emoji can't be recolored exactly, so the things kids recolor are drawn in the same shapes: shirt, pants, shorts, dress, pajamas, socks, underwear, jacket, hat, shoes, stuffed animal, purse, backpack, blanket. Any color (including the ➕ picker) and a pattern: stripes, dots, flowers, hearts or stars. Things nobody recolors (phone, keys, medicine, candle) stay as emoji.
+
 - **Some items take more than one space:** a pair of shoes takes two pockets side by side in a pocket organizer
 
 - **Two ways to make an item:**
