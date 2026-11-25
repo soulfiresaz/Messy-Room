@@ -198,6 +198,8 @@ Real furniture comes in all shapes and sizes, so each piece is made of parts you
 - **Optional labels** for readers or helpers
 
 ### Step 4: Decide what goes where
+- ✅ Built: open any drawer, cubby, cupboard space, pocket, hook, shelf, rod or hamper and pick pictures under **🧺 What goes here?** (more than one is fine, like socks and underwear). They show small in that space on the furniture. **📷** takes a photo of anything not on the list.
+- **The pictures:** clothes (shirts, pants, shorts, dresses, pajamas, socks, underwear, jackets, shoes, hats, belts); play (toys, stuffed animals, games and puzzles, books, art supplies, music, electronics); everyday (school papers, backpacks, aprons, keys, purse, phone, tablet, charger, medicine, lotion, creams, make-up, hair things, candle); other (blankets, a mix of things). These become the item stickers later.
 - Each space is given what it holds: the closet holds clothes, one shelf holds toys, another holds books or a mix
 - **The child decides.** There's no wrong answer, as long as they know where things go.
 
@@ -282,7 +284,7 @@ Each stage gives something usable before moving on.
    - ✅ Step A built: pick ready-made pieces, shape them with 🔧 "change the parts," colors, optional labels, tap any part to open it, closet with rods, shelves and furniture on its floor
    - ✅ Closets built first (➕ in the walls tray), closet doors and the 🚪 inside/outside button, outlets, a door page for hanging things on a door, pocket organizers, hooks, wall file sorter, wire shelves, lounge chair, hampers, baskets, bags and boxes, the top of each piece as a space, and a pop-up color picker
    - ✅ Step B built: the map from above in three steps (📐 room size, 🚪 door, closet, windows and light switch, 🛏️ furniture), big rotate button, dragging from the tray, pieces turning their backs to the wall, tap a piece to turn it, open it or take it off the map
-2. **People stickers and ownership:** sticker builder (person and alien), badges on spaces, shared spaces
+2. **People stickers and ownership** ✅ built: sticker builder, a 👤 Whose? row for each piece and each space, owner badges on spaces, shared spaces, the PIN to take a space away from someone, and 🧺 what goes where
 3. **Item stickers:** cartoon drawings, color chooser, patterns, photos
 4. **Tidying:** floor checklist, Pictures / Words tabs, dragging items into drawers and cubbies, sound and confetti
 5. **Deep clean:** suggested jobs, daily and weekly schedule, parent settings

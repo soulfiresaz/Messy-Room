@@ -25,6 +25,9 @@ const Furniture = (() => {
     return '#' + [n >> 16, (n >> 8) & 255, n & 255].map(f).map(x => x.toString(16).padStart(2, '0')).join('');
   }
 
+  // state.marks(ids, x, y, w, h) draws owner badges and what-goes-here pictures over a space.
+  const mk = (state, ids, x, y, w, h) => (state && state.marks ? state.marks(ids, x, y, w, h) : '');
+
   const line = (w = 3) => `stroke="${INK}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"`;
   const rect = (x, y, w, h, fill, rx = 6, lw = 3, extra = '') =>
     `<rect x="${x}" y="${y}" width="${Math.max(0, w)}" height="${Math.max(0, h)}" rx="${rx}" fill="${fill}" ${line(lw)} ${extra}/>`;
@@ -343,6 +346,7 @@ const Furniture = (() => {
       const kx = k.hinge === 'r' ? b.x + 13 : b.x + b.w - 13;
       o += knob(kx, b.y + b.h / 2, c);
     }
+    o += mk(state, k.spots && k.spots.length ? k.spots.map(x => x.id) : [k.id], b.x, b.y, b.w, b.h);
     const sel = state.selected === k.id
       ? `<rect x="${b.x - 4}" y="${b.y - 4}" width="${b.w + 8}" height="${b.h + 8}" rx="9" fill="none" stroke="#3a86ff" stroke-width="5" stroke-dasharray="10 6"/>`
       : '';
@@ -369,6 +373,9 @@ const Furniture = (() => {
     layout(p, ox, oy, w, h).forEach(colBox => colBox.cells.forEach(b => { o += partArt(p, b, state); }));
     if (state.interactive && p.top) {
       o = `<g class="fpart" data-act="part" data-id="${p.top.id}" role="button" aria-label="The top"><rect x="${ox - 6}" y="${oy - 16}" width="${w + 12}" height="20" fill="transparent"/></g>` + o;
+    }
+    if (p.top) {
+      o += mk(state, [p.top.id], ox, oy - 34, w, 30);
     }
     return o;
   }
@@ -455,6 +462,7 @@ const Furniture = (() => {
     let o = rect(ox, y, w, 14, c, 5);
     o += `<path d="M${ox + 14} ${y + 14} l0 ${h * 0.45} l20 ${-h * 0.45}" fill="${shade(c, -0.25)}" ${line()}/>`;
     o += `<path d="M${ox + w - 14} ${y + 14} l0 ${h * 0.45} l-20 ${-h * 0.45}" fill="${shade(c, -0.25)}" ${line()}/>`;
+    o += mk(state, [p.spot.id], ox, oy, w, y - oy);
     if (!state.interactive) return o;
     return `<g class="fpart" data-act="part" data-id="${p.spot.id}" role="button" aria-label="Open"><rect x="${ox}" y="${oy}" width="${w}" height="${y - oy + 14}" fill="transparent"/>${o}</g>`;
   }
@@ -527,7 +535,7 @@ const Furniture = (() => {
     let o = rect(ox, oy, w, h, p.color, 10) + rect(ox + 16, oy + 16, w - 32, h - 32, '#fffaf0', 4, 2);
     L.shelves.forEach(s => {
       o += wrap(s.spot.id, `<rect x="${x0}" y="${s.y - 40}" width="${x1 - x0}" height="52" fill="transparent"/>`,
-        rect(x0, s.y, x1 - x0, 12, shade(p.color, -0.12), 4));
+        rect(x0, s.y, x1 - x0, 12, shade(p.color, -0.12), 4) + mk(state, [s.spot.id], x0, s.y - 40, x1 - x0, 40));
     });
     // Dividers between sections
     L.sections.slice(1).forEach(S => {
@@ -544,11 +552,12 @@ const Furniture = (() => {
           if (i % 6 === 4) continue;   // a little gap, like real clothes
           art += hanger(S.x0 + 24 * r.s + i * step, r.y + 16, cl[(i + ri * 2 + si) % cl.length], i % 4 === 1 ? 'dress' : 'shirt', r.s);
         }
+        art += mk(state, [r.spot.id], S.x0, r.y + 8, S.x1 - S.x0, 70 * r.s);
         secArt += wrap(r.spot.id, `<rect x="${S.x0}" y="${r.y - 10}" width="${S.x1 - S.x0}" height="${70 * r.s + 20}" fill="transparent"/>`, art);
       });
       S.shelves.forEach(sh => {
         secArt += wrap(sh.spot.id, `<rect x="${S.x0}" y="${sh.y - 44}" width="${S.x1 - S.x0}" height="56" fill="transparent"/>`,
-          rect(S.x0, sh.y, S.x1 - S.x0, 12, shade(p.color, -0.12), 4));
+          rect(S.x0, sh.y, S.x1 - S.x0, 12, shade(p.color, -0.12), 4) + mk(state, [sh.spot.id], S.x0, sh.y - 40, S.x1 - S.x0, 40));
       });
       if (picking) {
         const sel = state.selected === S.sec.id
@@ -561,7 +570,7 @@ const Furniture = (() => {
     });
     // Floor: furniture standing in the closet, then the floor itself for shoes and bins.
     o += wrap(p.floor.id, `<rect x="${x0}" y="${floorY - 40}" width="${x1 - x0}" height="40" fill="transparent"/>`,
-      `<path d="M${x0} ${floorY} L${x1} ${floorY}" stroke="${shade(p.color, -0.3)}" stroke-width="4"/>`);
+      `<path d="M${x0} ${floorY} L${x1} ${floorY}" stroke="${shade(p.color, -0.3)}" stroke-width="4"/>` + mk(state, [p.floor.id], x1 - 200, floorY - 44, 200, 40));
     let fx = x0 + 10;
     inside.forEach(q => {
       const box = frontBox(q);
@@ -652,7 +661,7 @@ const Furniture = (() => {
     p.pockets.forEach((s, i) => {
       const r = Math.floor(i / p.cols), k = i % p.cols;
       const px = ox + gap + k * (pw + gap), py = oy + gap + r * (ph + gap);
-      o += tap(state, s.id, `<rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="transparent"/>`, pocketArt(px, py, pw, ph));
+      o += tap(state, s.id, `<rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="transparent"/>`, pocketArt(px, py, pw, ph) + mk(state, [s.id], px, py, pw, ph));
     });
     return o;
   }
@@ -686,7 +695,7 @@ const Furniture = (() => {
       const hx = p.sub === 'single' || p.sub === 'double' ? ox + w / 2 : ox + 0.2 * U + step * (i + 0.5);
       const hy = p.sub === 'single' || p.sub === 'double' ? oy + 12 : oy + 10;
       o += tap(state, hk.id, `<rect x="${hx - step / 2}" y="${oy}" width="${step}" height="${h}" fill="transparent"/>`,
-        hookShape(hx, hy, s, p.sub === 'wall' ? brass : metal, p.sub === 'double' || p.sub === 'wall'));
+        hookShape(hx, hy, s, p.sub === 'wall' ? brass : metal, p.sub === 'double' || p.sub === 'wall') + mk(state, [hk.id], hx - step / 2, oy + h * 0.45, step, h * 0.55));
     });
     return o;
   }
@@ -700,7 +709,7 @@ const Furniture = (() => {
       const sy = oy + 10 + i * sh;
       o += tap(state, sl.id, `<rect x="${ox}" y="${sy}" width="${w}" height="${sh}" fill="transparent"/>`,
         `<rect x="${ox + 16}" y="${sy + sh * 0.25}" width="${w - 32}" height="${sh * 0.45}" rx="2" fill="#fff" stroke="${INK}" stroke-width="1.2"/>` +
-        rect(ox + 10, sy + sh * 0.45, w - 20, sh * 0.5, shade(p.color, -0.12), 4, 2));
+        rect(ox + 10, sy + sh * 0.45, w - 20, sh * 0.5, shade(p.color, -0.12), 4, 2) + mk(state, [sl.id], ox, sy, w, sh));
     });
     const by = oy + h * 0.8;
     o += rect(ox + 10, by, w - 20, 10, shade(p.color, -0.2), 4, 2);
@@ -766,6 +775,7 @@ const Furniture = (() => {
       for (let g = 1; g < 12; g++) art += `<path d="M${ox - 4 + g * (w + 8) / 12} ${sy} L${ox - 4 + g * (w + 8) / 12} ${sy + 10}" stroke="${INK}" stroke-width="1" opacity=".5"/>`;
       if (k.insert === 'bin') art += binArt(ox + 18, sy - ch * 0.75, Math.min(ch, w * 0.4), ch * 0.75, k.binColor || BIN_COLORS[0]);
       const hit = `<rect x="${ox}" y="${sy - ch + 10}" width="${w}" height="${ch}" fill="transparent"/>`;
+      art += mk(state, [k.id], ox, sy - ch + 10, w, ch - 10);
       o += state.interactive ? `<g class="fpart" data-act="part" data-id="${k.id}" role="button" aria-label="Open">${hit}${art}</g>` : art;
       if (state.selected === k.id) o += `<rect x="${ox - 6}" y="${sy - ch + 8}" width="${w + 12}" height="${ch + 6}" rx="8" fill="none" stroke="#3a86ff" stroke-width="5" stroke-dasharray="10 6"/>`;
     });
@@ -913,7 +923,7 @@ const Furniture = (() => {
     else if (p.kind === 'wallsorter') art = wallsorterArt(p, state);
     else if (p.kind === 'container') {
       const { ox, oy } = frontBox(p);
-      art = tap(state, p.spot.id, `<rect x="${ox}" y="${oy}" width="${p.w * U}" height="${p.h * U}" fill="transparent"/>`, containerArt(p, ox, oy, p.w * U, p.h * U));
+      art = tap(state, p.spot.id, `<rect x="${ox}" y="${oy}" width="${p.w * U}" height="${p.h * U}" fill="transparent"/>`, containerArt(p, ox, oy, p.w * U, p.h * U) + mk(state, [p.spot.id], ox, oy + p.h * U * 0.2, p.w * U, p.h * U * 0.8));
     } else if (p.style === 'wire') art = wireArt(p, state);
     else art = storageArt(p, state);
     const k = scaleOf(p);

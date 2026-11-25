@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 12;
+  const APP_VERSION = 13;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -613,6 +613,7 @@
       outside: p.kind === 'closet' && closetOutside,
       hung: p.kind === 'closet' ? piecesHungOn(p.id) : [],
       addHang: p.kind === 'closet' && closetOutside,
+      marks: marksFor(p),
     });
     // On the outside of a closet, the colors are for its doors.
     const current = p.kind === 'closet' && closetOutside ? p.doorColor : p.color;
@@ -626,6 +627,7 @@
           ${canChange ? `<button type="button" class="round-btn ${partsMode ? 'on' : ''}" data-act="parts-mode" aria-label="Change the parts" aria-pressed="${partsMode}">🔧</button>` : ''}
           <button type="button" class="round-btn" data-act="piece-delete" aria-label="Delete">🗑️</button>
         </div>
+        ${whoseRow(p)}
         ${basketRow(p)}
         ${sizeRow(p)}
         ${partsMode ? partsPanel(p) : ''}
@@ -894,12 +896,106 @@
     const cubby = k && k.type === 'open' && k.id === partId;
     const choices = cubby ? `<div class="inside-choices">${[['empty', 'Take it out (open)'], ['bin', 'Bin'], ['sorter', 'Paper sorter'], ['drawers', 'Paper drawers']].map(([v, label]) =>
       `<button type="button" class="pick small square ${k.insert === v ? 'picked' : ''}" data-act="inside-insert" data-id="${k.id}" data-value="${v}" aria-label="${label}" aria-pressed="${k.insert === v}">${Furniture.partIcon('open', v)}</button>`).join('')}</div>` : '';
+    const spaces = spacesIn(p, partId);
+    if (!insideCtx || insideCtx.partId !== partId) insideCtx = { partId, spot: 0 };
+    const space = spaces[Math.min(insideCtx.spot, spaces.length - 1)];
+    // Cupboards, sorters and paper-drawer boxes have more than one space: pick which one.
+    const spotRow = spaces.length > 1 ? `<div class="spot-row">${spaces.map((sp, i) =>
+      `<button type="button" class="spot-btn ${sp === space ? 'picked' : ''}" data-act="inside-spot" data-value="${i}" aria-label="Space ${i + 1}">${i + 1}</button>`).join('')}</div>` : '';
+    const scroll = $modal.querySelector('.modal-card') ? $modal.querySelector('.modal-card').scrollTop : 0;
     openModal(`
       <div class="inside-view">${Furniture.renderInside(p, partId)}</div>
       ${choices}
+      ${space ? `${spotRow}${spaceWhose(p, space)}${spaceHolds(space)}` : ''}
       <div class="confirm-row">
         <button type="button" class="big-btn yes" data-act="modal-close" aria-label="Close">👍</button>
       </div>`);
+    insideCtx.pieceId = p.id;
+    const card = $modal.querySelector('.modal-card');
+    if (card) card.scrollTop = scroll;
+  }
+
+  // ---------- Whose space is whose, and what goes there ----------
+  // A whole piece can belong to someone (p.owners). A space can have its own owners;
+  // until then it belongs to whoever owns the piece. Shared spaces have more than one owner.
+
+  let insideCtx = null;
+
+  const uniq = list => [...new Set(list)];
+  const findSpace = (p, id) => Furniture.spacesOf(p).find(s => s.id === id) || null;
+
+  // The spaces inside the part that was tapped (a cupboard has a top and bottom spot).
+  function spacesIn(p, partId) {
+    const one = findSpace(p, partId);
+    if (one) return [one];
+    const k = Furniture.findCell(p, partId);
+    return k && k.spots ? k.spots : [];
+  }
+
+  function ownersOf(p, space) {
+    const list = space && space.owners !== undefined ? space.owners : (p.owners || []);
+    return list.filter(id => S.data.people.some(x => x.id === id));
+  }
+
+  function personBadge(pid, x, y, s) {
+    const person = S.data.people.find(x => x.id === pid);
+    if (!person) return '';
+    return `<circle cx="${x + s / 2}" cy="${y + s / 2}" r="${s / 2 + 1.5}" fill="#fff"/>` +
+      Stickers.render(personSticker(person)).replace('<svg class="sticker-svg"', `<svg x="${x}" y="${y}" width="${s}" height="${s}"`);
+  }
+
+  // Badges in the top right of a space, what-goes-here pictures in the bottom left.
+  function marksFor(p) {
+    const custom = S.data.customHolds || [];
+    return (ids, x, y, w, h) => {
+      const spaces = ids.map(id => findSpace(p, id)).filter(Boolean);
+      const owners = uniq(spaces.flatMap(sp => ownersOf(p, sp)));
+      const holds = uniq(spaces.flatMap(sp => sp.holds || []));
+      if (!owners.length && !holds.length) return '';
+      const s = Math.max(14, Math.min(30, Math.min(w, h) * 0.42));
+      let o = '';
+      owners.slice(0, 3).forEach((pid, i) => { o += personBadge(pid, x + w - s - 3 - i * s * 0.75, y + 3, s); });
+      holds.slice(0, 3).forEach((key, i) => { o += Items.place(key, x + 4 + i * (s + 2), y + h - s - 3, s, custom); });
+      return `<g pointer-events="none">${o}</g>`;
+    };
+  }
+
+  function stickerPick(pid, on, act, extra = '') {
+    const person = S.data.people.find(x => x.id === pid);
+    return `<button type="button" class="pick small ${on ? 'picked' : ''}" data-act="${act}" data-pid="${pid}" ${extra} aria-label="${esc(person.name || 'Person')}" aria-pressed="${on}">
+      ${Stickers.render(personSticker(person))}</button>`;
+  }
+
+  function whoseRow(p) {
+    if (!S.data.people.length || p.kind === 'closet' && closetOutside) return '';
+    const owners = p.owners || [];
+    return `<section class="opt-row whose-row"><h2 class="opt-head"><span aria-hidden="true">👤</span> Whose?</h2>
+      <div class="opt-choices">${S.data.people.map(x => stickerPick(x.id, owners.includes(x.id), 'piece-owner')).join('')}</div></section>`;
+  }
+
+  function spaceWhose(p, space) {
+    const owners = ownersOf(p, space);
+    return `<section class="inside-section"><h3 class="inside-head"><span aria-hidden="true">👤</span> Whose?</h3>
+      <div class="opt-choices">${S.data.people.map(x => stickerPick(x.id, owners.includes(x.id), 'space-owner', `data-sid="${space.id}"`)).join('')}</div></section>`;
+  }
+
+  function spaceHolds(space) {
+    const custom = S.data.customHolds || [];
+    const holds = space.holds || [];
+    const btn = key => `<button type="button" class="hold-pick ${holds.includes(key) ? 'picked' : ''}" data-act="space-hold" data-sid="${space.id}" data-key="${key}" aria-label="${esc(Items.label(key, custom))}" aria-pressed="${holds.includes(key)}">${Items.icon(key, custom)}</button>`;
+    const groups = Items.GROUPS.map(g => `<div class="hold-group" aria-label="${g.label}">${g.items.map(([key]) => btn(key)).join('')}</div>`).join('');
+    const mine = custom.map(c => btn(c.key)).join('');
+    return `<section class="inside-section"><h3 class="inside-head"><span aria-hidden="true">🧺</span> What goes here?</h3>
+      ${groups}
+      <div class="hold-group">${mine}
+        <label class="hold-pick photo-pick" aria-label="Take a photo of something"><span aria-hidden="true">📷</span>
+          <input type="file" accept="image/*" capture="environment" data-hold-photo="${space.id}" hidden></label>
+      </div></section>`;
+  }
+
+  function reopenInside() {
+    const p = pieceById(pagePieceId);
+    if (p && insideCtx) openPartInside(p, insideCtx.partId);
   }
 
   // Redraw the piece page and keep the scroll where it was.
@@ -1585,6 +1681,53 @@
       const box = document.getElementById('restore-text');
       askRestore(box ? box.value : '');
     },
+    'piece-owner'(el) {
+      const p = pieceById(pagePieceId);
+      if (!p) return;
+      const pid = el.dataset.pid;
+      const owners = p.owners || [];
+      const apply = () => {
+        p.owners = owners.includes(pid) ? owners.filter(x => x !== pid) : [...owners, pid];
+        saveOrWarn();
+        Effects.pop();
+        redrawPiece();
+      };
+      // Taking a piece away from someone else needs the parent PIN.
+      if (owners.includes(pid) && pid !== currentId) askPin(apply); else apply();
+    },
+    'space-owner'(el) {
+      const p = pieceById(pagePieceId);
+      const space = p && findSpace(p, el.dataset.sid);
+      if (!space) return;
+      const pid = el.dataset.pid;
+      const now = ownersOf(p, space);
+      const apply = () => {
+        space.owners = now.includes(pid) ? now.filter(x => x !== pid) : [...now, pid];
+        saveOrWarn();
+        Effects.pop();
+        redrawPiece();
+        reopenInside();
+      };
+      if (now.includes(pid) && pid !== currentId) askPin(() => { apply(); }); else apply();
+    },
+    'space-hold'(el) {
+      const p = pieceById(pagePieceId);
+      const space = p && findSpace(p, el.dataset.sid);
+      if (!space) return;
+      const key = el.dataset.key;
+      const holds = space.holds || [];
+      space.holds = holds.includes(key) ? holds.filter(x => x !== key) : [...holds, key];
+      saveOrWarn();
+      Effects.pop();
+      redrawPiece();
+      reopenInside();
+    },
+    'inside-spot'(el) {
+      if (!insideCtx) return;
+      insideCtx.spot = Number(el.dataset.value);
+      Effects.pop();
+      reopenInside();
+    },
     'inside-insert'(el) {
       const p = pieceById(pagePieceId);
       const k = p && Furniture.findCell(p, el.dataset.id);
@@ -1768,6 +1911,7 @@
         return;
       }
       Effects.pop();
+      insideCtx = null;
       openPartInside(p, id);
     },
     'parts-mode'() {
@@ -2157,6 +2301,25 @@
   });
 
   document.addEventListener('change', async e => {
+    if (e.target.matches('[data-hold-photo]') && e.target.files[0]) {
+      const sid = e.target.dataset.holdPhoto;
+      try {
+        const photo = await readPhoto(e.target.files[0]);
+        if (!S.data.customHolds) S.data.customHolds = [];
+        const key = 'own-' + S.uid();
+        S.data.customHolds.push({ key, photo });
+        const p = pieceById(pagePieceId);
+        const space = p && findSpace(p, sid);
+        if (space) space.holds = [...(space.holds || []), key];
+        if (!saveOrWarn()) return;
+        Effects.pop();
+        redrawPiece();
+        reopenInside();
+      } catch (err) {
+        infoBox('🤔', 'That picture could not be used. Please try another one.');
+      }
+      return;
+    }
     if (e.target.matches('[data-restore-file]') && e.target.files[0]) {
       try { askRestore(await e.target.files[0].text()); } catch (err) { infoBox('🤔', 'That file could not be read.'); }
       e.target.value = '';
