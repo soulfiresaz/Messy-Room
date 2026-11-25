@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 13;
+  const APP_VERSION = 14;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -171,6 +171,7 @@
         ${circle({ href: `#/people/${me.id}`, icon: mine, label: 'Stickers', color: 'var(--c-stickers)', extraClass: 'sticker-circle' })}
         ${circle({ href: '#/rewards', icon: '🎁', label: 'Rewards', color: 'var(--c-rewards)' })}
         ${circle({ icon: '🧽', label: 'Clean', color: 'var(--c-clean)', disabled: true })}
+        ${circle({ href: '#/things', icon: '🧸', label: 'Things', color: 'var(--c-things)' })}
       </main>
       <p class="app-version">Version ${APP_VERSION}</p>`;
   }
@@ -1110,6 +1111,151 @@
     });
   }
 
+  // ---------- 🧸 Things: the things that get put away ----------
+  // A thing has a picture (or a photo), a color and pattern, whose it is, and where it lives.
+  // thing = { id, kind, color, pattern, photo, owners: [], home: { pieceId, spaceId }, label }
+
+  let thingDraft = null;
+  let thingIsNew = false;
+  let homePiece = null;      // piece shown while choosing where a thing lives
+
+  const things = () => (S.data.things || (S.data.things = []));
+
+  function thingArt(t) {
+    if (t.photo) return `<svg viewBox="0 0 60 60"><clipPath id="tp-${t.id}"><rect width="60" height="60" rx="12"/></clipPath><image href="${t.photo}" width="60" height="60" preserveAspectRatio="xMidYMid slice" clip-path="url(#tp-${t.id})"/></svg>`;
+    if (ItemArt.has(t.kind)) return ItemArt.svg(t.kind, t.color, t.pattern);
+    return Items.icon(t.kind, S.data.customHolds || []);
+  }
+
+  // Where a thing lives, as words for grown-ups and a small picture for kids.
+  function homeOf(t) {
+    if (!t.home) return null;
+    const p = pieceById(t.home.pieceId);
+    if (!p) return null;
+    const space = findSpace(p, t.home.spaceId);
+    return space ? { p, space } : null;
+  }
+
+  function ownerBadges(owners, size = 34) {
+    return owners.filter(id => S.data.people.some(x => x.id === id)).slice(0, 3).map(pid => {
+      const person = S.data.people.find(x => x.id === pid);
+      return `<span class="mini-sticker" style="width:${size}px;height:${size}px">${Stickers.render(personSticker(person))}</span>`;
+    }).join('');
+  }
+
+  function renderThings() {
+    const list = things();
+    $app.innerHTML = `
+      ${topBar('Things', '#/')}
+      <main>
+        <div class="thing-grid">
+          <a class="thing-card add-card" href="#/thing/new" aria-label="Make a thing"><span class="add-plus" aria-hidden="true">➕</span></a>
+          ${list.map(t => `<a class="thing-card" href="#/thing/${t.id}" aria-label="${esc(t.label || Items.label(t.kind, S.data.customHolds || []) || 'Thing')}">
+            <span class="thing-pic">${thingArt(t)}</span>
+            <span class="thing-badges">${ownerBadges(t.owners || [])}${homeOf(t) ? '<span class="home-pin" aria-hidden="true">📍</span>' : ''}</span>
+            ${t.label ? `<span class="furn-label">${esc(t.label)}</span>` : ''}
+          </a>`).join('')}
+        </div>
+      </main>`;
+  }
+
+  function renderThing(id) {
+    if (!thingDraft || (id !== 'new' && thingDraft.id !== id) || (id === 'new' && !thingIsNew)) {
+      const existing = id === 'new' ? null : things().find(t => t.id === id);
+      if (id !== 'new' && !existing) { location.replace('#/things'); return; }
+      thingIsNew = !existing;
+      thingDraft = existing ? clone(existing) : { id: S.uid(), kind: 'shirts', color: null, pattern: 'none', owners: currentId ? [currentId] : [], home: null, label: '' };
+    }
+    drawThing();
+  }
+
+  function drawThing() {
+    const t = thingDraft;
+    const custom = S.data.customHolds || [];
+    const pick = key => `<button type="button" class="hold-pick ${t.kind === key && !t.photo ? 'picked' : ''}" data-act="thing-kind" data-key="${key}" aria-label="${esc(Items.label(key, custom))}">${Items.icon(key, custom)}</button>`;
+    const pictures = Items.GROUPS.map(g => `<div class="hold-group">${g.items.map(([key]) => pick(key)).join('')}</div>`).join('') +
+      `<div class="hold-group">${custom.map(c => pick(c.key)).join('')}
+        <label class="hold-pick photo-pick" aria-label="Take a photo of it"><span aria-hidden="true">📷</span>
+          <input type="file" accept="image/*" capture="environment" data-thing-photo hidden></label></div>`;
+    const recolor = ItemArt.has(t.kind) && !t.photo;
+    const color = t.color || (recolor ? ItemArt.ART[t.kind].color : null);
+    const colors = recolor ? swatches(color, 'thing-color') : '';
+    const patterns = recolor ? ItemArt.PATTERNS.map(pt =>
+      `<button type="button" class="hold-pick ${(t.pattern || 'none') === pt ? 'picked' : ''}" data-act="thing-pattern" data-value="${pt}" aria-label="Pattern ${pt}">${ItemArt.svg(t.kind, color, pt)}</button>`).join('') : '';
+    const owners = t.owners || [];
+    const home = homeOf(t);
+    const homePic = home ? Furniture.render(home.p, { marks: homeMark(home.p, home.space.id) }) : '';
+    $app.innerHTML = `
+      ${topBar(t.label || '', thingIsNew ? '#/things' : '#/things', `<button type="button" class="round-btn save-top" data-act="thing-save" aria-label="Save">✔️</button>`)}
+      <main class="piece-page">
+        <div class="thing-hero">${thingArt(t)}</div>
+        ${recolor ? `<section class="opt-row"><h2 class="opt-head"><span aria-hidden="true">🎨</span></h2><div class="opt-choices">${colors}</div></section>
+        <section class="opt-row"><h2 class="opt-head"><span aria-hidden="true">✨</span> Pattern</h2><div class="opt-choices">${patterns}</div></section>` : ''}
+        ${S.data.people.length ? `<section class="opt-row"><h2 class="opt-head"><span aria-hidden="true">👤</span> Whose?</h2>
+          <div class="opt-choices">${S.data.people.map(x => stickerPick(x.id, owners.includes(x.id), 'thing-owner')).join('')}</div></section>` : ''}
+        <section class="opt-row">
+          <h2 class="opt-head"><span aria-hidden="true">📍</span> Where does it live?</h2>
+          ${home ? `<div class="home-preview">${homePic}</div>` : ''}
+          <div class="action-row"><button type="button" class="tool-btn big" data-act="thing-home"><span aria-hidden="true">📍</span> ${home ? 'Change' : 'Choose'}</button>
+          ${home ? `<button type="button" class="tool-btn big" data-act="thing-home-clear" aria-label="No home"><span aria-hidden="true">✖️</span></button>` : ''}</div>
+        </section>
+        <section class="opt-row"><h2 class="opt-head"><span aria-hidden="true">🖼️</span> Picture</h2>${pictures}</section>
+        <section class="opt-row">
+          <h2 class="opt-head"><span aria-hidden="true">🏷️</span> Label (optional)</h2>
+          <input class="text-input" id="thing-label" type="text" maxlength="24" value="${esc(t.label || '')}" placeholder="Like: Ava's pink dress">
+        </section>
+        <div class="action-row">
+          ${thingIsNew ? '' : `<button type="button" class="round-btn" data-act="thing-delete" aria-label="Delete">🗑️</button>`}
+          <button type="button" class="save-btn" data-act="thing-save"><span aria-hidden="true">✔️</span> Save</button>
+        </div>
+      </main>`;
+  }
+
+  // A pin on the space where a thing lives.
+  function homeMark(p, spaceId) {
+    return (ids, x, y, w, h) => (ids.includes(spaceId)
+      ? `<g pointer-events="none"><rect x="${x + 2}" y="${y + 2}" width="${w - 4}" height="${h - 4}" rx="6" fill="#3a86ff" fill-opacity=".18" stroke="#3a86ff" stroke-width="4" stroke-dasharray="8 5"/>` +
+        `<text x="${x + w / 2}" y="${y + h / 2}" font-size="${Math.min(34, Math.max(16, h * 0.6))}" text-anchor="middle" dominant-baseline="central">📍</text></g>`
+      : '');
+  }
+
+  function redrawThing() {
+    const y = window.scrollY;
+    drawThing();
+    window.scrollTo(0, y);
+  }
+
+  // Choosing where a thing lives: pick a piece of furniture, then tap the space.
+  function renderThingHome() {
+    if (!thingDraft) { location.replace('#/things'); return; }
+    const r = room();
+    const p = homePiece && pieceById(homePiece);
+    if (!p) {
+      const pieces = r.pieces.filter(q => Furniture.spacesOf(q).length);
+      $app.innerHTML = `
+        ${topBar('', thingIsNew ? '#/thing/new' : `#/thing/${thingDraft.id}`)}
+        <main>
+          <h2 class="section-title"><span aria-hidden="true">📍</span> <span class="thing-inline">${thingArt(thingDraft)}</span></h2>
+          <div class="furn-grid">${pieces.map(q => pieceCard(q, 'home-piece')).join('') || '<p class="parts-hint">Make some furniture in My Room first.</p>'}</div>
+        </main>`;
+      return;
+    }
+    $app.innerHTML = `
+      ${topBar('', '#/thing-home')}
+      <main class="piece-page">
+        <h2 class="section-title"><span aria-hidden="true">👆</span> <span class="thing-inline">${thingArt(thingDraft)}</span></h2>
+        <div class="piece-stage">${Furniture.render(p, { interactive: true, inside: p.kind === 'closet' ? piecesIn(p.id) : [], marks: marksFor(p) })}</div>
+      </main>`;
+  }
+
+  function setThingHome(p, spaceId) {
+    thingDraft.home = { pieceId: p.id, spaceId };
+    homePiece = null;
+    closeModal();
+    Effects.chime();
+    location.hash = thingIsNew ? '#/thing/new' : `#/thing/${thingDraft.id}`;
+  }
+
   // ---------- Sticker page for one person ----------
   // Shows the whole shared collection. Your sticker has a ✔️.
   // Stickers someone else is using are taken and can't be picked.
@@ -1893,7 +2039,76 @@
       Effects.chime();
       location.hash = `#/rooms/my-room/piece/${p.id}`;
     },
+    'home-piece'(el) {
+      homePiece = el.dataset.id;
+      Effects.pop();
+      renderThingHome();
+      window.scrollTo(0, 0);
+    },
+    'home-spot'(el) {
+      const hp = pieceById(homePiece);
+      if (hp) setThingHome(hp, el.dataset.sid);
+    },
+    'thing-kind'(el) {
+      thingDraft.kind = el.dataset.key;
+      delete thingDraft.photo;
+      thingDraft.color = null;
+      Effects.pop();
+      redrawThing();
+    },
+    'thing-color'(el) {
+      thingDraft.color = el.dataset.value;
+      Effects.pop();
+      redrawThing();
+    },
+    'thing-pattern'(el) {
+      thingDraft.pattern = el.dataset.value;
+      Effects.pop();
+      redrawThing();
+    },
+    'thing-owner'(el) {
+      const pid = el.dataset.pid;
+      const owners = thingDraft.owners || [];
+      const saved = things().find(t => t.id === thingDraft.id);
+      const apply = () => {
+        thingDraft.owners = owners.includes(pid) ? owners.filter(x => x !== pid) : [...owners, pid];
+        Effects.pop();
+        redrawThing();
+      };
+      // Taking a thing away from someone else needs the parent PIN.
+      const wasTheirs = saved && (saved.owners || []).includes(pid);
+      if (owners.includes(pid) && pid !== currentId && wasTheirs) askPin(apply); else apply();
+    },
+    'thing-home'() {
+      homePiece = null;
+      location.hash = '#/thing-home';
+    },
+    'thing-home-clear'() {
+      thingDraft.home = null;
+      redrawThing();
+    },
+    'thing-save'() {
+      const input = document.getElementById('thing-label');
+      if (input) thingDraft.label = input.value.trim();
+      const list = things();
+      const i = list.findIndex(t => t.id === thingDraft.id);
+      if (i >= 0) list[i] = clone(thingDraft); else list.push(clone(thingDraft));
+      if (!saveOrWarn()) return;
+      Effects.celebrate();
+      thingDraft = null;
+      location.hash = '#/things';
+    },
+    'thing-delete'() {
+      const id = thingDraft.id;
+      confirmBox(thingArt(thingDraft), 'Delete this?', () => {
+        S.data.things = things().filter(t => t.id !== id);
+        saveOrWarn();
+        thingDraft = null;
+        location.hash = '#/things';
+      });
+    },
     'open-piece'(el) {
+      if (location.hash === '#/thing-home') { homePiece = el.dataset.id; renderThingHome(); return; }
       Effects.pop();
       location.hash = `#/rooms/my-room/piece/${el.dataset.id}`;
     },
@@ -1901,6 +2116,16 @@
       location.hash = `#/rooms/my-room/add/${pagePieceId}`;
     },
     'part'(el) {
+      if (location.hash === '#/thing-home' && homePiece) {
+        const hp = pieceById(homePiece);
+        const spaces = hp ? spacesIn(hp, el.dataset.id) : [];
+        if (spaces.length === 1) { setThingHome(hp, spaces[0].id); return; }
+        if (spaces.length > 1) {
+          openModal(`<div class="inside-view">${Furniture.renderInside(hp, el.dataset.id)}</div>
+            <div class="spot-row">${spaces.map((sp, i) => `<button type="button" class="spot-btn" data-act="home-spot" data-sid="${sp.id}" aria-label="Space ${i + 1}">${i + 1}</button>`).join('')}</div>`);
+        }
+        return;
+      }
       const p = pieceById(pagePieceId);
       if (!p) return;
       const id = el.dataset.id;
@@ -2280,6 +2505,10 @@
   });
 
   document.addEventListener('input', e => {
+    if (e.target.id === 'thing-label') {
+      if (thingDraft) thingDraft.label = e.target.value.trim();
+      return;
+    }
     if (e.target.id === 'door-label') {
       const door = room().wallItems.find(it => it.id === pageDoorId);
       if (door) { door.label = e.target.value.trim(); S.save(); }
@@ -2301,6 +2530,17 @@
   });
 
   document.addEventListener('change', async e => {
+    if (e.target.matches('[data-thing-photo]') && e.target.files[0]) {
+      try {
+        thingDraft.photo = await readPhoto(e.target.files[0]);
+        thingDraft.kind = 'photo';
+        Effects.pop();
+        redrawThing();
+      } catch (err) {
+        infoBox('🤔', 'That picture could not be used. Please try another one.');
+      }
+      return;
+    }
     if (e.target.matches('[data-hold-photo]') && e.target.files[0]) {
       const sid = e.target.dataset.holdPhoto;
       try {
@@ -2373,6 +2613,9 @@
     [/^#\/sticker\/new$/, () => renderStickerBuilder(null)],
     [/^#\/sticker\/([\w-]+)$/, m => renderStickerBuilder(m[1])],
     [/^#\/rewards$/, renderRewards],
+    [/^#\/things$/, () => { thingDraft = null; renderThings(); }],
+    [/^#\/thing\/(new|[\w-]+)$/, m => renderThing(m[1])],
+    [/^#\/thing-home$/, renderThingHome],
     [/^#\/backup$/, renderBackup],
   ];
 

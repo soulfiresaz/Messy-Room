@@ -213,6 +213,8 @@ Every item is a sticker the child can drag.
 
 - **Some items take more than one space:** a pair of shoes takes two pockets side by side in a pocket organizer
 
+- **🧸 Things (decided):** a circle on the home screen. Things belong to the whole house (a backpack moves from the bedroom to the kitchen), not to one room, and tidying starts from them.
+- ✅ Built: ➕ make a thing: pick its picture (or 📷 a photo), color (including ➕ more colors) and pattern, 👤 whose it is, and 📍 where it lives (pick a piece of furniture, then tap the drawer, cubby, shelf or hook). An optional label. The Things page shows each thing with its owner's sticker and a 📍 when it has a home.
 - **Two ways to make an item:**
   - **Take a photo** of the real thing, like a favorite stuffed animal
   - **Pick a cartoon drawing** (dress, shirt, pants, socks, teddy bear, puzzle, game, book, musical instrument, trash and more)
@@ -287,7 +289,7 @@ Each stage gives something usable before moving on.
    - ✅ Closets built first (➕ in the walls tray), closet doors and the 🚪 inside/outside button, outlets, a door page for hanging things on a door, pocket organizers, hooks, wall file sorter, wire shelves, lounge chair, hampers, baskets, bags and boxes, the top of each piece as a space, and a pop-up color picker
    - ✅ Step B built: the map from above in three steps (📐 room size, 🚪 door, closet, windows and light switch, 🛏️ furniture), big rotate button, dragging from the tray, pieces turning their backs to the wall, tap a piece to turn it, open it or take it off the map
 2. **People stickers and ownership** ✅ built: sticker builder, a 👤 Whose? row for each piece and each space, owner badges on spaces, shared spaces, the PIN to take a space away from someone, and 🧺 what goes where
-3. **Item stickers:** cartoon drawings, color chooser, patterns, photos
+3. **Item stickers** ✅ built: 🧸 Things with the same pictures (recolorable drawings), colors, patterns, photos, owners and a home spot
 4. **Tidying:** floor checklist, Pictures / Words tabs, dragging items into drawers and cubbies, sound and confetti
 5. **Deep clean:** suggested jobs, daily and weekly schedule, parent settings
 6. **Saving:** automatic save ✅, backup and restore ✅

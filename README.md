@@ -14,6 +14,7 @@ To use it on a tablet or phone, put the folder on any simple web host and open t
 - **Home screen:** four round circles, in order: Rooms, Stickers, Rewards, Clean (grayed out, coming soon)
 - **Rooms:** My Room, plus Bathroom, Living Room and Kitchen grayed out.
 - **My Room map:** a map from above in three steps. 📐 Set the room's width and depth (drag the yellow handles or use ➖ ➕), 🚪 drag the door, windows, light switch and outlets onto the walls, and tap ➕ closet to build a closet (folding doors, curtain, sliding, one door or none), save it, then drag it onto its wall, then 🛏️ drag furniture in from the tray. Pieces dropped near a wall turn so their back is against it. The big yellow button turns the map to match what you see. Tap a piece to turn it 🔄, open it 👀 or take it off the map ↩️; tap the door to change its swing. 🧰 shows all furniture.
+- **🧸 Things:** a circle on the home screen. ➕ makes a thing (a pink flowered dress, a teddy bear, or a photo of anything), says whose it is and 📍 where it lives.
 - **Whose and what:** on any furniture page, 👤 Whose? makes the whole piece someone's. Open a drawer, cubby or pocket to give it to someone else, share it (tap more than one sticker), and pick 🧺 what goes there. Owner stickers and the pictures show on the furniture. Taking a space away from someone else needs the parent PIN.
 - **Doors:** tap a door on the map and 👀 to see it from the front, give it a label (like Bathroom), and ➕ to hang a pocket organizer or hooks on it. Closets work the same way on the outside of their doors.
 - **More colors:** ➕ after the color circles opens a big grid of color squares.
@@ -32,6 +33,7 @@ To use it on a tablet or phone, put the folder on any simple web host and open t
 - `css/styles.css`: look and layout
 - `js/store.js`: saving on the device
 - `js/stickers.js`: drawings for person, alien and animal stickers
+- `js/itemart.js`: drawings of clothes, stuffed animals, bags and blankets that can take any color and pattern
 - `js/items.js`: the pictures for what goes where
 - `js/furniture.js`: ready-made furniture, its parts and drawings (front and from above)
 - `js/roommap.js`: the room map from above

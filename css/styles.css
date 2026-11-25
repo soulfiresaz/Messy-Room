@@ -8,6 +8,7 @@
   --c-stickers: #ffb3d1;
   --c-rewards: #b9a2ff;
   --c-clean: #7fd8c0;
+  --c-things: #ffd27a;
   --yes: #4cc38a;
   --no: #e8e0da;
   --danger: #ff8a80;
@@ -131,7 +132,7 @@ button { font: inherit; color: inherit; }
 
 @media (min-width: 900px) {
   .home-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     max-width: none;
   }
 }
@@ -1258,3 +1259,52 @@ button { font: inherit; color: inherit; }
 .hold-pick.picked { border-color: var(--focus); background: #e8f1ff; transform: scale(1.06); }
 .photo-pick { font-size: 28px; background: var(--c-rooms); border-color: transparent; }
 .modal-card:has(.inside-section) { width: min(560px, 100%); }
+
+/* ---------- Things ---------- */
+
+.thing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(150px, 40vw), 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.thing-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 150px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.thing-card:active { transform: scale(.96); }
+.thing-pic { width: 100px; height: 100px; display: block; }
+.thing-pic svg { width: 100%; height: 100%; display: block; }
+.thing-badges { position: absolute; top: 6px; right: 6px; display: flex; gap: 2px; align-items: center; }
+.mini-sticker { display: inline-block; border-radius: 50%; background: #fff; box-shadow: 0 1px 0 rgba(58, 42, 42, .2); }
+.mini-sticker svg { width: 100%; height: 100%; display: block; }
+.home-pin { font-size: 22px; }
+
+.thing-hero {
+  width: min(220px, 60vw);
+  height: min(220px, 60vw);
+  margin: 8px auto 4px;
+  padding: 16px;
+  border-radius: 36px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.thing-hero svg { width: 100%; height: 100%; display: block; }
+.home-preview { display: flex; justify-content: center; }
+.home-preview svg { max-width: 100%; max-height: 260px; width: auto; height: auto; }
+.thing-inline { display: inline-block; width: 44px; height: 44px; vertical-align: middle; }
+.thing-inline svg { width: 100%; height: 100%; display: block; }
+
+.thing-card.add-card { background: var(--c-things); }

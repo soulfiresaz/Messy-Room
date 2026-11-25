@@ -45,6 +45,7 @@ const Items = (() => {
     if (own) return `<svg viewBox="0 0 60 60"><clipPath id="c-${key}"><rect width="60" height="60" rx="12"/></clipPath><image href="${own.photo}" width="60" height="60" preserveAspectRatio="xMidYMid slice" clip-path="url(#c-${key})"/></svg>`;
     const it = ALL[key];
     if (!it) return '';
+    if (typeof ItemArt !== 'undefined' && ItemArt.has(key)) return ItemArt.svg(key);
     if (it.pic.startsWith('d:')) return `<svg viewBox="0 0 60 60">${DRAWN[it.pic.slice(2)]}</svg>`;
     return `<svg viewBox="0 0 60 60"><text x="30" y="33" font-size="44" text-anchor="middle" dominant-baseline="central">${it.pic}</text></svg>`;
   }
@@ -55,6 +56,7 @@ const Items = (() => {
     if (own) return `<image href="${own.photo}" x="${x}" y="${y}" width="${s}" height="${s}" preserveAspectRatio="xMidYMid slice"/>`;
     const it = ALL[key];
     if (!it) return '';
+    if (typeof ItemArt !== 'undefined' && ItemArt.has(key)) return `<svg x="${x}" y="${y}" width="${s}" height="${s}" viewBox="0 0 60 60">${ItemArt.inner(key)}</svg>`;
     if (it.pic.startsWith('d:')) return `<svg x="${x}" y="${y}" width="${s}" height="${s}" viewBox="0 0 60 60">${DRAWN[it.pic.slice(2)]}</svg>`;
     return `<text x="${x + s / 2}" y="${y + s / 2 + 1}" font-size="${s * 0.8}" text-anchor="middle" dominant-baseline="central">${it.pic}</text>`;
   }
