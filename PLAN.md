@@ -104,6 +104,7 @@ One PIN guards everything parent-only:
 **Whose space is whose:**
 
 - Each space (drawer, cubby, shelf) gets a small badge with its owner's sticker
+- **Setting owners (decided): whole piece first, then any part.** Open a piece and tap someone's sticker to make the whole piece theirs. Then open any single drawer, cubby, pocket or hook to give it to someone else, or tap more than one sticker to share it.
 - **Shared spaces** show more than one badge, like a book shelf for two kids
 - **During cleanup**, the child taps their own sticker first. The app shows their spaces and the shared ones, and dims everyone else's.
 
@@ -276,7 +277,7 @@ A picture checklist of cleaning jobs. The app suggests them based on what's in t
 Each stage gives something usable before moving on.
 
 0. **Home screen** ✅ built: "Who are you?" profiles, Rooms, Stickers, Rewards, Clean (grayed out), sticker builder, shared rewards with parent PIN
-1. **Room builder:** door, rotate, beds, furniture from parts, windows, light switch, colors, labels, stretching the room
+1. **Room builder** ✅ built: door, rotate, beds, furniture from parts, windows, light switch, colors, labels, stretching the room
    - ✅ Step A built: pick ready-made pieces, shape them with 🔧 "change the parts," colors, optional labels, tap any part to open it, closet with rods, shelves and furniture on its floor
    - ✅ Closets built first (➕ in the walls tray), closet doors and the 🚪 inside/outside button, outlets, a door page for hanging things on a door, pocket organizers, hooks, wall file sorter, wire shelves, lounge chair, hampers, baskets, bags and boxes, the top of each piece as a space, and a pop-up color picker
    - ✅ Step B built: the map from above in three steps (📐 room size, 🚪 door, closet, windows and light switch, 🛏️ furniture), big rotate button, dragging from the tray, pieces turning their backs to the wall, tap a piece to turn it, open it or take it off the map
