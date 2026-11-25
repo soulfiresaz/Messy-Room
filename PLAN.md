@@ -105,6 +105,7 @@ One PIN guards everything parent-only:
 
 - Each space (drawer, cubby, shelf) gets a small badge with its owner's sticker
 - **Setting owners (decided): whole piece first, then any part.** Open a piece and tap someone's sticker to make the whole piece theirs. Then open any single drawer, cubby, pocket or hook to give it to someone else, or tap more than one sticker to share it.
+- **Who can change owners (decided):** anyone can claim an empty space or add themselves to share one. Taking a space away from someone else needs the parent PIN.
 - **Shared spaces** show more than one badge, like a book shelf for two kids
 - **During cleanup**, the child taps their own sticker first. The app shows their spaces and the shared ones, and dims everyone else's.
 
