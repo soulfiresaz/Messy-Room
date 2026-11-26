@@ -309,6 +309,7 @@ Each stage gives something usable before moving on.
 5. **Deep clean** ✅ built: Clean → 🧽 Jobs. Picture cards (the bed, the dresser, the light switch) with a tool badge (hands, rag, spray, vacuum, trash bag). Jobs come from the room (tidy, vacuum, laundry if there's a hamper, make the bed and wipe the frame, dust each dresser/shelf/table, empty each trash can and the recycling, disinfect each light switch and doorknob). Each child sees only their jobs and the shared ones. Tapping a job shows it glowing on the map; ✔️ checks it off. Finishing a tidy checks off "tidy the floor". When all of today's jobs are done it counts one cleanup (once a day per person) with confetti. Parent settings (🔒 PIN): each job on/off, every day or every week, and who does it.
 6. **Saving:** automatic save ✅, backup and restore ✅
 7. **Phone layout and polish:** word list version first on phones, final touches
+   - **Who the word list is for (decided):** parents first, then older kids who can read.
 
 ---
 
