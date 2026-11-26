@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 15;
+  const APP_VERSION = 16;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -1272,7 +1272,7 @@
       ${topBar('Clean', '#/')}
       <main class="circle-grid">
         ${circle({ href: '#/tidy', icon: '🧺', label: 'Tidy up', color: 'var(--c-clean)' })}
-        ${circle({ icon: '🧽', label: 'Jobs', disabled: true })}
+        ${circle({ href: '#/jobs', icon: '🧽', label: 'Jobs', color: 'var(--c-things)' })}
       </main>`;
   }
 
@@ -1447,6 +1447,10 @@
     tidy.i += 1;
     if (tidy.i >= tidy.steps.length) {
       S.addCleanup();
+      const r = room();
+      if (!r.jobsDone) r.jobsDone = {};
+      r.jobsDone.tidy = new Date().toISOString();
+      saveOrWarn();
       Effects.celebrate();
     } else {
       Effects.pop();
@@ -1506,6 +1510,131 @@
     if (ok) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 0); putAway(d.pk); }
     else { Effects.pop(); wiggle(d.el); }
   });
+
+  // ---------- 🧽 Jobs ----------
+  // Suggested from the room. Jobs follow ownership: a job on Ava's dresser is Ava's; jobs for
+  // shared things or the whole room belong to everyone who shares it, and whoever does it first
+  // checks it off. A parent can turn jobs on or off, change how often, or give a job to someone.
+
+  function jobSettings(job) {
+    const r = room();
+    if (!r.jobs) r.jobs = {};
+    return r.jobs[job.id] || (r.jobs[job.id] = {});
+  }
+
+  // Everyone who shares the room: owners of anything in it, or everyone if nobody owns anything.
+  function roomPeople() {
+    const ids = uniq(room().pieces.flatMap(p => p.owners || [])).filter(id => S.data.people.some(x => x.id === id));
+    return ids.length ? ids : S.data.people.map(x => x.id);
+  }
+
+  function jobWho(job) {
+    const set = jobSettings(job);
+    if (set.who && set.who.length) return set.who;
+    const p = job.pieceId && pieceById(job.pieceId);
+    const owners = p ? (p.owners || []).filter(id => S.data.people.some(x => x.id === id)) : [];
+    return owners.length ? owners : roomPeople();
+  }
+
+  const jobFreq = job => jobSettings(job).freq || job.freq;
+  const jobOn = job => jobSettings(job).on !== false && jobFreq(job) !== 'off';
+  const jobDone = job => (room().jobsDone || {})[job.id] || null;
+  const jobDue = job => jobOn(job) && Jobs.isDue(jobFreq(job), jobDone(job));
+
+  function jobPlace(job) {
+    if (job.pieceId) { const p = pieceById(job.pieceId); return p ? Furniture.render(p) : ''; }
+    if (job.itemId) {
+      const it = (room().wallItems || []).find(x => x.id === job.itemId);
+      return it ? RoomMap.itemIcon(it.type) : '';
+    }
+    const pl = Jobs.PLACE[job.key] || '';
+    return pl.startsWith('<') ? pl : `<svg viewBox="0 0 60 60"><text x="30" y="33" font-size="44" text-anchor="middle" dominant-baseline="central">${pl}</text></svg>`;
+  }
+
+  function jobCard(job, act = 'job-open') {
+    const done = !jobDue(job);
+    return `<button type="button" class="job-card ${done ? 'done' : ''}" data-act="${act}" data-id="${job.id}" aria-label="${esc(Jobs.LABEL[job.key])}">
+      <span class="job-place">${jobPlace(job)}</span>
+      <span class="job-tool">${Jobs.toolSvg(job.tool)}</span>
+      ${done ? '<span class="tick" aria-hidden="true">✔️</span>' : ''}
+      <span class="job-who">${ownerBadges(jobWho(job), 26)}</span>
+    </button>`;
+  }
+
+  function renderJobs() {
+    const all = Jobs.suggest(RoomMap.defaults(room()));
+    if (parentUnlocked) { renderJobSettings(all); return; }
+    const mineJobs = all.filter(j => jobOn(j) && jobWho(j).includes(currentId));
+    const due = mineJobs.filter(jobDue), done = mineJobs.filter(j => !jobDue(j));
+    $app.innerHTML = `
+      ${topBar('', '#/clean', `<span class="me-mini">${Stickers.render(personSticker(currentPerson()))}</span>${lockButton()}`)}
+      <main>
+        <div class="job-grid">${due.map(j => jobCard(j)).join('')}</div>
+        ${!due.length ? `<div class="all-done"><span aria-hidden="true">🌟</span></div>` : ''}
+        ${done.length ? `<div class="job-grid done-grid">${done.map(j => jobCard(j)).join('')}</div>` : ''}
+      </main>`;
+  }
+
+  // Parent settings: every job, on or off, how often, and who.
+  function renderJobSettings(all) {
+    const rows = all.map(j => {
+      const on = jobOn(j), freq = jobFreq(j), set = jobSettings(j);
+      const who = set.who || [];
+      return `<section class="opt-row job-row ${on ? '' : 'off'}">
+        <div class="job-row-head">${jobCard(j, 'noop')}<span class="job-name">${esc(Jobs.LABEL[j.key])}</span></div>
+        <div class="opt-choices">
+          <button type="button" class="tool-btn big ${on ? 'on' : ''}" data-act="job-toggle" data-id="${j.id}">${on ? '✅ On' : '⛔ Off'}</button>
+          <button type="button" class="tool-btn big ${freq === 'daily' ? 'on' : ''}" data-act="job-freq" data-id="${j.id}" data-value="daily">☀️ Every day</button>
+          <button type="button" class="tool-btn big ${freq === 'weekly' ? 'on' : ''}" data-act="job-freq" data-id="${j.id}" data-value="weekly">📅 Every week</button>
+        </div>
+        <div class="opt-choices job-who-picks">${S.data.people.map(x => stickerPick(x.id, who.includes(x.id), 'job-who', `data-id="${j.id}"`)).join('')}</div>
+      </section>`;
+    }).join('');
+    $app.innerHTML = `
+      ${topBar('Jobs', '#/clean', lockButton())}
+      ${parentBanner()}
+      <main class="piece-page">
+        <p class="backup-note">Stickers picked here get the job. With none picked, it goes to whoever owns the thing, or everyone who shares the room.</p>
+        ${rows}
+      </main>`;
+  }
+
+  function openJob(id) {
+    const job = Jobs.suggest(RoomMap.defaults(room())).find(j => j.id === id);
+    if (!job) return;
+    if (job.key === 'tidy') { location.hash = '#/tidy'; return; }
+    const r = room();
+    const target = job.pieceId || job.itemId || null;
+    const placed = r.pieces.find(p => p.id === target && p.place) || (r.wallItems || []).find(x => x.id === target);
+    const map = r.sizeSet ? RoomMap.render(r, mapPieces(), { step: 3, selected: target, noHandles: true }) : '';
+    openModal(`
+      <div class="job-head"><span class="job-big">${jobPlace(job)}</span><span class="job-big tool">${Jobs.toolSvg(job.tool)}</span></div>
+      <p class="confirm-text">${esc(Jobs.LABEL[job.key])}</p>
+      ${map && (placed || !target) ? `<div class="job-map">${map}</div>` : ''}
+      <div class="confirm-row">
+        <button type="button" class="big-btn no" data-act="modal-close" aria-label="Not yet">✖️</button>
+        <button type="button" class="big-btn yes" data-act="job-done" data-id="${job.id}" aria-label="Done">✔️</button>
+      </div>`);
+  }
+
+  // When all of today's jobs are done, it counts as a cleanup (once a day).
+  function markJobDone(id) {
+    const r = room();
+    if (!r.jobsDone) r.jobsDone = {};
+    r.jobsDone[id] = new Date().toISOString();
+    const all = Jobs.suggest(RoomMap.defaults(r));
+    const left = all.filter(j => jobOn(j) && jobWho(j).includes(currentId) && jobDue(j));
+    const day = `${Jobs.today()}:${currentId}`;
+    if (!left.length && r.jobsCounted !== day) {
+      r.jobsCounted = day;
+      S.addCleanup();
+      saveOrWarn();
+      Effects.celebrate();
+    } else {
+      saveOrWarn();
+      Effects.chime();
+    }
+  }
 
   // ---------- Sticker page for one person ----------
   // Shows the whole shared collection. Your sticker has a ✔️.
@@ -2290,6 +2419,39 @@
       Effects.chime();
       location.hash = `#/rooms/my-room/piece/${p.id}`;
     },
+    'job-open'(el) {
+      Effects.pop();
+      openJob(el.dataset.id);
+    },
+    'job-done'(el) {
+      closeModal();
+      markJobDone(el.dataset.id);
+      renderJobs();
+    },
+    'noop'() {},
+    'job-toggle'(el) {
+      const r = room();
+      const set = r.jobs[el.dataset.id] || (r.jobs[el.dataset.id] = {});
+      set.on = set.on === false;
+      saveOrWarn();
+      rerender();
+    },
+    'job-freq'(el) {
+      const r = room();
+      const set = r.jobs[el.dataset.id] || (r.jobs[el.dataset.id] = {});
+      set.freq = el.dataset.value;
+      set.on = true;
+      saveOrWarn();
+      rerender();
+    },
+    'job-who'(el) {
+      const r = room();
+      const set = r.jobs[el.dataset.id] || (r.jobs[el.dataset.id] = {});
+      const who = set.who || [];
+      set.who = who.includes(el.dataset.pid) ? who.filter(x => x !== el.dataset.pid) : [...who, el.dataset.pid];
+      saveOrWarn();
+      rerender();
+    },
     'tidy-pick'(el) {
       const v = el.dataset.value;
       tidy.picks = tidy.picks.includes(v) ? tidy.picks.filter(x => x !== v) : [...tidy.picks, v];
@@ -2900,6 +3062,7 @@
     [/^#\/sticker\/([\w-]+)$/, m => renderStickerBuilder(m[1])],
     [/^#\/rewards$/, renderRewards],
     [/^#\/clean$/, renderClean],
+    [/^#\/jobs$/, renderJobs],
     [/^#\/tidy$/, () => { if (tidy.i >= tidy.steps.length && tidy.steps.length) tidy = { mode: tidy.mode, picks: [], steps: [], i: 0, done: new Set() }; renderTidy(); }],
     [/^#\/tidy\/go$/, renderTidyGo],
     [/^#\/things$/, () => { thingDraft = null; renderThings(); }],

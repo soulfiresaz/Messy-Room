@@ -261,7 +261,9 @@ const RoomMap = (() => {
     // The stretch handle of whatever is picked
     const pickedItem = room.wallItems.find(it => it.id === state.selected);
     const pickedPiece = placed.find(p => p.id === state.selected);
-    if (pickedItem) {
+    if (state.noHandles) {
+      // Just showing where something is (a job): no handles.
+    } else if (pickedItem) {
       const f = wallFrame(room, pickedItem.wall, pickedItem.pos);
       o += `<g transform="translate(${f.x * S} ${f.y * S}) rotate(${f.a})">${stretchHandle(itemW(pickedItem) * S / 2 + 6, S * 1.2, pickedItem.id)}</g>`;
     } else if (pickedPiece && pickedPiece.kind === 'closet') {
