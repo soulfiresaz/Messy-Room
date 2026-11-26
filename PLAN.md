@@ -313,6 +313,7 @@ Each stage gives something usable before moving on.
    - **What a parent sees first on a phone (decided):** today's progress, meaning each child's jobs and tidy-ups, checked or not. "Where does it go?" and settings are one tap away.
    - **One shared device (decided):** kids and parents use the same device, so progress needs no syncing or accounts. Everything stays saved on that device.
    - **📋 Today (decided, sample built):** a circle on the home screen anyone can open. 🖼️ Pictures and 🔤 Words tabs (phones start on Words). Each person's jobs, done or not, who did shared ones, and tidy-ups today. Settings still need the PIN.
+   - **📍 Where does it go? (decided, built):** one tap from Today. A words list that starts from the thing, in the clothes / play / everyday / other groups: each kind picked for a space and each named thing, with every spot in words ("Dresser (Blue) · 2nd drawer from the top · Ava"). Tapping a spot shows it glowing on the furniture and the piece on the map.
 
 ---
 

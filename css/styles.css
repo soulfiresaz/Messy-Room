@@ -1472,3 +1472,16 @@ button { font: inherit; color: inherit; }
 .today-list li { padding: 9px 0; border-top: 1px solid rgba(58, 42, 42, .12); }
 .today-list li.done { opacity: .65; }
 .today-note { font-size: 15px; opacity: .8; }
+
+/* ---------- Where does it go? ---------- */
+
+.where-group { margin-top: 18px; padding: 6px 14px 10px; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
+.where-head { margin: 8px 0 4px; font-size: 20px; }
+.where-row { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid rgba(58, 42, 42, .12); }
+.where-pic { width: 48px; height: 48px; flex: none; }
+.where-pic svg { width: 100%; height: 100%; display: block; }
+.where-text { flex: 1; min-width: 0; }
+.where-name { margin: 2px 0 4px; font-size: 19px; font-weight: 800; }
+.where-text .today-note { margin: 0; }
+.where-spot { display: block; width: 100%; text-align: left; margin: 4px 0; padding: 8px 10px; border: 0; border-radius: 12px; background: #f3f8ff; font: inherit; font-size: 17px; color: inherit; cursor: pointer; touch-action: manipulation; }
+.today-settings { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }

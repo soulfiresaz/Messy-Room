@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 17;
+  const APP_VERSION = 18;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -1716,9 +1716,158 @@
       ${parentBanner()}
       <main>
         <div class="opt-choices today-tabs">${tab('pictures', '🖼️', 'Pictures')}${tab('words', '🔤', 'Words')}</div>
-        ${parentUnlocked ? `<p class="today-settings"><a class="tool-btn big" href="#/jobs">⚙️ Job settings</a></p>` : ''}
+        <p class="today-settings"><a class="tool-btn big" href="#/where">📍 Where does it go?</a>${parentUnlocked ? ` <a class="tool-btn big" href="#/jobs">⚙️ Job settings</a>` : ''}</p>
         ${people.length ? sections : ''}
       </main>`;
+  }
+
+  // ---------- 📍 Where does it go? (words, for grown-ups and readers) ----------
+  // Starts from the thing: each kind (socks, books) and each named thing, with every spot it goes.
+
+  const nth = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');
+  // "top drawer", "2nd drawer from the top", "bottom drawer"
+  const rowWord = (what, i, n) => (n < 2 ? what : i === 0 ? `top ${what}` : i === n - 1 ? `bottom ${what}` : `${nth(i + 1)} ${what} from the top`);
+  const sideWord = (i, n) => (n < 2 ? '' : n === 2 ? ['left', 'right'][i] : n === 3 ? ['left', 'middle', 'right'][i] : `${nth(i + 1)} from the left`);
+
+  const PIECE_NAME = {
+    bed: 'Bed', dresser: 'Dresser', table: 'Side table', cubby: 'Cubby', bookshelf: 'Bookshelf', wire: 'Wire shelves', wallshelf: 'Wall shelf',
+    tower: 'Drawers', closet: 'Closet', pockets: 'Pocket organizer', hooks: 'Hooks', wallsorter: 'Wall sorter', seat: 'Seat',
+  };
+
+  function pieceName(p) {
+    let name = PIECE_NAME[p.kind] || 'Furniture';
+    if (p.kind === 'container') {
+      const sub = p.sub || '';
+      name = /^hamper/.test(sub) ? 'Hamper' : /^trash/.test(sub) ? 'Trash can' : sub === 'recycle' ? 'Recycling bin' : /^bag/.test(sub) ? 'Bag' : /^box/.test(sub) ? 'Box' : 'Basket';
+    }
+    if (p.label) name += ` (${p.label})`;
+    const host = p.insideId ? pieceById(p.insideId) : null;
+    if (host) return `${name} in the ${pieceName(host).toLowerCase()}`;
+    if (p.hangOn) {
+      const door = (room().wallItems || []).find(x => x.id === p.hangOn);
+      const on = door ? `door${door.label ? ` (${door.label})` : ''}` : (pieceById(p.hangOn) ? pieceName(pieceById(p.hangOn)).toLowerCase() : 'door');
+      return `${name} on the ${on}`;
+    }
+    return name;
+  }
+
+  // The words for one space inside a piece: "top drawer, left side", "2nd tray", "low rod".
+  function spaceWords(p, sid) {
+    const join = (...xs) => xs.filter(Boolean).join(', ');
+    if (Furniture.hasParts(p)) {
+      if (p.top && p.top.id === sid) return 'on top';
+      for (let ci = 0; ci < p.cols.length; ci++) {
+        const cells = p.cols[ci].cells;
+        for (let ki = 0; ki < cells.length; ki++) {
+          const k = cells[ki];
+          const si = (k.spots || []).findIndex(s => s.id === sid);
+          if (k.id !== sid && si < 0) continue;
+          let what = k.type === 'drawer' ? 'drawer' : k.type === 'cupboard' ? 'cupboard' : 'cubby';
+          if (k.type === 'open') {
+            what = { bin: 'bin', sorter: 'paper sorter', drawers: 'paper drawers' }[k.insert] ||
+              (p.kind === 'bookshelf' || p.style === 'wire' || p.kind === 'table' ? 'shelf' : 'cubby');
+          }
+          const nc = p.cols.length;
+          const where = nc > 3 ? `${what} in row ${ki + 1}, ${nth(ci + 1)} from the left`
+            : join(rowWord(what, ki, cells.length), nc > 1 && `${sideWord(ci, nc)} side`);
+          if (si < 0) return where;
+          const n = k.spots.length;
+          const inner = k.type === 'cupboard' ? rowWord('shelf', si, n) : k.insert === 'sorter' ? rowWord('tray', si, n) : rowWord('drawer', si, n);
+          return join(where, inner);
+        }
+      }
+      return '';
+    }
+    if (p.kind === 'closet') {
+      const ti = (p.shelves || []).findIndex(s => s.id === sid);
+      if (ti >= 0) return p.shelves.length > 1 ? `top shelf ${ti + 1}` : 'top shelf';
+      if (p.floor && p.floor.id === sid) return 'floor';
+      const secs = p.sections || [];
+      for (let i = 0; i < secs.length; i++) {
+        const sec = secs[i], side = sideWord(i, secs.length) && `${sideWord(i, secs.length)} side`;
+        const ri = sec.rods.findIndex(s => s.id === sid);
+        const shi = sec.shelves.findIndex(s => s.id === sid);
+        if (ri >= 0) return join(sec.kind === 'two' ? (ri === 0 ? 'top rod' : 'bottom rod') : sec.kind === 'low' ? 'low rod' : 'rod', side);
+        if (shi >= 0) return join(rowWord('shelf', shi, sec.shelves.length), side);
+      }
+      return '';
+    }
+    if (p.kind === 'pockets') {
+      const i = (p.pockets || []).findIndex(s => s.id === sid);
+      const cols = p.cols || 1;
+      return i < 0 ? '' : `pocket in row ${Math.floor(i / cols) + 1}, ${nth((i % cols) + 1)} from the left`;
+    }
+    if (p.kind === 'hooks') {
+      const i = (p.hooks || []).findIndex(s => s.id === sid);
+      return p.hooks.length > 1 && i >= 0 ? `${nth(i + 1)} hook` : '';
+    }
+    if (p.kind === 'wallsorter') {
+      const a = p.slots.findIndex(s => s.id === sid), b = p.keys.findIndex(s => s.id === sid);
+      return a >= 0 ? `${nth(a + 1)} slot` : b >= 0 ? `${nth(b + 1)} key hook` : '';
+    }
+    return '';
+  }
+
+  function placeLine(p, space) {
+    const owners = ownersOf(p, space).map(id => S.data.people.find(x => x.id === id).name || 'someone');
+    const where = spaceWords(p, space.id);
+    return { pieceId: p.id, spaceId: space.id, text: [pieceName(p), where].filter(Boolean).join(' · '), owners };
+  }
+
+  // Every kind and named thing, with where each one goes.
+  function whereRows() {
+    const custom = S.data.customHolds || [];
+    const pieces = room().pieces;
+    const spotsFor = key => pieces.flatMap(p => Furniture.spacesOf(p).filter(s => (s.holds || []).includes(key)).map(s => placeLine(p, s)));
+    const groups = [...Items.GROUPS.map(g => ({ label: g.label, keys: g.items.map(([k]) => k) })), { label: 'My photos', keys: custom.map(c => c.key) }];
+    return groups.map(g => {
+      const rows = [];
+      g.keys.forEach(key => {
+        const spots = spotsFor(key);
+        if (spots.length) rows.push({ id: `k:${key}`, pic: Items.icon(key, custom), name: Items.label(key, custom), spots });
+        things().filter(t => t.kind === key).forEach(t => {
+          const h = homeOf(t);
+          const whose = (t.owners || []).map(id => (S.data.people.find(x => x.id === id) || {}).name).filter(Boolean);
+          const name = t.label || `${Items.label(key, custom) || 'Thing'}${whose.length ? ` (${whose.join(' and ')})` : ''}`;
+          rows.push({ id: `t:${t.id}`, pic: thingArt(t), name, spots: h ? [placeLine(h.p, h.space)] : [], thing: true });
+        });
+      });
+      return { label: g.label, rows };
+    }).filter(g => g.rows.length);
+  }
+
+  function renderWhere() {
+    const groups = whereRows();
+    const body = groups.map(g => `<section class="where-group"><h2 class="where-head">${esc(g.label)}</h2>
+      ${g.rows.map(r => `<div class="where-row">
+        <span class="where-pic">${r.pic}</span>
+        <div class="where-text"><p class="where-name">${esc(r.name)}</p>
+          ${r.spots.length ? r.spots.map(s => `<button type="button" class="where-spot" data-act="where-show" data-id="${s.pieceId}" data-sid="${s.spaceId}">
+            📍 ${esc(s.text)}${s.owners.length ? ` <span class="today-note">· ${esc(s.owners.join(', '))}</span>` : ''}</button>`).join('')
+            : '<p class="today-note">No home yet</p>'}
+        </div></div>`).join('')}</section>`).join('');
+    $app.innerHTML = `
+      ${topBar('Where does it go?', '#/today')}
+      <main>
+        ${body || '<p class="backup-note">Nothing has a spot yet. Open a drawer or cubby in My Room and pick 🧺 what goes there, or give a thing a home in 🧸 Things.</p>'}
+      </main>`;
+  }
+
+  // Show the spot: the piece with the space glowing, and the piece on the map.
+  function showWhere(pieceId, spaceId) {
+    const p = pieceById(pieceId);
+    if (!p) return;
+    const r = room();
+    let top = p;
+    while (top && top.insideId && pieceById(top.insideId)) top = pieceById(top.insideId);
+    const target = top.hangOn || top.id;
+    const onMap = r.pieces.some(q => q.id === target && q.place) || (r.wallItems || []).some(x => x.id === target);
+    const map = r.sizeSet && onMap ? RoomMap.render(r, mapPieces(), { step: 3, selected: target, noHandles: true }) : '';
+    openModal(`
+      <div class="inside-view">${Furniture.render(p, { marks: homeMark(p, spaceId) })}</div>
+      <p class="confirm-text">${esc([pieceName(p), spaceWords(p, spaceId)].filter(Boolean).join(' · '))}</p>
+      ${map ? `<div class="job-map">${map}</div>` : ''}
+      <div class="confirm-row"><button type="button" class="big-btn yes" data-act="modal-close" aria-label="Close">👍</button></div>`);
   }
 
   // ---------- Sticker page for one person ----------
@@ -2514,6 +2663,9 @@
       renderJobs();
     },
     'noop'() {},
+    'where-show'(el) {
+      showWhere(el.dataset.id, el.dataset.sid);
+    },
     'today-tab'(el) {
       todayTab = el.dataset.value;
       renderToday();
@@ -3153,6 +3305,7 @@
     [/^#\/clean$/, renderClean],
     [/^#\/jobs$/, renderJobs],
     [/^#\/today$/, renderToday],
+    [/^#\/where$/, renderWhere],
     [/^#\/tidy$/, () => { if (tidy.i >= tidy.steps.length && tidy.steps.length) tidy = { mode: tidy.mode, picks: [], steps: [], i: 0, done: new Set() }; renderTidy(); }],
     [/^#\/tidy\/go$/, renderTidyGo],
     [/^#\/things$/, () => { thingDraft = null; renderThings(); }],
