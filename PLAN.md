@@ -251,6 +251,7 @@ Every item is a sticker the child can drag.
 ## 6. Deep clean (after tidying)
 
 - **Which jobs show up (decided):** the app suggests jobs from what's in the room (a bed means wipe the bed frame, a light switch means disinfect it), and a parent can turn any job on or off (PIN).
+- **Who does each job (decided):** jobs follow ownership. A job on Ava's dresser is Ava's. Jobs for shared things or the whole room (vacuum the floor, disinfect the doorknob) belong to everyone who shares the room, and whoever does it first checks it off. A parent can give any job to a specific person instead.
 
 A picture checklist of cleaning jobs. The app suggests them based on what's in the room.
 
