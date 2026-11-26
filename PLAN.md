@@ -199,7 +199,7 @@ Real furniture comes in all shapes and sizes, so each piece is made of parts you
 
 ### Step 4: Decide what goes where
 - ✅ Built: open any drawer, cubby, cupboard space, pocket, hook, shelf, rod or hamper and pick pictures under **🧺 What goes here?** (more than one is fine, like socks and underwear). They show small in that space on the furniture. **📷** takes a photo of anything not on the list.
-- **The pictures:** clothes (shirts, pants, shorts, dresses, pajamas, socks, underwear, jackets, shoes, hats, belts); play (toys, stuffed animals, games and puzzles, books, art supplies, music, electronics); everyday (school papers, backpacks, aprons, keys, purse, phone, tablet, charger, medicine, lotion, creams, make-up, hair things, candle); other (blankets, a mix of things). These become the item stickers later.
+- **The pictures:** clothes (shirts, pants, shorts, dresses, pajamas, socks, underwear, jackets, coats, scarves, shoes, hats, belts); play (toys, stuffed animals, games and puzzles, books, art supplies, music, electronics); everyday (school papers, backpacks, aprons, keys, purse, phone, tablet, charger, medicine, lotion, creams, make-up, hair things, candle); other (blankets, a mix of things). These become the item stickers later.
 - Each space is given what it holds: the closet holds clothes, one shelf holds toys, another holds books or a mix
 - **The child decides.** There's no wrong answer, as long as they know where things go.
 
@@ -209,7 +209,7 @@ Real furniture comes in all shapes and sizes, so each piece is made of parts you
 
 Every item is a sticker the child can drag.
 
-- **Item stickers start from the same pictures as "what goes here" (decided).** Emoji can't be recolored exactly, so the things kids recolor are drawn in the same shapes: shirt, pants, shorts, dress, pajamas, socks, underwear, jacket, hat, shoes, stuffed animal, purse, backpack, blanket. Any color (including the ➕ picker) and a pattern: stripes, dots, flowers, hearts or stars. Things nobody recolors (phone, keys, medicine, candle) stay as emoji.
+- **Item stickers start from the same pictures as "what goes here" (decided).** Emoji can't be recolored exactly, so the things kids recolor are drawn in the same shapes: shirt, pants, shorts, dress, pajamas, socks, underwear, jacket, coat, scarf, hat, shoes, stuffed animal, purse, backpack, blanket. Any color (including the ➕ picker) and a pattern: stripes, dots, flowers, hearts or stars. Things nobody recolors (phone, keys, medicine, candle) stay as emoji.
 
 - **Some items take more than one space:** a pair of shoes takes two pockets side by side in a pocket organizer
 

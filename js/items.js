@@ -21,7 +21,7 @@ const Items = (() => {
   const GROUPS = [
     { key: 'clothes', icon: '👕', label: 'Clothes', items: [
       ['shirts', '👕', 'Shirts'], ['pants', '👖', 'Pants'], ['shorts', '🩳', 'Shorts'], ['dresses', '👗', 'Dresses'],
-      ['pajamas', 'd:pajamas', 'Pajamas'], ['socks', '🧦', 'Socks'], ['underwear', '🩲', 'Underwear'], ['jackets', '🧥', 'Jackets'],
+      ['pajamas', 'd:pajamas', 'Pajamas'], ['socks', '🧦', 'Socks'], ['underwear', '🩲', 'Underwear'], ['jackets', '🧥', 'Jackets'], ['coats', '🧥', 'Coats'], ['scarves', '🧣', 'Scarves'],
       ['shoes', '👟', 'Shoes'], ['hats', '🧢', 'Hats'], ['belts', 'd:belt', 'Belts'],
     ] },
     { key: 'play', icon: '🧸', label: 'Play', items: [
