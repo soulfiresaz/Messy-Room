@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 18;
+  const APP_VERSION = 19;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -1330,12 +1330,18 @@
     return { spaces: ours.length ? ours : spaces };
   }
 
+  let tidyTab = 'pictures';
+
   function renderTidy() {
     const custom = S.data.customHolds || [];
     const sel = new Set(tidy.picks);
-    const pick = (id, art, label) => `<button type="button" class="hold-pick floor-pick ${sel.has(id) ? 'picked' : ''}" data-act="tidy-pick" data-value="${id}" aria-label="${esc(label)}" aria-pressed="${sel.has(id)}">${art}</button>`;
+    const words = tidyTab === 'words';
+    const pick = (id, art, label) => words
+      ? `<button type="button" class="word-pick ${sel.has(id) ? 'picked' : ''}" data-act="tidy-pick" data-value="${id}" aria-pressed="${sel.has(id)}"><span class="word-box" aria-hidden="true">${sel.has(id) ? '✔️' : ''}</span><span class="word-pic">${art}</span><span class="word-label">${esc(label)}</span></button>`
+      : `<button type="button" class="hold-pick floor-pick ${sel.has(id) ? 'picked' : ''}" data-act="tidy-pick" data-value="${id}" aria-label="${esc(label)}" aria-pressed="${sel.has(id)}">${art}</button>`;
     const myThings = things().filter(t => mine(t.owners || []));
-    const row = (icon, label, picks) => picks ? `<section class="opt-row"><h2 class="opt-head"><span aria-hidden="true">${icon}</span> ${label}</h2><div class="opt-choices">${picks}</div></section>` : '';
+    const row = (icon, label, picks) => picks ? `<section class="opt-row"><h2 class="opt-head"><span aria-hidden="true">${icon}</span> ${label}</h2><div class="${words ? 'word-list' : 'opt-choices'}">${picks}</div></section>` : '';
+    const tab = (key, icon, word) => `<button type="button" class="tool-btn big ${tidyTab === key ? 'on' : ''}" data-act="tidy-tab" data-value="${key}">${icon} ${word}</button>`;
     const floor = Items.FLOOR.map(g => row(g.icon, g.label, g.items.map(([k]) => pick(`kind:${k}`, Items.icon(k), Items.label(k))).join(''))).join('');
     const dirty = row('🧺', 'Dirty clothes', CLOTHES_KEYS.map(k => pick(`dirty:${k}`, dirtyIcon(k), `Dirty ${Items.label(k)}`)).join(''));
     const kinds = Items.GROUPS.map(g => row(g.icon, g.label, g.items.map(([k]) => pick(`kind:${k}`, Items.icon(k, custom), Items.label(k, custom))).join(''))).join('');
@@ -1345,6 +1351,7 @@
       ${topBar('', '#/clean', `<span class="me-mini">${Stickers.render(personSticker(currentPerson()))}</span>`)}
       <main class="piece-page">
         <h1 class="tidy-title"><span aria-hidden="true">👀</span> What's on the floor?</h1>
+        <div class="opt-choices today-tabs">${tab('pictures', '🖼️', 'Pictures')}${tab('words', '🔤', 'Words')}</div>
         <div class="mode-row">
           <button type="button" class="mode-btn ${tidy.mode === 'one' ? 'picked' : ''}" data-act="tidy-mode" data-value="one" aria-label="One thing at a time" aria-pressed="${tidy.mode === 'one'}">${one}<span class="mode-n">1</span></button>
           <button type="button" class="mode-btn ${tidy.mode === 'group' ? 'picked' : ''}" data-act="tidy-mode" data-value="group" aria-label="One kind at a time" aria-pressed="${tidy.mode === 'group'}">${many}</button>
@@ -2663,6 +2670,10 @@
       renderJobs();
     },
     'noop'() {},
+    'tidy-tab'(el) {
+      tidyTab = el.dataset.value;
+      rerender();
+    },
     'where-show'(el) {
       showWhere(el.dataset.id, el.dataset.sid);
     },
