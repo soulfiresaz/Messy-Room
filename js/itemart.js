@@ -23,6 +23,10 @@ const ItemArt = (() => {
       details: c => `<path d="M8 21 L52 21" stroke="${shade(c, -0.25)}" stroke-width="3"/>` },
     jackets: { color: '#3d6fa8', body: ['M18 6 L26 4 L30 12 L34 4 L42 6 L54 18 L48 30 L44 26 L44 56 L16 56 L16 26 L12 30 L6 18 Z'],
       details: c => `<path d="M30 12 L30 56" ${L(2)}/><g fill="#e0b050"><circle cx="34" cy="22" r="1.8"/><circle cx="34" cy="32" r="1.8"/><circle cx="34" cy="42" r="1.8"/></g><path d="M26 4 L30 12 L22 16 Z M34 4 L30 12 L38 16 Z" fill="${shade(c, -0.2)}" ${L(1.6)}/>` },
+    coats: { color: '#e05a6a', body: ['M20 10 Q20 2 30 2 Q40 2 40 10 L44 12 L54 22 L52 48 L46 48 L46 30 L46 56 L14 56 L14 30 L14 48 L8 48 L6 22 L16 12 Z'],
+      details: c => `<path d="M22 12 Q22 6 30 6 Q38 6 38 12 Q34 16 30 16 Q26 16 22 12 Z" fill="#f3ebe0" ${L(1.8)}/><path d="M30 16 L30 56" ${L(2)}/><path d="M14 30 Q30 34 46 30 M14 43 Q30 47 46 43" fill="none" stroke="${shade(c, -0.25)}" stroke-width="2.4"/><path d="M9 34 L52 34" stroke="none"/><path d="M8 40 L14 40 M46 40 L52 40" stroke="${shade(c, -0.25)}" stroke-width="2.4"/><rect x="28.5" y="20" width="3" height="4" rx="1" fill="#d8d8e0" ${L(1)}/>` },
+    scarves: { color: '#ffb84a', body: ['M28 28 L36 28 L32 54 L22 52 Z', 'M32 28 L40 28 L48 50 L38 53 Z', 'M10 18 a20 10 0 1 0 40 0 a20 10 0 1 0 -40 0 Z M18 17 a12 5 0 1 0 24 0 a12 5 0 1 0 -24 0 Z', 'M26 22 Q32 20 38 22 L37 30 Q32 32 27 30 Z'],
+      details: c => `<path d="M23 52 l-1 5 M27 53 v5 M31 54 l1 5 M39 53 l-1 5 M43 52 v5 M47 50 l1 5" ${L(2)}/>` },
     hats: { color: '#4f8fe0', body: ['M10 38 Q10 12 32 12 Q52 12 52 36 Z', 'M46 34 Q58 34 58 40 L36 42 Q38 36 46 34 Z'],
       details: c => `<circle cx="31" cy="12" r="2.5" fill="${shade(c, -0.3)}"/><path d="M31 14 Q24 24 22 37" fill="none" stroke="${shade(c, -0.25)}" stroke-width="1.6"/>` },
     shoes: { color: '#4fb0f0', body: ['M6 38 Q6 26 14 24 L26 24 Q32 32 44 34 Q56 36 56 44 L56 48 L6 48 Z'],
@@ -58,7 +62,7 @@ const ItemArt = (() => {
     const id = `pt${++n}`;
     const def = pattern && pattern !== 'none' ? `<defs>${patternDef(id, pattern, c)}</defs>` : '';
     const fill = def ? `url(#${id})` : c;
-    return def + a.body.map(d => `<path d="${d}" fill="${fill}" ${L()}/>`).join('') + a.details(c);
+    return def + a.body.map(d => `<path d="${d}" fill="${fill}" fill-rule="evenodd" ${L()}/>`).join('') + a.details(c);
   }
 
   const svg = (key, color, pattern) => `<svg viewBox="0 0 60 60">${inner(key, color, pattern)}</svg>`;
