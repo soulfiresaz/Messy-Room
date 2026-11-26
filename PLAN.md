@@ -312,6 +312,7 @@ Each stage gives something usable before moving on.
    - **Who the word list is for (decided):** parents first, then older kids who can read.
    - **What a parent sees first on a phone (decided):** today's progress, meaning each child's jobs and tidy-ups, checked or not. "Where does it go?" and settings are one tap away.
    - **One shared device (decided):** kids and parents use the same device, so progress needs no syncing or accounts. Everything stays saved on that device.
+   - **📋 Today (decided, sample built):** a circle on the home screen anyone can open. 🖼️ Pictures and 🔤 Words tabs (phones start on Words). Each person's jobs, done or not, who did shared ones, and tidy-ups today. Settings still need the PIN.
 
 ---
 

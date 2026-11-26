@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 16;
+  const APP_VERSION = 17;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -172,6 +172,7 @@
         ${circle({ href: '#/rewards', icon: '🎁', label: 'Rewards', color: 'var(--c-rewards)' })}
         ${circle({ href: '#/clean', icon: '🧽', label: 'Clean', color: 'var(--c-clean)' })}
         ${circle({ href: '#/things', icon: '🧸', label: 'Things', color: 'var(--c-things)' })}
+        ${circle({ href: '#/today', icon: '📋', label: 'Today', color: 'var(--c-today)' })}
       </main>
       <p class="app-version">Version ${APP_VERSION}</p>`;
   }
@@ -1449,7 +1450,11 @@
       S.addCleanup();
       const r = room();
       if (!r.jobsDone) r.jobsDone = {};
-      r.jobsDone.tidy = new Date().toISOString();
+      const now = new Date().toISOString();
+      r.jobsDone.tidy = now;
+      if (!r.jobsBy) r.jobsBy = {};
+      r.jobsBy.tidy = currentId;
+      r.tidies = [...(r.tidies || []), { who: currentId, at: now }].slice(-60);
       saveOrWarn();
       Effects.celebrate();
     } else {
@@ -1622,6 +1627,8 @@
     const r = room();
     if (!r.jobsDone) r.jobsDone = {};
     r.jobsDone[id] = new Date().toISOString();
+    if (!r.jobsBy) r.jobsBy = {};
+    r.jobsBy[id] = currentId;
     const all = Jobs.suggest(RoomMap.defaults(r));
     const left = all.filter(j => jobOn(j) && jobWho(j).includes(currentId) && jobDue(j));
     const day = `${Jobs.today()}:${currentId}`;
@@ -1634,6 +1641,84 @@
       saveOrWarn();
       Effects.chime();
     }
+  }
+
+  // ---------- 📋 Today: everyone's progress ----------
+  // Anyone can look. Pictures for kids, words for parents and readers.
+  // Phones start on Words; tablets and computers start on Pictures.
+
+  let todayTab = null;
+
+  const PIECE_WORD = { bed: 'bed', dresser: 'dresser', table: 'side table', cubby: 'cubby', bookshelf: 'bookshelf', wire: 'wire shelf', wallshelf: 'wall shelf', tower: 'drawers' };
+
+  function pieceWord(p) {
+    if (!p) return '';
+    if (p.kind === 'container') return p.sub === 'recycle' ? 'recycling bin' : 'trash can';
+    return PIECE_WORD[p.kind] || 'furniture';
+  }
+
+  function jobWords(job) {
+    const p = job.pieceId && pieceById(job.pieceId);
+    const it = job.itemId && (room().wallItems || []).find(x => x.id === job.itemId);
+    const named = (p && p.label) || (it && it.label) || '';
+    let text = Jobs.LABEL[job.key];
+    if (job.key === 'dust') text = `Dust the ${pieceWord(p)}`;
+    if (job.key === 'trash') text = 'Empty the trash can';
+    return named ? `${text} (${named})` : text;
+  }
+
+  function jobsFor(pid) {
+    return Jobs.suggest(RoomMap.defaults(room())).filter(j => jobOn(j) && jobWho(j).includes(pid));
+  }
+
+  function tidiesToday(pid) {
+    const day = Jobs.today();
+    return (room().tidies || []).filter(t => t.who === pid && t.at.slice(0, 10) === day).length;
+  }
+
+  function doneBy(job) {
+    const by = (room().jobsBy || {})[job.id];
+    return by && S.data.people.find(x => x.id === by) ? by : null;
+  }
+
+  function renderToday() {
+    if (!todayTab) todayTab = window.innerWidth < 600 ? 'words' : 'pictures';
+    const people = S.data.people;
+    const sections = people.map(person => {
+      const list = jobsFor(person.id);
+      const done = list.filter(j => !jobDue(j));
+      const tidies = tidiesToday(person.id);
+      const sticker = `<span class="today-sticker">${Stickers.render(personSticker(person))}</span>`;
+      if (todayTab === 'words') {
+        const rows = list.map(j => {
+          const isDone = !jobDue(j);
+          const by = isDone ? doneBy(j) : null;
+          const who = by && by !== person.id ? ` · done by ${esc(people.find(x => x.id === by).name || 'someone')}` : '';
+          const when = isDone && jobFreq(j) === 'weekly' ? ' · this week' : '';
+          return `<li class="${isDone ? 'done' : ''}"><span aria-hidden="true">${isDone ? '✔️' : '⬜'}</span> ${esc(jobWords(j))}<span class="today-note">${when}${who}</span></li>`;
+        }).join('');
+        return `<section class="today-person">
+          <div class="today-head">${sticker}<div><h2>${esc(person.name || 'No name')}</h2>
+            <p class="today-count">${done.length} of ${list.length} jobs done · ${tidies} tidy-up${tidies === 1 ? '' : 's'} today</p></div></div>
+          ${list.length ? `<ul class="today-list">${rows}</ul>` : '<p class="today-count">No jobs.</p>'}
+        </section>`;
+      }
+      const dots = list.map(j => `<span class="today-dot ${jobDue(j) ? '' : 'on'}"></span>`).join('');
+      return `<section class="today-person">
+        <div class="today-head">${sticker}<div class="today-dots" aria-label="${done.length} of ${list.length} done">${dots}</div>
+          ${tidies ? `<span class="today-tidies" aria-label="${tidies} tidy-ups today">${'🧺'.repeat(Math.min(tidies, 5))}</span>` : ''}</div>
+        <div class="job-grid today-grid">${list.map(j => jobCard(j, 'noop')).join('')}</div>
+      </section>`;
+    }).join('');
+    const tab = (key, icon, word) => `<button type="button" class="tool-btn big ${todayTab === key ? 'on' : ''}" data-act="today-tab" data-value="${key}">${icon} ${word}</button>`;
+    $app.innerHTML = `
+      ${topBar('', '#/', lockButton())}
+      ${parentBanner()}
+      <main>
+        <div class="opt-choices today-tabs">${tab('pictures', '🖼️', 'Pictures')}${tab('words', '🔤', 'Words')}</div>
+        ${parentUnlocked ? `<p class="today-settings"><a class="tool-btn big" href="#/jobs">⚙️ Job settings</a></p>` : ''}
+        ${people.length ? sections : ''}
+      </main>`;
   }
 
   // ---------- Sticker page for one person ----------
@@ -2429,6 +2514,10 @@
       renderJobs();
     },
     'noop'() {},
+    'today-tab'(el) {
+      todayTab = el.dataset.value;
+      renderToday();
+    },
     'job-toggle'(el) {
       const r = room();
       const set = r.jobs[el.dataset.id] || (r.jobs[el.dataset.id] = {});
@@ -3063,6 +3152,7 @@
     [/^#\/rewards$/, renderRewards],
     [/^#\/clean$/, renderClean],
     [/^#\/jobs$/, renderJobs],
+    [/^#\/today$/, renderToday],
     [/^#\/tidy$/, () => { if (tidy.i >= tidy.steps.length && tidy.steps.length) tidy = { mode: tidy.mode, picks: [], steps: [], i: 0, done: new Set() }; renderTidy(); }],
     [/^#\/tidy\/go$/, renderTidyGo],
     [/^#\/things$/, () => { thingDraft = null; renderThings(); }],
