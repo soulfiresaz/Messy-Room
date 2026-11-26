@@ -570,7 +570,7 @@ const Furniture = (() => {
     });
     // Floor: furniture standing in the closet, then the floor itself for shoes and bins.
     o += wrap(p.floor.id, `<rect x="${x0}" y="${floorY - 40}" width="${x1 - x0}" height="40" fill="transparent"/>`,
-      `<path d="M${x0} ${floorY} L${x1} ${floorY}" stroke="${shade(p.color, -0.3)}" stroke-width="4"/>` + mk(state, [p.floor.id], x1 - 200, floorY - 44, 200, 40));
+      `<path d="M${x0} ${floorY} L${x1} ${floorY}" stroke="${shade(p.color, -0.3)}" stroke-width="4"/>` + mk(state, [p.floor.id], x1 - 260, floorY - 84, 260, 80));
     let fx = x0 + 10;
     inside.forEach(q => {
       const box = frontBox(q);

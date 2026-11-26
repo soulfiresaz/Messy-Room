@@ -285,7 +285,25 @@ const RoomMap = (() => {
       o += handle(Wp / 2, Dp + Tp / 2, 'd', 'M0 -14 V14 M-7 -7 L0 -14 L7 -7 M-7 7 L0 14 L7 7');
     }
     o += '</g>';
-    return `<svg id="map-svg" class="map-svg" viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg">${o}</svg>`;
+    // Placing furniture (step 3): trim the empty edge on sides with no closet behind the wall.
+    let vb = `0 0 ${VW} ${VH}`;
+    if (state.step === 3) {
+      const side = [1.2, 1.2, 1.2, 1.2];   // top, right, bottom, left on screen
+      pieces.filter(p => p.place && p.kind === 'closet').forEach(p => {
+        const k = ((p.place.wall || 0) + r) % 4;
+        side[k] = Math.max(side[k], Furniture.footprint(p).d + T + 1);
+      });
+      // Keep anything that pokes past a wall in view.
+      pieces.filter(p => p.place && p.kind !== 'closet' && p.place.x != null).forEach(p => {
+        const f = Furniture.footprint(p), turned = (p.place.rot || 0) % 2;
+        const hw = (turned ? f.d : f.w) / 2, hd = (turned ? f.w : f.d) / 2;
+        const out = [hd - p.place.y, p.place.x + hw - w, p.place.y + hd - d, hw - p.place.x];
+        out.forEach((o, wall) => { const k = (wall + r) % 4; if (o > 0) side[k] = Math.min(m, Math.max(side[k], o + 0.6)); });
+      });
+      const cut = side.map(x => (m - x) * S);
+      vb = `${cut[3]} ${cut[0]} ${VW - cut[1] - cut[3]} ${VH - cut[0] - cut[2]}`;
+    }
+    return `<svg id="map-svg" class="map-svg" viewBox="${vb}" xmlns="http://www.w3.org/2000/svg">${o}</svg>`;
   }
 
   // A small picture for the tray: the door, a window or the light switch.

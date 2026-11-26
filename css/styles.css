@@ -1407,7 +1407,7 @@ button { font: inherit; color: inherit; }
 .glow { animation: glow 1.2s ease-in-out infinite; }
 
 .tidy-go { padding-bottom: 40px; }
-.tidy-go .piece-stage:last-of-type { margin-bottom: 70px; }
+.tidy-go .piece-stage:last-of-type { margin-bottom: 0; }
 
 /* ---------- Jobs ---------- */
 
@@ -1496,3 +1496,6 @@ button { font: inherit; color: inherit; }
 .word-pic svg { width: 100%; height: 100%; display: block; }
 .word-label { flex: 1; }
 .today-tabs { margin-bottom: 12px; }
+
+/* Tidy: keep the furniture above the ✔️ button on short screens */
+.piece-stage.tidy-stage svg { max-height: calc(100svh - 400px); width: 100%; }

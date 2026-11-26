@@ -315,6 +315,7 @@ Each stage gives something usable before moving on.
    - **📋 Today (decided, sample built):** a circle on the home screen anyone can open. 🖼️ Pictures and 🔤 Words tabs (phones start on Words). Each person's jobs, done or not, who did shared ones, and tidy-ups today. Settings still need the PIN.
    - **📍 Where does it go? (decided, built):** one tap from Today. A words list that starts from the thing, in the clothes / play / everyday / other groups: each kind picked for a space and each named thing, with every spot in words ("Dresser (Blue) · 2nd drawer from the top · Ava"). Tapping a spot shows it glowing on the furniture and the piece on the map.
    - **Tidy up Pictures / Words tabs ✅ built:** "What's on the floor?" has 🖼️ Pictures and 🔤 Words tabs. Words shows a checklist with a small picture beside each word, for kids who read. 🧽 Jobs has the same tabs, and the choice carries between the two pages.
+   - **Polish pass ✅ (after a full walk-through on phone and tablet):** anyone who owns even one drawer or cubby shares the room's jobs; the ✔️ in Tidy up no longer covers the furniture on phones; a new thing starts with "what is it?"; pattern buttons show a big round patch so flowers, hearts and stars are easy to tell apart; what-goes-here pictures are bigger (the closet floor especially); the map trims empty edges while placing furniture so it's bigger on phones.
 
 ---
 

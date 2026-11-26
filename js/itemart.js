@@ -67,5 +67,12 @@ const ItemArt = (() => {
 
   const svg = (key, color, pattern) => `<svg viewBox="0 0 60 60">${inner(key, color, pattern)}</svg>`;
 
-  return { ART, PATTERNS, inner, svg, has: key => !!ART[key] };
+  // A round patch of a color and pattern, big enough to tell the patterns apart.
+  const swatch = (color, pattern) => {
+    const id = `sw${++n}`;
+    const def = pattern && pattern !== 'none' ? `<defs>${patternDef(id, pattern, color)}</defs>` : '';
+    return `<svg viewBox="0 0 30 30">${def}<circle cx="15" cy="15" r="13" fill="${def ? `url(#${id})` : color}" ${L(2)}/></svg>`;
+  };
+
+  return { ART, PATTERNS, inner, svg, swatch, has: key => !!ART[key] };
 })();

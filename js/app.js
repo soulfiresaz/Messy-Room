@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 21;
+  const APP_VERSION = 22;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -954,7 +954,7 @@
       const owners = uniq(spaces.flatMap(sp => ownersOf(p, sp)));
       const holds = uniq(spaces.flatMap(sp => sp.holds || []));
       if (!owners.length && !holds.length) return '';
-      const s = Math.max(14, Math.min(30, Math.min(w, h) * 0.42));
+      const s = Math.max(14, Math.min(60, w * 0.42, Math.max(h * 0.75, 24)));
       let o = '';
       owners.slice(0, 3).forEach((pid, i) => { o += personBadge(pid, x + w - s - 3 - i * s * 0.75, y + 3, s); });
       holds.slice(0, 3).forEach((key, i) => { o += Items.place(key, x + 4 + i * (s + 2), y + h - s - 3, s, custom); });
@@ -1182,7 +1182,8 @@
     const color = t.color || (recolor ? ItemArt.ART[t.kind].color : null);
     const colors = recolor ? swatches(color, 'thing-color') : '';
     const patterns = recolor ? ItemArt.PATTERNS.map(pt =>
-      `<button type="button" class="hold-pick ${(t.pattern || 'none') === pt ? 'picked' : ''}" data-act="thing-pattern" data-value="${pt}" aria-label="Pattern ${pt}">${ItemArt.svg(t.kind, color, pt)}</button>`).join('') : '';
+      `<button type="button" class="hold-pick ${(t.pattern || 'none') === pt ? 'picked' : ''}" data-act="thing-pattern" data-value="${pt}" aria-label="Pattern ${pt}">${ItemArt.swatch(color, pt)}</button>`).join('') : '';
+    const pictureRow = `<section class="opt-row"><h2 class="opt-head"><span aria-hidden="true">🖼️</span> Picture</h2>${pictures}</section>`;
     const owners = t.owners || [];
     const home = homeOf(t);
     const homePic = home ? Furniture.render(home.p, { marks: homeMark(home.p, home.space.id) }) : '';
@@ -1190,6 +1191,7 @@
       ${topBar(t.label || '', thingIsNew ? '#/things' : '#/things', `<button type="button" class="round-btn save-top" data-act="thing-save" aria-label="Save">✔️</button>`)}
       <main class="piece-page">
         <div class="thing-hero">${thingArt(t)}</div>
+        ${thingIsNew ? pictureRow : ''}
         ${recolor ? `<section class="opt-row"><h2 class="opt-head"><span aria-hidden="true">🎨</span></h2><div class="opt-choices">${colors}</div></section>
         <section class="opt-row"><h2 class="opt-head"><span aria-hidden="true">✨</span> Pattern</h2><div class="opt-choices">${patterns}</div></section>` : ''}
         ${S.data.people.length ? `<section class="opt-row"><h2 class="opt-head"><span aria-hidden="true">👤</span> Whose?</h2>
@@ -1200,7 +1202,7 @@
           <div class="action-row"><button type="button" class="tool-btn big" data-act="thing-home"><span aria-hidden="true">📍</span> ${home ? 'Change' : 'Choose'}</button>
           ${home ? `<button type="button" class="tool-btn big" data-act="thing-home-clear" aria-label="No home"><span aria-hidden="true">✖️</span></button>` : ''}</div>
         </section>
-        <section class="opt-row"><h2 class="opt-head"><span aria-hidden="true">🖼️</span> Picture</h2>${pictures}</section>
+        ${thingIsNew ? '' : pictureRow}
         <section class="opt-row">
           <h2 class="opt-head"><span aria-hidden="true">🏷️</span> Label (optional)</h2>
           <input class="text-input" id="thing-label" type="text" maxlength="24" value="${esc(t.label || '')}" placeholder="Like: Ava's pink dress">
@@ -1536,7 +1538,7 @@
 
   // Everyone who shares the room: owners of anything in it, or everyone if nobody owns anything.
   function roomPeople() {
-    const ids = uniq(room().pieces.flatMap(p => p.owners || [])).filter(id => S.data.people.some(x => x.id === id));
+    const ids = uniq(room().pieces.flatMap(p => [...(p.owners || []), ...Furniture.spacesOf(p).flatMap(sp => sp.owners || [])])).filter(id => S.data.people.some(x => x.id === id));
     return ids.length ? ids : S.data.people.map(x => x.id);
   }
 
