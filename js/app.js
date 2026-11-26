@@ -7,7 +7,7 @@
   let parentUnlocked = false;
 
   // Shown small on the home screen, so it's easy to tell which copy of the app is open.
-  const APP_VERSION = 19;
+  const APP_VERSION = 20;
 
   // The person using the app right now (picked on "Who are you?").
   let currentId = null;
@@ -1578,9 +1578,24 @@
     if (parentUnlocked) { renderJobSettings(all); return; }
     const mineJobs = all.filter(j => jobOn(j) && jobWho(j).includes(currentId));
     const due = mineJobs.filter(jobDue), done = mineJobs.filter(j => !jobDue(j));
+    const tab = (key, icon, word) => `<button type="button" class="tool-btn big ${tidyTab === key ? 'on' : ''}" data-act="tidy-tab" data-value="${key}">${icon} ${word}</button>`;
+    const tabs = `<div class="opt-choices today-tabs">${tab('pictures', '🖼️', 'Pictures')}${tab('words', '🔤', 'Words')}</div>`;
+    const wordRow = j => { const isDone = !jobDue(j); return `<button type="button" class="word-pick ${isDone ? 'picked' : ''}" data-act="job-open" data-id="${j.id}"><span class="word-box" aria-hidden="true">${isDone ? '✔️' : ''}</span><span class="word-pic">${Jobs.toolSvg(j.tool)}</span><span class="word-label">${esc(jobWords(j))}</span></button>`; };
+    if (tidyTab === 'words') {
+      $app.innerHTML = `
+        ${topBar('', '#/clean', `<span class="me-mini">${Stickers.render(personSticker(currentPerson()))}</span>${lockButton()}`)}
+        <main>
+          ${tabs}
+          <div class="word-list">${due.map(wordRow).join('')}</div>
+          ${!due.length ? `<div class="all-done"><span aria-hidden="true">🌟</span></div>` : ''}
+          ${done.length ? `<div class="word-list done-grid">${done.map(wordRow).join('')}</div>` : ''}
+        </main>`;
+      return;
+    }
     $app.innerHTML = `
       ${topBar('', '#/clean', `<span class="me-mini">${Stickers.render(personSticker(currentPerson()))}</span>${lockButton()}`)}
       <main>
+        ${tabs}
         <div class="job-grid">${due.map(j => jobCard(j)).join('')}</div>
         ${!due.length ? `<div class="all-done"><span aria-hidden="true">🌟</span></div>` : ''}
         ${done.length ? `<div class="job-grid done-grid">${done.map(j => jobCard(j)).join('')}</div>` : ''}
