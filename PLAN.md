@@ -310,6 +310,7 @@ Each stage gives something usable before moving on.
 6. **Saving:** automatic save ✅, backup and restore ✅
 7. **Phone layout and polish:** word list version first on phones, final touches
    - **Who the word list is for (decided):** parents first, then older kids who can read.
+   - **What a parent sees first on a phone (decided):** today's progress, meaning each child's jobs and tidy-ups, checked or not. "Where does it go?" and settings are one tap away.
 
 ---
 
