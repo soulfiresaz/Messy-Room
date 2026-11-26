@@ -250,6 +250,8 @@ Every item is a sticker the child can drag.
 
 ## 6. Deep clean (after tidying)
 
+- **Which jobs show up (decided):** the app suggests jobs from what's in the room (a bed means wipe the bed frame, a light switch means disinfect it), and a parent can turn any job on or off (PIN).
+
 A picture checklist of cleaning jobs. The app suggests them based on what's in the room.
 
 | Job | Comes up because the room has… |
